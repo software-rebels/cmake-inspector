@@ -1,0 +1,5 @@
+../Research/.vscode
+.antlr
+.Rhistory
+__pycache__/
+.DS_Store
