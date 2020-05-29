@@ -23,13 +23,43 @@ vmodel = VModel.getInstance()
 lookupTable = Lookup.getInstance()
 
 
+def setCommand(arguments):
+    variable_name = "${{{}}}".format(arguments.pop(0))
+    if arguments:
+        # Retrieve or create node for each argument
+        node = vmodel.expand(arguments)
+    else:  # SET (VAR) // Removes the definition of VAR.
+        lookupTable.deleteKey(variable_name)
+        return
+    # Each variable has its own RefNode
+    variableNode = RefNode(variable_name, node)
+    # This function will handle scenarios like if conditions and reassignment before adding node to the graph
+    vmodel.addVariableNode(variableNode, "PARENT_SCOPE" in arguments)
+
+
+# Current strategy for foreach loop does not support nested foreach! If this is a case, we should change
+# create a activation record style class for each foreach command
+forEachVariableName = None
+forEachArguments = []
+forEachCommands = []
+
+
+def forEachCommand(arguments):
+    global forEachVariableName
+    global forEachArguments
+    forEachVariableName = "${{{}}}".format(arguments.pop(0))
+    forEachArguments = arguments
+    vmodel.enableRecordCommands()
+
+
 class CMakeExtractorListener(CMakeListener):
     def enterSetCommand(self, ctx: CMakeParser.SetCommandContext):
+        # Extract arguments
         arguments = [child.getText() for child in ctx.argument().getChildren() if not isinstance(child, TerminalNode)]
-        variable_name = "${{{}}}".format(arguments.pop(0))
-        node = vmodel.expand(arguments)
-        variableNode = RefNode(variable_name, node)
-        vmodel.addNode(variableNode)
+        if vmodel.shouldRecordCommand():
+            forEachCommands.append(('set', arguments))
+        else:
+            setCommand(arguments)
 
     def enterIfCommand(self, ctx: CMakeParser.IfCommandContext):
         vmodel.setInsideIf()
@@ -90,10 +120,28 @@ class CMakeExtractorListener(CMakeListener):
 
     def enterCommand_invocation(self, ctx: CMakeParser.Command_invocationContext):
         global project_dir
-        commandId = ctx.Identifier().getText()
+        commandId = ctx.Identifier().getText().lower()
         arguments = [child.getText() for child in ctx.argument().getChildren() if not isinstance(child, TerminalNode)]
         if commandId == 'set':
             raise Exception("This should not reach to this code!!!")
+
+        if commandId == 'unset':
+            variable_name = "${{{}}}".format(arguments.pop(0))
+            parentScope = False
+            if "PARENT_SCOPE" in arguments:
+                parentScope = True
+            lookupTable.deleteKey(variable_name, parentScope)
+
+        if commandId == 'foreach':
+            forEachCommand(arguments)
+
+        if commandId == 'endforeach':
+            vmodel.disableRecordCommands()
+            for arg in forEachArguments:
+                for commandType, commandArgs in forEachCommands:
+                    newArgs = [i.replace(forEachVariableName, arg) for i in  commandArgs]
+                    if commandType == 'set':
+                        setCommand(newArgs)
 
         if commandId == 'add_subdirectory':
             tempProjectDir = project_dir
@@ -237,8 +285,8 @@ def main(argv):
     # conditions = {"(MSVC)" : True, "(ASM686)": False}
     # vmodel.pathWithCondition(targetNode, sampleFile, **conditions)
     # !!!!!!!!!!!!!! Until here
-    vmodel.findAndSetTargets()
-    doGitAnalysis(project_dir)
+    # vmodel.findAndSetTargets()
+    # doGitAnalysis(project_dir)
 
 
 if __name__ == "__main__":

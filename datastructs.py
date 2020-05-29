@@ -8,6 +8,16 @@ import re
 VARIABLE_REGEX = r"\${(\S*)}"
 
 
+def infinite_sequence():
+    num = 0
+    while True:
+        yield num
+        num += 1
+
+
+COUNTER = infinite_sequence()
+
+
 # class NodeType(Enum):
 #     TARGET = auto()
 #
@@ -235,9 +245,19 @@ class VModel:
         self.testTargets = set()
         self.options = dict()
         self.lookupTable = Lookup.getInstance()
+        self.recordCommands = False
 
     def addOption(self, optionName, initialValue):
         self.options[optionName] = initialValue
+
+    def enableRecordCommands(self):
+        self.recordCommands = True
+
+    def disableRecordCommands(self):
+        self.recordCommands = False
+
+    def shouldRecordCommand(self):
+        return self.recordCommands
 
     def setInsideIf(self):
         self.ifLevel += 1
@@ -334,6 +354,38 @@ class VModel:
                 result.add(item)
         return result
 
+    def addVariableNode(self, node: RefNode, parentScope=False):
+        previousNode = self.lookupTable.getKey(node.getName())
+        if self.isInsideIf():
+            selectNodeName = "SELECT_{}_{}".format(node.getName(), " ".join(self.ifConditions))
+            if self.findNode(selectNodeName):
+                raise Exception("DUPLICATE_SELECT_NODE_FOUND!")
+
+            newSelectNode = SelectNode(selectNodeName, self.ifConditions)
+            newSelectNode.setTrueNode(node.getPointTo())
+            if previousNode:
+                if not isinstance(previousNode, RefNode):
+                    raise Exception("PREVIOUS NODE OF AN REF NODE SHOULD ALSO BE REF!")
+                newSelectNode.setFalseNode(previousNode.getPointTo())
+                previousNode.pointTo = newSelectNode
+                return
+            else:
+                node.pointTo = newSelectNode
+                self.nodes.append(node)
+                self.lookupTable.setKey(node.getName(), node, parentScope)
+                return
+
+        if previousNode and not self.isInsideIf():
+            # Then we simply add another node to the graph
+            prevNodeName = node.getName()
+            node.name = "{}_{}".format(node.getName(), next(COUNTER))
+            self.nodes.append(node)
+            self.lookupTable.setKey(prevNodeName, node)
+            return
+
+        self.nodes.append(node)
+        self.lookupTable.setKey(node.getName(), node)
+
     def addNode(self, node: Node):
         previousNode = self.findNode(node.getName())
         if self.isInsideIf():
@@ -396,16 +448,17 @@ class VModel:
         #     self.nodes.append(node)
 
     def expand(self, expression: List[str]) -> Node:
-        # A recursive function
+        # A recursive function which retrieve or create nodes
         if len(expression) == 1:
-            mayExistNode = self.findNode(expression[0])
+            mayExistNode = self.lookupTable.getKey(expression[0]) or self.findNode(expression[0])
             if mayExistNode:
                 return mayExistNode
             return LiteralNode(expression[0], expression[0])
 
-        mayExistNode = self.findNode(",".join(expression))
-        if mayExistNode:
-            return mayExistNode
+        # If we already created a Concat Node of the same arguments, then we can return that
+        # mayExistNode = self.findNode(",".join(expression))
+        # if mayExistNode:
+        #     return mayExistNode
 
         concatNode = ConcatNode(",".join(expression))
         for expr in expression:
