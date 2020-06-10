@@ -15,9 +15,6 @@ def infinite_sequence():
         num += 1
 
 
-COUNTER = infinite_sequence()
-
-
 # class NodeType(Enum):
 #     TARGET = auto()
 #
@@ -130,6 +127,19 @@ class RefNode(Node):
             return [self.pointTo]
         return None
 
+    def getTerminalNodes(self):
+        result = []
+        toExplore = self.getChildren()
+        while toExplore:
+            child = toExplore.pop(0)
+            if isinstance(child, LiteralNode):
+                result.append(child)
+            elif child.getChildren():
+                toExplore += child.getChildren()
+            else:
+                result.append(child)
+        return result
+
     def getValue(self):
         return self.pointTo.getName()
 
@@ -137,11 +147,11 @@ class RefNode(Node):
 class CustomCommandNode(Node):
     def __init__(self, name: str):
         super().__init__(name)
-        self.pointTo: Optional[Node] = None
+        self.pointTo: List[Node] = []
 
     def getChildren(self) -> Optional[List]:
         if self.pointTo:
-            return [self.pointTo]
+            return self.pointTo
         return None
 
 
@@ -155,6 +165,9 @@ class ConcatNode(Node):
 
     def addNode(self, node: Node):
         self.listOfNodes.append(node)
+
+    def addToBeginning(self, node: Node):
+        self.listOfNodes.insert(0, node)
 
     def getNodes(self) -> List[Node]:
         return self.listOfNodes
@@ -171,6 +184,9 @@ class LiteralNode(Node):
     def setValue(self, value):
         self.value = value
 
+    def getValue(self):
+        return self.value
+
 
 class SelectNode(Node):
     def __init__(self, name, condition):
@@ -178,7 +194,7 @@ class SelectNode(Node):
         self.trueNode: Optional[Node] = None
         self.falseNode: Optional[Node] = None
         self.conditionList = copy.deepcopy(condition)
-        self.condition = ",".join(condition)
+        self.condition = " ".join(condition)
 
     def getNodeName(self):
         return "SELECT\n" + self.condition
@@ -200,22 +216,32 @@ class SelectNode(Node):
 
 class Lookup:
     _instance = None
-    items = [{}]
+
+    def __init__(self):
+        self.items = [{}]
+        self.variableHistory = {}
 
     def newScope(self):
         self.items.append({})
 
     def setKey(self, key, value, parentScope=False):
+        if key not in self.variableHistory:
+            self.variableHistory[key] = []
+
+        self.variableHistory[key].append(value)
         if parentScope:
             self.items[-2][key] = value
         else:
             self.items[-1][key] = value
 
-    def getKey(self, key):
+    def getKey(self, key) -> Optional[RefNode]:
         for table in reversed(self.items):
             if key in table:
                 return table.get(key)
             return None
+
+    def getVariableHistory(self, key) -> List[RefNode]:
+        return self.variableHistory[key]
 
     def deleteKey(self, key, parentScope=False):
         if parentScope:
@@ -226,12 +252,46 @@ class Lookup:
     def dropScope(self):
         self.items.pop()
 
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.items = []
+        for item in self.items:
+            result.items.append(dict.copy(item))
+        return result
+
     @classmethod
     def getInstance(cls):
         if cls._instance is None:
             cls._instance = Lookup()
 
         return cls._instance
+
+    @classmethod
+    def clearInstance(cls):
+        cls._instance = None
+
+
+def flattenAlgorithm(node: Node):
+    if isinstance(node, LiteralNode):
+        return [node.getValue()]
+    elif isinstance(node, RefNode):
+        return flattenAlgorithm(node.getPointTo())
+    elif isinstance(node, SelectNode):
+        return flattenAlgorithm(node.falseNode) + flattenAlgorithm(node.trueNode)
+    elif isinstance(node, ConcatNode):
+        result = {''}
+        for item in node.getChildren():
+            childSet = flattenAlgorithm(item)
+            tempSet = set()
+            for str1 in result:
+                for str2 in childSet:
+                    if str1 == '':
+                        tempSet.add(str2)
+                    else:
+                        tempSet.add("{} {}".format(str1, str2))
+            result = tempSet
+        return list(result)
 
 
 class VModel:
@@ -246,6 +306,34 @@ class VModel:
         self.options = dict()
         self.lookupTable = Lookup.getInstance()
         self.recordCommands = False
+        self.COUNTER = infinite_sequence()
+        self.tmpLookupTableStack = []
+        self.systemState = []
+
+    def pushSystemState(self, state, properties):
+        self.systemState.append((state, properties))
+
+    def getCurrentSystemState(self):
+        if self.systemState:
+            return self.systemState[-1]
+        else:
+            return None
+
+    def popSystemState(self):
+        return self.systemState.pop()
+
+    def pushCurrentLookupTable(self):
+        newLookup = copy.copy(self.lookupTable)
+        self.tmpLookupTableStack.append(newLookup)
+
+    def getLastPushedLookupTable(self):
+        return self.tmpLookupTableStack[-1]
+
+    def popLookupTable(self):
+        return self.tmpLookupTableStack.pop()
+
+    def getNextCounter(self):
+        return str(next(self.COUNTER))
 
     def addOption(self, optionName, initialValue):
         self.options[optionName] = initialValue
@@ -340,51 +428,25 @@ class VModel:
                 return node
         return None
 
-    def flatten(self, textToFlat: List[str]) -> Set[str]:
-        result = set()
+    # Iterate over a list of arguments, if it's a variable, we return the corresponding RefNode
+    # Otherwise we return or create a literal node for that
+    def flatten(self, textToFlat: List[str]) -> List[Node]:
+        result = []
         for item in textToFlat:
             variableName = re.findall(VARIABLE_REGEX, item)
             if variableName:
-                node = self.findNode("${{{}}}".format(variableName[0]))
+                node = self.lookupTable.getKey("${{{}}}".format(variableName[0]))
                 if not isinstance(node, RefNode):
                     raise Exception("NOT_IMPLEMENTED")
-                # result.add(node.getValue()) I do not know why we returned the value of the node instead of node itself!
-                result.add(node.getName())
+                result.append(node)
             else:
-                result.add(item)
+                literalNode = self.findNode(item)
+                if literalNode and not isinstance(literalNode, LiteralNode):
+                    raise Exception("SHOULD_NOT_HAPPEN")
+                elif not literalNode:
+                    literalNode = LiteralNode(item, item)
+                result.append(literalNode)
         return result
-
-    def addVariableNode(self, node: RefNode, parentScope=False):
-        previousNode = self.lookupTable.getKey(node.getName())
-        if self.isInsideIf():
-            selectNodeName = "SELECT_{}_{}".format(node.getName(), " ".join(self.ifConditions))
-            if self.findNode(selectNodeName):
-                raise Exception("DUPLICATE_SELECT_NODE_FOUND!")
-
-            newSelectNode = SelectNode(selectNodeName, self.ifConditions)
-            newSelectNode.setTrueNode(node.getPointTo())
-            if previousNode:
-                if not isinstance(previousNode, RefNode):
-                    raise Exception("PREVIOUS NODE OF AN REF NODE SHOULD ALSO BE REF!")
-                newSelectNode.setFalseNode(previousNode.getPointTo())
-                previousNode.pointTo = newSelectNode
-                return
-            else:
-                node.pointTo = newSelectNode
-                self.nodes.append(node)
-                self.lookupTable.setKey(node.getName(), node, parentScope)
-                return
-
-        if previousNode and not self.isInsideIf():
-            # Then we simply add another node to the graph
-            prevNodeName = node.getName()
-            node.name = "{}_{}".format(node.getName(), next(COUNTER))
-            self.nodes.append(node)
-            self.lookupTable.setKey(prevNodeName, node)
-            return
-
-        self.nodes.append(node)
-        self.lookupTable.setKey(node.getName(), node)
 
     def addNode(self, node: Node):
         previousNode = self.findNode(node.getName())
@@ -613,6 +675,10 @@ class VModel:
             cls._instance = VModel()
 
         return cls._instance
+
+    @classmethod
+    def clearInstance(cls):
+        cls._instance = None
 
 
 def getNodeShape(node: Node):

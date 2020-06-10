@@ -26,7 +26,7 @@ elseIfStatement
 	;
 
 elseStatement
-	: 'else()'
+	: 'else' argument
 	;
 
 endIfStatement
