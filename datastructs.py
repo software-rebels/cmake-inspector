@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from typing import Optional, List, Set
+from typing import Optional, List, Set, Dict
 from graphviz import Digraph
 import copy
 from datalayer import Target, Reference, Concat, Literal, Select
@@ -309,6 +309,8 @@ class VModel:
         self.COUNTER = infinite_sequence()
         self.tmpLookupTableStack = []
         self.systemState = []
+        self.functions = {}
+        self.currentFunctionCommand = None
 
     def pushSystemState(self, state, properties):
         self.systemState.append((state, properties))
@@ -326,7 +328,7 @@ class VModel:
         newLookup = copy.copy(self.lookupTable)
         self.tmpLookupTableStack.append(newLookup)
 
-    def getLastPushedLookupTable(self):
+    def getLastPushedLookupTable(self) -> Lookup:
         return self.tmpLookupTableStack[-1]
 
     def popLookupTable(self):
@@ -432,7 +434,13 @@ class VModel:
     # Otherwise we return or create a literal node for that
     def flatten(self, textToFlat: List[str]) -> List[Node]:
         result = []
+        processedText = []
         for item in textToFlat:
+            tempText = re.split("(\${[A-Za-z_][A-Za-z0-9_]*})", item)
+            for t in tempText:
+                if t != "":
+                    processedText.append(t)
+        for item in processedText:
             variableName = re.findall(VARIABLE_REGEX, item)
             if variableName:
                 node = self.lookupTable.getKey("${{{}}}".format(variableName[0]))
@@ -512,10 +520,17 @@ class VModel:
     def expand(self, expression: List[str]) -> Node:
         # A recursive function which retrieve or create nodes
         if len(expression) == 1:
-            mayExistNode = self.lookupTable.getKey(expression[0]) or self.findNode(expression[0])
-            if mayExistNode:
-                return mayExistNode
-            return LiteralNode(expression[0], expression[0])
+            result = self.flatten(expression)
+            if len(result) == 1:
+                return result[0]
+            else:
+                concatNode = ConcatNode(",".join(expression))
+                concatNode.listOfNodes += result
+                return concatNode
+            # mayExistNode = self.lookupTable.getKey(expression[0]) or self.findNode(expression[0])
+            # if mayExistNode:
+            #     return mayExistNode
+            # return LiteralNode(expression[0], expression[0])
 
         # If we already created a Concat Node of the same arguments, then we can return that
         # mayExistNode = self.findNode(",".join(expression))

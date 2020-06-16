@@ -29,6 +29,10 @@ def util_getStringFromList(lst: List):
 
 def setCommand(arguments):
     variable_name = "${{{}}}".format(arguments.pop(0))
+    parentScope = False
+    if 'PARENT_SCOPE' in arguments:
+        parentScope = True
+        arguments.pop()
     if arguments:
         # Retrieve or create node for each argument
         node = vmodel.expand(arguments)
@@ -67,7 +71,7 @@ def setCommand(arguments):
 
     # Finally, we add the new RefNode to the graph and our lookup table
     vmodel.nodes.append(variableNode)
-    lookupTable.setKey(variable_name, variableNode)
+    lookupTable.setKey(variable_name, variableNode, parentScope)
 
 
 def listCommand(arguments):
@@ -86,9 +90,9 @@ def listCommand(arguments):
         command.pointTo.append(listVariable)
         variable = RefNode("{}_{}".format(outVariable, vmodel.getNextCounter()), command)
 
-        lookupTable.setKey(outVariable, variable)
-        vmodel.nodes.append(variable)
-        return
+        newNode = command
+        newVModel = variable
+        newName = outVariable
 
     if action == 'SORT' or action == 'REVERSE' or action == 'REMOVE_DUPLICATES':
         commandName = 'LIST.' + action
@@ -97,9 +101,10 @@ def listCommand(arguments):
         command = CustomCommandNode(commandName)
         command.pointTo.append(listVariable)
         variable = RefNode("{}_{}".format(listName, vmodel.getNextCounter()), command)
-        lookupTable.setKey(listName, variable)
-        vmodel.nodes.append(variable)
-        return
+
+        newNode = command
+        newVModel = variable
+        newName = listName
 
     if action == 'REMOVE_AT' or action == 'REMOVE_ITEM' or action == 'INSERT':
         commandName = 'LIST.{}({})'.format(action, " ".join(arguments))
@@ -108,9 +113,10 @@ def listCommand(arguments):
         command = CustomCommandNode(commandName)
         command.pointTo.append(listVariable)
         variable = RefNode("{}_{}".format(listName, vmodel.getNextCounter()), command)
-        lookupTable.setKey(listName, variable)
-        vmodel.nodes.append(variable)
-        return
+
+        newNode = command
+        newVModel = variable
+        newName = listName
 
     if action == 'FIND':
         valueToLook = arguments.pop(0)
@@ -122,10 +128,10 @@ def listCommand(arguments):
         command.pointTo.append(listVariable)
 
         variable = RefNode("{}_{}".format(outVariable, vmodel.getNextCounter()), command)
-        lookupTable.setKey(outVariable, variable)
-        vmodel.nodes.append(variable)
 
-        return
+        newNode = command
+        newVModel = variable
+        newName = outVariable
 
     if action == 'GET':
         outVariable = "${{{}}}".format(arguments.pop())
@@ -136,36 +142,28 @@ def listCommand(arguments):
         command.pointTo.append(listVariable)
 
         variable = RefNode("{}_{}".format(outVariable, vmodel.getNextCounter()), command)
-        lookupTable.setKey(outVariable, variable)
-        vmodel.nodes.append(variable)
 
-        return
+        newNode = command
+        newVModel = variable
+        newName = outVariable
 
+    if action == 'APPEND':
+        # We create a concatNode contains the arguments and a new RefNode for the variable
+        concatNode = ConcatNode("LIST_" + listName + ",".join(arguments) + vmodel.getNextCounter())
+        listVModel = RefNode("{}_{}".format(listName, vmodel.getNextCounter()), concatNode)
 
+        argumentSet = vmodel.flatten(arguments)
+        for item in argumentSet:
+            concatNode.addNode(item)
 
+        # Now we check if this variable were previously defined
+        prevListVar = lookupTable.getKey(listName)
+        if prevListVar:
+            concatNode.addToBeginning(prevListVar)
 
-    # We create a concatNode contains the arguments and a new RefNode for the variable
-    concatNode = ConcatNode("LIST_" + listName + ",".join(arguments) + vmodel.getNextCounter())
-    listVModel = RefNode("{}_{}".format(listName, vmodel.getNextCounter()), concatNode)
-
-    argumentSet = vmodel.flatten(arguments)
-    for item in argumentSet:
-        concatNode.addNode(item)
-
-    # Now we check if this variable were previously defined
-    prevListVar = lookupTable.getKey(listName)
-    if prevListVar:
-        concatNode.addToBeginning(prevListVar)
-
-    # # Exactly like set command for if conditions
-    # if vmodel.isInsideIf():
-    #     selectNodeName = "SELECT_{}_{}_{}".format(listName,
-    #                                               " ".join(vmodel.ifConditions), vmodel.getNextCounter())
-    #     newSelectNode = SelectNode(selectNodeName, vmodel.ifConditions)
-    #     newSelectNode.setTrueNode(concatNode)
-    #     if lookupTable.getKey(listName):
-    #         newSelectNode.setFalseNode(lookupTable.getKey(listName))
-    #     listVModel.pointTo = newSelectNode
+        newNode = concatNode
+        newVModel = listVModel
+        newName = listName
 
     systemState = None
     stateProperty = None
@@ -173,26 +171,44 @@ def listCommand(arguments):
         systemState, stateProperty = vmodel.getCurrentSystemState()
 
     if systemState == 'if' or systemState == 'else' or systemState == 'elseif':
-        selectNodeName = "SELECT_{}_{}_{}".format(listName,
+        selectNodeName = "SELECT_{}_{}_{}".format(newName,
                                                   util_getStringFromList(stateProperty), vmodel.getNextCounter())
         newSelectNode = SelectNode(selectNodeName, stateProperty)
 
         if systemState == 'if' or systemState == 'elseif':
-            newSelectNode.setTrueNode(concatNode)
+            newSelectNode.setTrueNode(newNode)
         elif systemState == 'else':
-            newSelectNode.setFalseNode(concatNode)
+            newSelectNode.setFalseNode(newNode)
         # Inside if statement, we set true node to the variable defined outside if which pushed
         # to this stack before entering the if statement
-        if vmodel.getLastPushedLookupTable().getKey(listName):
+        if vmodel.getLastPushedLookupTable().getKey(newName):
             if systemState == 'if' or systemState == 'elseif':
-                newSelectNode.setFalseNode(vmodel.getLastPushedLookupTable().getKey(listName))
+                newSelectNode.setFalseNode(vmodel.getLastPushedLookupTable().getKey(newName))
             elif systemState == 'else':
-                newSelectNode.setTrueNode(vmodel.getLastPushedLookupTable().getKey(listName))
+                newSelectNode.setTrueNode(vmodel.getLastPushedLookupTable().getKey(newName))
 
-        listVModel.pointTo = newSelectNode
+        newVModel.pointTo = newSelectNode
 
-    lookupTable.setKey(listName, listVModel)
-    vmodel.nodes.append(listVModel)
+    lookupTable.setKey(newName, newVModel)
+    vmodel.nodes.append(newVModel)
+
+
+def whileCommand(arguments):
+    customCommand = CustomCommandNode("WHILE({})".format(util_getStringFromList(arguments)))
+    vmodel.pushSystemState('while', customCommand)
+    vmodel.pushCurrentLookupTable()
+
+
+def endwhileCommand():
+    lastPushedLookup = vmodel.getLastPushedLookupTable()
+    state, command = vmodel.popSystemState()
+    for key in lookupTable.items[-1].keys():
+        if key not in lastPushedLookup.items[-1].keys() or lookupTable.getKey(key) != lastPushedLookup.getKey(key):
+            command.pointTo.append(lookupTable.getKey(key))
+            refNode = RefNode("{}_{}".format(key, vmodel.getNextCounter()), command)
+            lookupTable.setKey(key, refNode)
+            vmodel.nodes.append(refNode)
+
 
 
 # Current strategy for foreach loop does not support nested foreach! If this is a case, we should change
@@ -231,6 +247,8 @@ class CMakeExtractorListener(CMakeListener):
         arguments = [child.getText() for child in ctx.argument().getChildren() if not isinstance(child, TerminalNode)]
         if vmodel.shouldRecordCommand():
             forEachCommands.append(('set', arguments))
+        elif vmodel.currentFunctionCommand is not None:
+            vmodel.currentFunctionCommand.append(('set', arguments))
         else:
             setCommand(arguments)
 
@@ -323,17 +341,31 @@ class CMakeExtractorListener(CMakeListener):
         if commandId == 'set':
             raise Exception("This should not reach to this code!!!")
 
-        if commandId == 'unset':
+        elif commandId == 'function':
+            functionName = arguments.pop(0)
+            vmodel.functions[functionName] = {'arguments': arguments, 'commands' : []}
+            vmodel.currentFunctionCommand = vmodel.functions[functionName]['commands']
+
+        elif commandId == 'endfunction':
+            vmodel.currentFunctionCommand = None
+
+        elif commandId == 'while':
+            whileCommand(arguments)
+
+        elif commandId == 'endwhile':
+            endwhileCommand()
+
+        elif commandId == 'unset':
             variable_name = "${{{}}}".format(arguments.pop(0))
             parentScope = False
             if "PARENT_SCOPE" in arguments:
                 parentScope = True
             lookupTable.deleteKey(variable_name, parentScope)
 
-        if commandId == 'foreach':
+        elif commandId == 'foreach':
             forEachCommand(arguments)
 
-        if commandId == 'endforeach':
+        elif commandId == 'endforeach':
             vmodel.disableRecordCommands()
 
             # Whether we should use range mode or continue as variables
@@ -384,13 +416,13 @@ class CMakeExtractorListener(CMakeListener):
                         newArgs = [i.replace(forEachVariableName, arg) for i in commandArgs]
                         processCommand(commandType, newArgs)
 
-        if commandId == 'add_subdirectory':
+        elif commandId == 'add_subdirectory':
             tempProjectDir = project_dir
             project_dir = os.path.join(project_dir, ctx.argument().single_argument()[0].getText())
             parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
             project_dir = tempProjectDir
 
-        if commandId == 'add_library':
+        elif commandId == 'add_library':
             targetName = arguments.pop(0)
             scope = None
             if arguments[0] in ('STATIC', 'SHARED', 'MODULE'):
@@ -400,22 +432,51 @@ class CMakeExtractorListener(CMakeListener):
             targetNode.scope = scope
             vmodel.addNode(targetNode)
 
-        if commandId == 'add_executable':
+        elif commandId == 'add_executable':
             targetName = arguments.pop(0)
             nextNode = vmodel.expand(arguments)
-            targetNode = TargetNode(targetName, nextNode)
-            vmodel.addNode(targetNode)
+            targetNode = lookupTable.getKey('t:{}'.format(targetName))
+            if targetNode is None:
+                targetNode = TargetNode(targetName, nextNode)
+                lookupTable.setKey('t:{}'.format(targetName), targetNode)
+                vmodel.nodes.append(targetNode)
 
-        if commandId == 'list':
+            systemState = None
+            stateProperty = None
+            if vmodel.getCurrentSystemState():
+                systemState, stateProperty = vmodel.getCurrentSystemState()
+
+            if systemState == 'if' or systemState == 'else' or systemState == 'elseif':
+                selectNodeName = "SELECT_{}_{}_{}".format(targetName,
+                                                          util_getStringFromList(stateProperty),
+                                                          vmodel.getNextCounter())
+                newSelectNode = SelectNode(selectNodeName, stateProperty)
+
+                if systemState == 'if' or systemState == 'elseif':
+                    newSelectNode.setTrueNode(nextNode)
+                elif systemState == 'else':
+                    newSelectNode.setFalseNode(nextNode)
+                # Inside if statement, we set true node to the variable defined outside if which pushed
+                # to this stack before entering the if statement
+                if vmodel.getLastPushedLookupTable().getKey('t:{}'.format(targetName)):
+                    if systemState == 'if' or systemState == 'elseif':
+                        newSelectNode.setFalseNode(vmodel.getLastPushedLookupTable().getKey('t:{}'.format(targetName)).getPointTo())
+                    elif systemState == 'else':
+                        newSelectNode.setTrueNode(vmodel.getLastPushedLookupTable().getKey('t:{}'.format(targetName)).getPointTo())
+
+                targetNode.pointTo = newSelectNode
+
+
+        elif commandId == 'list':
             if vmodel.shouldRecordCommand():
                 forEachCommands.append(('list', arguments))
             else:
                 listCommand(arguments)
 
-        if commandId == 'target_include_directories':
+        elif commandId == 'target_include_directories':
             pass
 
-        if commandId == 'target_compile_definitions':
+        elif commandId == 'target_compile_definitions':
             # This command add a definition to the current ones. So we should add it in all the possible paths
             targetName = arguments.pop(0)
             scope = None
@@ -456,7 +517,7 @@ class CMakeExtractorListener(CMakeListener):
                         else:
                             targetNode.getDefinition().falseNode = nextNode
 
-        if commandId == 'target_link_libraries':
+        elif commandId == 'target_link_libraries':
             targetName = arguments.pop(0)
             scope = None
             targetNode = vmodel.findNode(targetName)
@@ -483,6 +544,19 @@ class CMakeExtractorListener(CMakeListener):
                 targetNode.linkLibraries = newSelectNode
             else:
                 targetNode.linkLibraries = linkLibraries
+
+        else:
+            customFunction = vmodel.functions.get(commandId)
+            if customFunction is None:
+                raise Exception('unknown command!')
+            vmodel.lookupTable.newScope()
+            functionArguments = customFunction.get('arguments')
+            for commandType, commandArgs in customFunction.get('commands'):
+                for arg in functionArguments:
+                    newArgs = [args.replace("${{{}}}".format(arg), arguments[functionArguments.index(arg)])
+                               for args in commandArgs]
+                    processCommand(commandType, newArgs)
+            vmodel.lookupTable.dropScope()
 
 
 def parseFile(filePath):

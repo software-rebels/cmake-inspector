@@ -297,6 +297,123 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual(self.lookup.getVariableHistory("${var}")[4],
                          self.lookup.getKey("${out_var3}").pointTo.pointTo[0])
 
+    def test_list_action_inside_if(self):
+        text = """
+        set(var foo)
+        if(1)
+          list(APPEND var john doe)
+        elseif(0)
+          list(APPEND var 1 2)
+          list(REVERSE var)
+        else(1)
+          list(GET var 1 2 3 out_var)
+          list(APPEND var bar baz)
+        endif(1)
+        
+        """
+        self.runTool(text)
+
+        self.assertIsNone(self.lookup.getKey("${out_var}").pointTo.trueNode)
+        self.assertIsInstance(self.lookup.getKey("${out_var}").pointTo.falseNode, CustomCommandNode)
+
+        self.assertEqual(self.lookup.getVariableHistory("${var}")[3],
+                         self.lookup.getKey("${out_var}").pointTo.falseNode.pointTo[0])
+
+        self.assertEqual(self.lookup.getVariableHistory("${var}")[1],
+                         self.lookup.getVariableHistory("${var}")[3].pointTo.falseNode)
+
+        self.assertEqual(self.lookup.getVariableHistory("${var}")[2],
+                         self.lookup.getVariableHistory("${var}")[3].pointTo.trueNode.pointTo[0])
+
+    def test_list_action_2_inside_if(self):
+        text = """
+        set(var foo)
+        if(1)
+          list(APPEND var john doe)
+        elseif(0)
+          list(APPEND var 1 2)
+          list(REVERSE var)
+        else(1)
+          list(APPEND var bar baz)
+          list(GET var 1 2 3 out_var)
+        endif(1)
+
+        """
+        self.runTool(text)
+        self.assertIsNone(self.lookup.getKey("${out_var}").pointTo.trueNode)
+        self.assertIsInstance(self.lookup.getKey("${out_var}").pointTo.falseNode, CustomCommandNode)
+
+        self.assertEqual(self.lookup.getVariableHistory("${var}")[4],
+                         self.lookup.getKey("${out_var}").pointTo.falseNode.pointTo[0])
+
+        self.assertEqual(self.lookup.getVariableHistory("${var}")[1],
+                         self.lookup.getVariableHistory("${var}")[3].pointTo.falseNode)
+
+        self.assertEqual(self.lookup.getVariableHistory("${var}")[2],
+                         self.lookup.getVariableHistory("${var}")[3].pointTo.trueNode.pointTo[0])
+
+    def test_simple_while_loop(self):
+        text = """
+        set(a foo)
+        set(condition TRUE)
+        while(condition)
+          set(a ${a}bar)
+          set(b mehran${a})
+        endwhile()
+        """
+        self.runTool(text)
+        self.assertIsInstance(self.lookup.getKey('${a}').pointTo, CustomCommandNode)
+        self.assertIsInstance(self.lookup.getKey('${b}').pointTo, CustomCommandNode)
+        customCommand = self.lookup.getKey('${b}').pointTo
+        self.assertIn(self.lookup.getVariableHistory('${a}')[1], customCommand.pointTo)
+        self.assertIn(self.lookup.getVariableHistory('${b}')[0], customCommand.pointTo)
+
+    def test_variable_scoping_function_without_parent_scope(self):
+        text = """
+        set(This foo)
+        function(simple REQUIRED_ARG)
+            set(${REQUIRED_ARG} "From SIMPLE")
+        endfunction()
+        simple(This)
+        set(bar ${This})
+        """
+        self.runTool(text)
+        self.assertEqual(self.lookup.getVariableHistory('${This}')[0], self.lookup.getKey('${This}'))
+        self.assertEqual(self.lookup.getVariableHistory('${This}')[0], self.lookup.getKey('${bar}').getPointTo())
+        self.assertEqual("\"From SIMPLE\"", self.lookup.getVariableHistory('${This}')[1].getPointTo().getValue())
+
+    def test_variable_scoping_function_with_parent_scope(self):
+        text = """
+        set(This foo)
+        function(simple REQUIRED_ARG)
+            set(${REQUIRED_ARG} "From SIMPLE" PARENT_SCOPE)
+        endfunction()
+        simple(This)
+        set(bar ${This})
+        """
+        self.runTool(text)
+        self.assertEqual(self.lookup.getKey('${This}'), self.lookup.getKey('${bar}').getPointTo())
+        self.assertEqual("\"From SIMPLE\"", self.lookup.getKey('${This}').getPointTo().getValue())
+
+    def test_simple_add_executable(self):
+        text = """
+        add_executable (helloDemo demo.cxx demo_b.cxx)
+        """
+        self.runTool(text)
+        self.vmodel.export()
+
+    def test_add_executable_in_if(self):
+        text = """
+        if(1)
+          add_executable(foo bar.c)
+        elseif(0)
+          add_executable(foo doe.c)
+        else() 
+          add_executable(foo john.c)
+        endif()
+        """
+        self.runTool(text)
+        self.vmodel.export()
 
 if __name__ == '__main__':
     unittest.main()
