@@ -311,6 +311,7 @@ class VModel:
         self.systemState = []
         self.functions = {}
         self.currentFunctionCommand = None
+        self.COMPILE_OPTIONS = None
 
     def pushSystemState(self, state, properties):
         self.systemState.append((state, properties))

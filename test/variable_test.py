@@ -400,7 +400,8 @@ class TestVariableDefinitions(unittest.TestCase):
         add_executable (helloDemo demo.cxx demo_b.cxx)
         """
         self.runTool(text)
-        self.vmodel.export()
+        self.assertIsInstance(self.lookup.getKey("t:helloDemo").getPointTo(), ConcatNode)
+        self.assertEqual("demo.cxx", self.lookup.getKey("t:helloDemo").getPointTo().getChildren()[0].getValue())
 
     def test_add_executable_in_if(self):
         text = """
@@ -413,7 +414,38 @@ class TestVariableDefinitions(unittest.TestCase):
         endif()
         """
         self.runTool(text)
-        self.vmodel.export()
+        self.assertIsInstance(self.lookup.getKey("t:foo").getPointTo(), SelectNode)
+        self.assertIsInstance(self.lookup.getKey("t:foo").getPointTo().trueNode, SelectNode)
+        self.assertEqual("john.c", self.lookup.getKey("t:foo").getPointTo().falseNode.getValue())
+
+    def test_add_compile_option(self):
+        text = """
+            add_compile_options(-Wall -Wextra -pedantic -Werror)
+            add_executable(foo bar.c)
+        """
+        self.runTool(text)
+        self.assertEqual(4, len(self.lookup.getKey("t:foo").definitions.getChildren()[0].getChildren()))
+
+    def test_add_compile_option_in_if_statement(self):
+        text = """
+            add_executable(john doe.c)
+            add_compile_options(-Ddebug)
+            add_executable(cat dog.c)
+            if (1)
+                add_compile_options(/W4 /WX)
+            else()
+                add_compile_options(-Wall -Wextra -pedantic -Werror)
+            endif()
+            add_executable(foo bar.c)
+        """
+        self.runTool(text)
+        self.assertIsNone(self.lookup.getKey("t:john").definitions)
+        self.assertEqual('-Ddebug', self.lookup.getKey("t:cat").definitions.getChildren()[0].getValue())
+        self.assertEqual(3, len(self.lookup.getKey("t:foo").definitions.getChildren()))
+
+
+
+
 
 if __name__ == '__main__':
     unittest.main()

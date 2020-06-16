@@ -438,6 +438,7 @@ class CMakeExtractorListener(CMakeListener):
             targetNode = lookupTable.getKey('t:{}'.format(targetName))
             if targetNode is None:
                 targetNode = TargetNode(targetName, nextNode)
+                targetNode.setDefinition(vmodel.COMPILE_OPTIONS)
                 lookupTable.setKey('t:{}'.format(targetName), targetNode)
                 vmodel.nodes.append(targetNode)
 
@@ -466,7 +467,6 @@ class CMakeExtractorListener(CMakeListener):
 
                 targetNode.pointTo = newSelectNode
 
-
         elif commandId == 'list':
             if vmodel.shouldRecordCommand():
                 forEachCommands.append(('list', arguments))
@@ -475,6 +475,37 @@ class CMakeExtractorListener(CMakeListener):
 
         elif commandId == 'target_include_directories':
             pass
+
+        elif commandId == 'add_compile_options':
+            nextNode = vmodel.expand(arguments)
+            targetNode = nextNode
+
+            systemState = None
+            stateProperty = None
+            if vmodel.getCurrentSystemState():
+                systemState, stateProperty = vmodel.getCurrentSystemState()
+
+            if systemState == 'if' or systemState == 'else' or systemState == 'elseif':
+                selectNodeName = "SELECT_{}_{}_{}".format(nextNode.name,
+                                                          util_getStringFromList(stateProperty),
+                                                          vmodel.getNextCounter())
+                newSelectNode = SelectNode(selectNodeName, stateProperty)
+
+                if systemState == 'if' or systemState == 'elseif':
+                    newSelectNode.setTrueNode(nextNode)
+                elif systemState == 'else':
+                    newSelectNode.setFalseNode(nextNode)
+                # Inside if statement, we set true node to the variable defined outside if which pushed
+                # to this stack before entering the if statement
+
+                targetNode = newSelectNode
+
+            newCompileOptions = ConcatNode("COMPILE_OPTIONS_{}".format(vmodel.getNextCounter()))
+            if vmodel.COMPILE_OPTIONS:
+                newCompileOptions.listOfNodes = list(vmodel.COMPILE_OPTIONS.listOfNodes)
+            vmodel.COMPILE_OPTIONS = newCompileOptions
+            vmodel.COMPILE_OPTIONS.addNode(targetNode)
+
 
         elif commandId == 'target_compile_definitions':
             # This command add a definition to the current ones. So we should add it in all the possible paths
