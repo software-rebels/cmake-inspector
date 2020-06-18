@@ -199,6 +199,9 @@ def whileCommand(arguments):
     vmodel.pushCurrentLookupTable()
 
 
+# We compare lookup table before while and after that. For any changed variable, or newly created one,
+# the tool will add the RefNode to the while command node, then it creates a new RefNode pointing to the
+# While command node
 def endwhileCommand():
     lastPushedLookup = vmodel.getLastPushedLookupTable()
     state, command = vmodel.popSystemState()
@@ -209,6 +212,43 @@ def endwhileCommand():
             lookupTable.setKey(key, refNode)
             vmodel.nodes.append(refNode)
 
+
+def fileCommand(arguments):
+    action = arguments.pop(0)
+    fileCommandNode = None
+    if action in ('WRITE', 'APPEND'):
+        fileName = arguments.pop(0)
+        fileNode = vmodel.expand([fileName])
+        contents = vmodel.expand(arguments)
+        fileCommandNode = CustomCommandNode("FILE.({} {})_{}".format(action, fileName, vmodel.getNextCounter()))
+        fileCommandNode.pointTo.append(fileNode)
+        fileCommandNode.pointTo.append(contents)
+
+    elif action in ('READ', 'STRINGS', 'MD5', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512'):
+        fileName = arguments.pop(0)
+        fileNode = vmodel.expand([fileName])
+        variableName = arguments.pop(0)
+        fileCommandNode = CustomCommandNode("FILE.({} {} {})_{}".format(action, fileName,
+                                                                        " ".join(arguments), vmodel.getNextCounter()))
+        fileCommandNode.pointTo.append(fileNode)
+        refNode = RefNode("{}_{}".format(variableName, vmodel.getNextCounter()), fileCommandNode)
+        lookupTable.setKey("${{{}}}".format(variableName), refNode)
+        vmodel.nodes.append(refNode)
+
+    elif action in ('GLOB', 'GLOB_RECURSE'):
+        variableName = arguments.pop(0)
+        fileCommandNode = CustomCommandNode("FILE.({})_{}".format(action, vmodel.getNextCounter()))
+        fileCommandNode.pointTo.append(vmodel.expand(arguments))
+        refNode = RefNode("{}_{}".format(variableName, vmodel.getNextCounter()), fileCommandNode)
+        lookupTable.setKey("${{{}}}".format(variableName), refNode)
+        vmodel.nodes.append(refNode)
+
+    elif action in ('REMOVE', 'REMOVE_RECURSE', 'MAKE_DIRECTORY'):
+        fileCommandNode = CustomCommandNode("FILE.({})_{}".format(action, vmodel.getNextCounter()))
+        fileCommandNode.pointTo.append(vmodel.expand(arguments))
+
+
+    vmodel.nodes.append(fileCommandNode)
 
 
 # Current strategy for foreach loop does not support nested foreach! If this is a case, we should change
@@ -268,7 +308,7 @@ class CMakeExtractorListener(CMakeListener):
         # and NOT it and AND it with our condition. This new list will later be parsed to evaluate the query.
         # We keep previous condition for else statement
         condition = ['((', 'NOT'] + condition + [')', 'AND'] + [argument.getText() for argument in
-                                                               ctx.argument().children] + [')']
+                                                                ctx.argument().children] + [')']
         vmodel.pushSystemState('elseif', condition)
 
     def enterElseStatement(self, ctx: CMakeParser.ElseStatementContext):
@@ -343,7 +383,7 @@ class CMakeExtractorListener(CMakeListener):
 
         elif commandId == 'function':
             functionName = arguments.pop(0)
-            vmodel.functions[functionName] = {'arguments': arguments, 'commands' : []}
+            vmodel.functions[functionName] = {'arguments': arguments, 'commands': []}
             vmodel.currentFunctionCommand = vmodel.functions[functionName]['commands']
 
         elif commandId == 'endfunction':
@@ -461,9 +501,11 @@ class CMakeExtractorListener(CMakeListener):
                 # to this stack before entering the if statement
                 if vmodel.getLastPushedLookupTable().getKey('t:{}'.format(targetName)):
                     if systemState == 'if' or systemState == 'elseif':
-                        newSelectNode.setFalseNode(vmodel.getLastPushedLookupTable().getKey('t:{}'.format(targetName)).getPointTo())
+                        newSelectNode.setFalseNode(
+                            vmodel.getLastPushedLookupTable().getKey('t:{}'.format(targetName)).getPointTo())
                     elif systemState == 'else':
-                        newSelectNode.setTrueNode(vmodel.getLastPushedLookupTable().getKey('t:{}'.format(targetName)).getPointTo())
+                        newSelectNode.setTrueNode(
+                            vmodel.getLastPushedLookupTable().getKey('t:{}'.format(targetName)).getPointTo())
 
                 targetNode.pointTo = newSelectNode
 
@@ -472,6 +514,9 @@ class CMakeExtractorListener(CMakeListener):
                 forEachCommands.append(('list', arguments))
             else:
                 listCommand(arguments)
+
+        elif commandId == 'file':
+            fileCommand(arguments)
 
         elif commandId == 'target_include_directories':
             pass

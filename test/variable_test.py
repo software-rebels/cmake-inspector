@@ -270,7 +270,8 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         self.assertIsInstance(self.lookup.getKey("${out_var}").pointTo, CustomCommandNode)
-        self.assertEqual(self.lookup.getVariableHistory("${var}")[3], self.lookup.getKey("${out_var}").pointTo.pointTo[0])
+        self.assertEqual(self.lookup.getVariableHistory("${var}")[3],
+                         self.lookup.getKey("${out_var}").pointTo.pointTo[0])
 
     def test_list_multiple_commands_on_if_statements(self):
         text = """
@@ -443,7 +444,73 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual('-Ddebug', self.lookup.getKey("t:cat").definitions.getChildren()[0].getValue())
         self.assertEqual(3, len(self.lookup.getKey("t:foo").definitions.getChildren()))
 
+    def test_file_write_with_variable_in_filename(self):
+        text = """
+        set(var1 foo.txt)
+        file(WRITE ${var1} "Hey John Doe!")
+        """
+        self.runTool(text)
+        self.assertIn(self.lookup.getKey("${var1}"), self.vmodel.findNode('FILE.(WRITE ${var1})_1').getChildren())
+        self.assertIn(self.vmodel.findNode('"Hey John Doe!"'),
+                      self.vmodel.findNode('FILE.(WRITE ${var1})_1').getChildren())
 
+    def test_file_write_with_variable_in_content_part(self):
+        text = """
+        set(var2 bar)
+        file(APPEND baz.txt "Hey ${var2}")
+        """
+        self.runTool(text)
+        self.assertIn(self.lookup.getKey("${var2}"),
+                      self.vmodel.findNode('FILE.(APPEND baz.txt)_1').getChildren()[1].getChildren())
+        self.assertEqual("bar", self.lookup.getKey("${var2}").getValue())
+
+    def test_file_read_from_file_into_variable(self):
+        text = """
+        file(READ foo.txt bar offset 12 limit 20)
+        """
+        self.runTool(text)
+        self.assertEqual(self.vmodel.findNode('FILE.(READ foo.txt offset 12 limit 20)_0'),
+                         self.lookup.getKey('${bar}').getPointTo())
+
+    def test_file_read_from_filename_in_variable(self):
+        text = """
+        set(john doe.txt)
+        file(READ ${john} bar offset 12 limit 20)
+        """
+        self.runTool(text)
+        self.assertEqual(self.vmodel.findNode('FILE.(READ ${john} offset 12 limit 20)_1'),
+                         self.lookup.getKey('${bar}').getPointTo())
+        self.assertIn(self.lookup.getKey("${john}"),
+                      self.vmodel.findNode('FILE.(READ ${john} offset 12 limit 20)_1').getChildren())
+
+    def test_file_STRINGS_from_filename_in_variable(self):
+        text = """
+        set(john doe.txt)
+        file(STRINGS ${john} bar offset 12 limit 20)
+        """
+        self.runTool(text)
+        self.assertEqual(self.vmodel.findNode('FILE.(STRINGS ${john} offset 12 limit 20)_1'),
+                         self.lookup.getKey('${bar}').getPointTo())
+        self.assertIn(self.lookup.getKey("${john}"),
+                      self.vmodel.findNode('FILE.(STRINGS ${john} offset 12 limit 20)_1').getChildren())
+
+    def test_simple_file_glob(self):
+        text = """
+        file(GLOB foo /dir/*.cxx)
+        """
+        self.runTool(text)
+        self.assertEqual(self.vmodel.findNode('FILE.(GLOB)_0'), self.lookup.getKey('${foo}').getPointTo())
+        self.assertEqual('/dir/*.cxx', self.vmodel.findNode('FILE.(GLOB)_0').getChildren()[0].getValue())
+
+    def test_simple_file_remove(self):
+        text = """
+        file(REMOVE foo.cxx bar.cxx)
+        """
+        self.runTool(text)
+        self.assertEqual('foo.cxx',
+                         self.vmodel.findNode('FILE.(REMOVE)_0').getChildren()[0].getChildren()[0].getValue())
+        self.assertEqual('bar.cxx',
+                         self.vmodel.findNode('FILE.(REMOVE)_0').getChildren()[0].getChildren()[1].getValue())
 
 
 
