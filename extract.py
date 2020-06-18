@@ -213,6 +213,12 @@ def endwhileCommand():
             vmodel.nodes.append(refNode)
 
 
+# 1- Create a custom command node for file command
+# 2- Write the action (WRITE APPEND ...) as the first argument on the name of the node (e.g FILE(APPEND))
+# 3- If file command mutate or define any variable, create a RefNode for that variable pointing to the file node
+# 4- Any other argument given to the file command will be expanded (as it may have a variable which needs to be
+# de-addressed) and added as child node to custom command node point to property
+
 def fileCommand(arguments):
     action = arguments.pop(0)
     fileCommandNode = None
@@ -224,18 +230,19 @@ def fileCommand(arguments):
         fileCommandNode.pointTo.append(fileNode)
         fileCommandNode.pointTo.append(contents)
 
-    elif action in ('READ', 'STRINGS', 'MD5', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512'):
+    elif action in ('READ', 'STRINGS', 'MD5', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512', 'TIMESTAMP'):
         fileName = arguments.pop(0)
         fileNode = vmodel.expand([fileName])
         variableName = arguments.pop(0)
         fileCommandNode = CustomCommandNode("FILE.({} {} {})_{}".format(action, fileName,
                                                                         " ".join(arguments), vmodel.getNextCounter()))
         fileCommandNode.pointTo.append(fileNode)
+        fileCommandNode.pointTo.append(vmodel.expand(arguments))
         refNode = RefNode("{}_{}".format(variableName, vmodel.getNextCounter()), fileCommandNode)
         lookupTable.setKey("${{{}}}".format(variableName), refNode)
         vmodel.nodes.append(refNode)
 
-    elif action in ('GLOB', 'GLOB_RECURSE'):
+    elif action in ('GLOB', 'GLOB_RECURSE', 'RELATIVE_PATH'):
         variableName = arguments.pop(0)
         fileCommandNode = CustomCommandNode("FILE.({})_{}".format(action, vmodel.getNextCounter()))
         fileCommandNode.pointTo.append(vmodel.expand(arguments))
@@ -247,8 +254,60 @@ def fileCommand(arguments):
         fileCommandNode = CustomCommandNode("FILE.({})_{}".format(action, vmodel.getNextCounter()))
         fileCommandNode.pointTo.append(vmodel.expand(arguments))
 
+    elif action in ('TO_CMAKE_PATH', 'TO_NATIVE_PATH'):
+        pathText = arguments.pop(0)
+        variableName = arguments.pop(0)
+        fileCommandNode = CustomCommandNode("FILE.({})_{}".format(action, vmodel.getNextCounter()))
+        fileCommandNode.pointTo.append(vmodel.expand([pathText]))
+        refNode = RefNode("{}_{}".format(variableName, vmodel.getNextCounter()), fileCommandNode)
+        lookupTable.setKey("${{{}}}".format(variableName), refNode)
+        vmodel.nodes.append(refNode)
+
+    elif action in ('DOWNLOAD', 'UPLOAD', 'COPY', 'INSTALL'):
+        # TODO: There is a "log" option for download and upload
+        #  which takes a variable. Currently we ignore that specific option
+        fileCommandNode = CustomCommandNode("FILE.({})_{}".format(action, vmodel.getNextCounter()))
+        fileCommandNode.pointTo.append(vmodel.expand(arguments))
+
+    elif action == 'GENERATE':
+        # In cmake documentation (https://cmake.org/cmake/help/v3.1/command/file.html) there is only one possible
+        # word after GENERATE which is OUTPUT. So I assume that the full action name is GENERATE OUTPUT
+        arguments.pop(0)
+        fileCommandNode = CustomCommandNode("FILE.(GENERATE OUTPUT)_{}".format(vmodel.getNextCounter()))
+        fileCommandNode.pointTo.append(vmodel.expand(arguments))
 
     vmodel.nodes.append(fileCommandNode)
+
+
+def addCompileOptionsCommand(arguments):
+    nextNode = vmodel.expand(arguments)
+    targetNode = nextNode
+
+    systemState = None
+    stateProperty = None
+    if vmodel.getCurrentSystemState():
+        systemState, stateProperty = vmodel.getCurrentSystemState()
+
+    if systemState == 'if' or systemState == 'else' or systemState == 'elseif':
+        selectNodeName = "SELECT_{}_{}_{}".format(nextNode.name,
+                                                  util_getStringFromList(stateProperty),
+                                                  vmodel.getNextCounter())
+        newSelectNode = SelectNode(selectNodeName, stateProperty)
+
+        if systemState == 'if' or systemState == 'elseif':
+            newSelectNode.setTrueNode(nextNode)
+        elif systemState == 'else':
+            newSelectNode.setFalseNode(nextNode)
+        # Inside if statement, we set true node to the variable defined outside if which pushed
+        # to this stack before entering the if statement
+
+        targetNode = newSelectNode
+
+    newCompileOptions = ConcatNode("COMPILE_OPTIONS_{}".format(vmodel.getNextCounter()))
+    if vmodel.COMPILE_OPTIONS:
+        newCompileOptions.listOfNodes = list(vmodel.COMPILE_OPTIONS.listOfNodes)
+    vmodel.COMPILE_OPTIONS = newCompileOptions
+    vmodel.COMPILE_OPTIONS.addNode(targetNode)
 
 
 # Current strategy for foreach loop does not support nested foreach! If this is a case, we should change
@@ -381,6 +440,21 @@ class CMakeExtractorListener(CMakeListener):
         if commandId == 'set':
             raise Exception("This should not reach to this code!!!")
 
+        if commandId == 'add_definitions':
+            addCompileOptionsCommand(arguments)
+
+        if commandId == 'find_file':
+            variableName = arguments.pop(0)
+            fileNode = CustomCommandNode('find_file_{}'.format(vmodel.getNextCounter()))
+            fileNode.pointTo.append(vmodel.expand(arguments))
+            foundRefNode = RefNode("{}_{}".format(variableName, vmodel.getNextCounter()), fileNode)
+            notFoundRefNode = RefNode("{}-NOTFOUND_{}".format(variableName, vmodel.getNextCounter()), fileNode)
+
+            lookupTable.setKey("${{{}}}".format(variableName), foundRefNode)
+            lookupTable.setKey("${{{}}}".format(variableName+"-NOTFOUND"), notFoundRefNode)
+            vmodel.nodes.append(foundRefNode)
+            vmodel.nodes.append(notFoundRefNode)
+
         elif commandId == 'function':
             functionName = arguments.pop(0)
             vmodel.functions[functionName] = {'arguments': arguments, 'commands': []}
@@ -474,13 +548,22 @@ class CMakeExtractorListener(CMakeListener):
 
         elif commandId == 'add_executable':
             targetName = arguments.pop(0)
-            nextNode = vmodel.expand(arguments)
+            nextNode = None
+            if arguments[0] not in ('IMPORTED', 'ALIAS'):
+                nextNode = vmodel.expand(arguments)
             targetNode = lookupTable.getKey('t:{}'.format(targetName))
             if targetNode is None:
                 targetNode = TargetNode(targetName, nextNode)
                 targetNode.setDefinition(vmodel.COMPILE_OPTIONS)
                 lookupTable.setKey('t:{}'.format(targetName), targetNode)
                 vmodel.nodes.append(targetNode)
+
+            if 'IMPORTED' in arguments:
+                targetNode.imported = True
+
+            if 'ALIAS' in arguments:
+                aliasTarget = lookupTable.getKey('t:{}'.format(arguments[1]))
+                targetNode.pointTo = aliasTarget
 
             systemState = None
             stateProperty = None
@@ -522,35 +605,7 @@ class CMakeExtractorListener(CMakeListener):
             pass
 
         elif commandId == 'add_compile_options':
-            nextNode = vmodel.expand(arguments)
-            targetNode = nextNode
-
-            systemState = None
-            stateProperty = None
-            if vmodel.getCurrentSystemState():
-                systemState, stateProperty = vmodel.getCurrentSystemState()
-
-            if systemState == 'if' or systemState == 'else' or systemState == 'elseif':
-                selectNodeName = "SELECT_{}_{}_{}".format(nextNode.name,
-                                                          util_getStringFromList(stateProperty),
-                                                          vmodel.getNextCounter())
-                newSelectNode = SelectNode(selectNodeName, stateProperty)
-
-                if systemState == 'if' or systemState == 'elseif':
-                    newSelectNode.setTrueNode(nextNode)
-                elif systemState == 'else':
-                    newSelectNode.setFalseNode(nextNode)
-                # Inside if statement, we set true node to the variable defined outside if which pushed
-                # to this stack before entering the if statement
-
-                targetNode = newSelectNode
-
-            newCompileOptions = ConcatNode("COMPILE_OPTIONS_{}".format(vmodel.getNextCounter()))
-            if vmodel.COMPILE_OPTIONS:
-                newCompileOptions.listOfNodes = list(vmodel.COMPILE_OPTIONS.listOfNodes)
-            vmodel.COMPILE_OPTIONS = newCompileOptions
-            vmodel.COMPILE_OPTIONS.addNode(targetNode)
-
+            addCompileOptionsCommand(arguments)
 
         elif commandId == 'target_compile_definitions':
             # This command add a definition to the current ones. So we should add it in all the possible paths

@@ -83,12 +83,16 @@ class TargetNode(Node):
         self.definitions = None
         self.linkLibraries = None
         self.scope = None
+        self.imported = False
+        self.isAlias = False
 
     def getPointTo(self) -> Node:
         return self.pointTo
 
     def getChildren(self):
-        result = [self.pointTo]
+        result = []
+        if self.pointTo:
+            result.append(self.pointTo)
         if self.definitions:
             result.append(self.definitions)
         if self.linkLibraries:
@@ -277,6 +281,11 @@ def flattenAlgorithm(node: Node):
         return [node.getValue()]
     elif isinstance(node, RefNode):
         return flattenAlgorithm(node.getPointTo())
+    elif isinstance(node, CustomCommandNode):
+        result = []
+        for child in node.getChildren():
+            result += flattenAlgorithm(child)
+        return result
     elif isinstance(node, SelectNode):
         return flattenAlgorithm(node.falseNode) + flattenAlgorithm(node.trueNode)
     elif isinstance(node, ConcatNode):

@@ -512,7 +512,75 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual('bar.cxx',
                          self.vmodel.findNode('FILE.(REMOVE)_0').getChildren()[0].getChildren()[1].getValue())
 
+    def test_imported_and_alias_add_executable(self):
+        text = """
+        add_executable(foo IMPORTED)
+        add_executable(bar ALIAS foo)
+        """
+        self.runTool(text)
+        self.assertTrue(self.lookup.getKey("t:foo").imported)
+        self.assertEqual(self.lookup.getKey("t:foo"), self.lookup.getKey("t:bar").pointTo)
 
+    def test_file_relative_path(self):
+        text = """
+        set(foo bar)
+        file(RELATIVE_PATH john ${foo} sample.cxx)
+        """
+        self.runTool(text)
+        fileNode = self.lookup.getKey("${john}").pointTo
+        self.assertIsInstance(fileNode, CustomCommandNode)
+        self.assertEqual('bar sample.cxx', flattenAlgorithm(fileNode.getChildren()[0])[0])
+
+    def test_file_to_path(self):
+        text = """
+        file(TO_CMAKE_PATH "/bar/test" foo)
+        file(TO_NATIVE_PATH "/baz/" john)
+        """
+        self.runTool(text)
+        fileNode1 = self.lookup.getKey("${foo}").pointTo
+        fileNode2 = self.lookup.getKey("${john}").pointTo
+        self.assertIsInstance(fileNode1, CustomCommandNode)
+        self.assertIsInstance(fileNode2, CustomCommandNode)
+        self.assertEqual('"/bar/test"', fileNode1.pointTo[0].getValue())
+
+    def test_file_timestamp(self):
+        text = """
+        file(TIMESTAMP foo.cxx bar someformat UTC)
+        """
+        self.runTool(text)
+        barVariable = self.lookup.getKey("${bar}")
+        fileNode = barVariable.pointTo
+        self.assertIsInstance(fileNode, CustomCommandNode)
+        self.assertEqual("foo.cxx someformat UTC", " ".join(flattenAlgorithm(fileNode)))
+
+    def test_file_generate_output_command(self):
+        text = """
+        set(foo bar)
+        file(GENERATE OUTPUT outfile.txt INPUT infile.txt CONDITION ${foo})
+        """
+        self.runTool(text)
+        fileNode = self.vmodel.findNode('FILE.(GENERATE OUTPUT)_1')
+        self.assertEqual("outfile.txt INPUT infile.txt CONDITION bar", " ".join(flattenAlgorithm(fileNode)))
+
+    def test_file_copy_install(self):
+        text = """
+        file(COPY a.cxx b.cxx DESTINATION /home FILE_PERMISSIONS 644)
+        """
+        self.runTool(text)
+        fileNode = self.vmodel.findNode('FILE.(COPY)_0')
+        self.assertEqual('a.cxx b.cxx DESTINATION /home FILE_PERMISSIONS 644', " ".join(flattenAlgorithm(fileNode)))
+
+    def test_find_file_command(self):
+        text = """
+        find_file(foo bar.txt /home /var)
+        """
+        self.runTool(text)
+        foundVar = self.lookup.getKey("${foo}")
+        notFoundVar = self.lookup.getKey("${foo-NOTFOUND}")
+        fileNode = self.vmodel.findNode('find_file_0')
+        self.assertEqual(fileNode, foundVar.pointTo)
+        self.assertEqual(fileNode, notFoundVar.pointTo)
+        self.assertEqual('bar.txt /home /var', " ".join(flattenAlgorithm(fileNode)))
 
 if __name__ == '__main__':
     unittest.main()
