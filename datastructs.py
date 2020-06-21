@@ -77,6 +77,10 @@ class Node:
 
 
 class TargetNode(Node):
+    STATIC_LIBRARY = 'STATIC'
+    SHARED_LIBRARY = 'SHARED'
+    MODULE_LIBRARY = 'MODULE'
+
     def __init__(self, name: str, pointTo: Node):
         super().__init__(name)
         self.pointTo = pointTo
@@ -85,6 +89,9 @@ class TargetNode(Node):
         self.scope = None
         self.imported = False
         self.isAlias = False
+        self.isExecutable = True
+        self.libraryType = self.STATIC_LIBRARY
+        self.isObjectLibrary = False
 
     def getPointTo(self) -> Node:
         return self.pointTo

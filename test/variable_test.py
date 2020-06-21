@@ -582,5 +582,66 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual(fileNode, notFoundVar.pointTo)
         self.assertEqual('bar.txt /home /var', " ".join(flattenAlgorithm(fileNode)))
 
+    def test_add_library_simple_command(self):
+        text = """
+        add_library(foo SHARED bar.cxx john.cxx)
+        """
+        self.runTool(text)
+        libraryNode = self.lookup.getKey('t:foo')
+        self.assertEqual(False, libraryNode.isExecutable)
+        self.assertEqual('SHARED', libraryNode.libraryType)
+        self.assertEqual('bar.cxx john.cxx', " ".join(flattenAlgorithm(libraryNode.pointTo)))
+
+    def test_add_library_in_if(self):
+        text = """
+        if(1)
+          add_library(foo bar.c)
+        elseif(0)
+          add_library(foo doe.c)
+        else() 
+          add_library(foo john.c)
+        endif()
+        """
+        self.runTool(text)
+        self.assertIsInstance(self.lookup.getKey("t:foo").getPointTo(), SelectNode)
+        self.assertIsInstance(self.lookup.getKey("t:foo").getPointTo().trueNode, SelectNode)
+        self.assertEqual("john.c", self.lookup.getKey("t:foo").getPointTo().falseNode.getValue())
+        self.assertEqual('STATIC', self.lookup.getKey("t:foo").libraryType)
+
+    def test_add_imported_library(self):
+        text = """
+        add_library(foo MODULE IMPORTED)
+        """
+        self.runTool(text)
+        libraryNode = self.lookup.getKey('t:foo')
+        self.assertEqual(False, libraryNode.isExecutable)
+        self.assertEqual('MODULE', libraryNode.libraryType)
+        self.assertTrue(libraryNode.imported)
+        self.assertIsNone(libraryNode.pointTo)
+
+    def test_add_aliased_library(self):
+        text = """
+        add_library(foo bar.c)
+        add_library(john ALIAS foo)
+        """
+        self.runTool(text)
+        fooL = self.lookup.getKey('t:foo')
+        johnL = self.lookup.getKey('t:john')
+        self.assertEqual(False, johnL.isExecutable)
+        self.assertEqual(fooL, johnL.pointTo)
+
+    def test_add_object_library(self):
+        text = """
+        add_library(foo OBJECT bar.cxx john.cxx)
+        """
+        self.runTool(text)
+        targetNode = self.lookup.getKey('$<TARGET_OBJECTS:foo>')
+        self.assertIsNone(self.lookup.getKey('t:foo'))
+        self.assertTrue(targetNode.isObjectLibrary)
+        self.assertEqual('bar.cxx john.cxx', " ".join(flattenAlgorithm(targetNode.pointTo)))
+
+
+
+
 if __name__ == '__main__':
     unittest.main()

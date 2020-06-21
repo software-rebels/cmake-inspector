@@ -310,6 +310,77 @@ def addCompileOptionsCommand(arguments):
     vmodel.COMPILE_OPTIONS.addNode(targetNode)
 
 
+# This function handles both add_library and add_executable
+def addTarget(arguments, isExecutable=True):
+    targetName = arguments.pop(0)
+    lookupTableName = 't:{}'.format(targetName)
+    nextNode = None
+    libraryType = None
+    isObjectLibrary = False
+
+    # These values may exist in add_library only. There is a type property in TargetNode that we can set
+    if arguments[0] in ('STATIC', 'SHARED', 'MODULE'):
+        libraryType = arguments.pop(0)
+
+    # Object libraries just contains list of files, so there is small change in behaviour
+    if arguments[0] == 'OBJECT':
+        arguments.pop(0)
+        isObjectLibrary = True
+        lookupTableName = "$<TARGET_OBJECTS:{}>".format(targetName)
+
+    # IMPORTED target node doesn't have any more argument to expand
+    # ALIAS target node points to another target node, so the logic behind it is a little different
+    if arguments[0] not in ('IMPORTED', 'ALIAS'):
+        nextNode = vmodel.expand(arguments)
+
+    targetNode = lookupTable.getKey(lookupTableName)
+    if targetNode is None:
+        targetNode = TargetNode(targetName, nextNode)
+        targetNode.setDefinition(vmodel.COMPILE_OPTIONS)
+        lookupTable.setKey(lookupTableName, targetNode)
+        vmodel.nodes.append(targetNode)
+
+    if libraryType:
+        targetNode.libraryType = libraryType
+
+    targetNode.isExecutable = isExecutable
+    targetNode.isObjectLibrary = isObjectLibrary
+
+    if 'IMPORTED' in arguments:
+        targetNode.imported = True
+
+    if 'ALIAS' in arguments:
+        aliasTarget = lookupTable.getKey('t:{}'.format(arguments[1]))
+        targetNode.pointTo = aliasTarget
+
+    systemState = None
+    stateProperty = None
+    if vmodel.getCurrentSystemState():
+        systemState, stateProperty = vmodel.getCurrentSystemState()
+
+    if systemState == 'if' or systemState == 'else' or systemState == 'elseif':
+        selectNodeName = "SELECT_{}_{}_{}".format(targetName,
+                                                  util_getStringFromList(stateProperty),
+                                                  vmodel.getNextCounter())
+        newSelectNode = SelectNode(selectNodeName, stateProperty)
+
+        if systemState == 'if' or systemState == 'elseif':
+            newSelectNode.setTrueNode(nextNode)
+        elif systemState == 'else':
+            newSelectNode.setFalseNode(nextNode)
+        # Inside if statement, we set true node to the variable defined outside if which pushed
+        # to this stack before entering the if statement
+        if vmodel.getLastPushedLookupTable().getKey(lookupTableName):
+            if systemState == 'if' or systemState == 'elseif':
+                newSelectNode.setFalseNode(
+                    vmodel.getLastPushedLookupTable().getKey(lookupTableName).getPointTo())
+            elif systemState == 'else':
+                newSelectNode.setTrueNode(
+                    vmodel.getLastPushedLookupTable().getKey(lookupTableName).getPointTo())
+
+        targetNode.pointTo = newSelectNode
+
+
 # Current strategy for foreach loop does not support nested foreach! If this is a case, we should change
 # create a activation record style class for each foreach command
 forEachVariableName = None
@@ -451,7 +522,7 @@ class CMakeExtractorListener(CMakeListener):
             notFoundRefNode = RefNode("{}-NOTFOUND_{}".format(variableName, vmodel.getNextCounter()), fileNode)
 
             lookupTable.setKey("${{{}}}".format(variableName), foundRefNode)
-            lookupTable.setKey("${{{}}}".format(variableName+"-NOTFOUND"), notFoundRefNode)
+            lookupTable.setKey("${{{}}}".format(variableName + "-NOTFOUND"), notFoundRefNode)
             vmodel.nodes.append(foundRefNode)
             vmodel.nodes.append(notFoundRefNode)
 
@@ -537,60 +608,10 @@ class CMakeExtractorListener(CMakeListener):
             project_dir = tempProjectDir
 
         elif commandId == 'add_library':
-            targetName = arguments.pop(0)
-            scope = None
-            if arguments[0] in ('STATIC', 'SHARED', 'MODULE'):
-                scope = arguments.pop(0)
-            nextNode = vmodel.expand(arguments)
-            targetNode = TargetNode(targetName, nextNode)
-            targetNode.scope = scope
-            vmodel.addNode(targetNode)
+            addTarget(arguments, False)
 
         elif commandId == 'add_executable':
-            targetName = arguments.pop(0)
-            nextNode = None
-            if arguments[0] not in ('IMPORTED', 'ALIAS'):
-                nextNode = vmodel.expand(arguments)
-            targetNode = lookupTable.getKey('t:{}'.format(targetName))
-            if targetNode is None:
-                targetNode = TargetNode(targetName, nextNode)
-                targetNode.setDefinition(vmodel.COMPILE_OPTIONS)
-                lookupTable.setKey('t:{}'.format(targetName), targetNode)
-                vmodel.nodes.append(targetNode)
-
-            if 'IMPORTED' in arguments:
-                targetNode.imported = True
-
-            if 'ALIAS' in arguments:
-                aliasTarget = lookupTable.getKey('t:{}'.format(arguments[1]))
-                targetNode.pointTo = aliasTarget
-
-            systemState = None
-            stateProperty = None
-            if vmodel.getCurrentSystemState():
-                systemState, stateProperty = vmodel.getCurrentSystemState()
-
-            if systemState == 'if' or systemState == 'else' or systemState == 'elseif':
-                selectNodeName = "SELECT_{}_{}_{}".format(targetName,
-                                                          util_getStringFromList(stateProperty),
-                                                          vmodel.getNextCounter())
-                newSelectNode = SelectNode(selectNodeName, stateProperty)
-
-                if systemState == 'if' or systemState == 'elseif':
-                    newSelectNode.setTrueNode(nextNode)
-                elif systemState == 'else':
-                    newSelectNode.setFalseNode(nextNode)
-                # Inside if statement, we set true node to the variable defined outside if which pushed
-                # to this stack before entering the if statement
-                if vmodel.getLastPushedLookupTable().getKey('t:{}'.format(targetName)):
-                    if systemState == 'if' or systemState == 'elseif':
-                        newSelectNode.setFalseNode(
-                            vmodel.getLastPushedLookupTable().getKey('t:{}'.format(targetName)).getPointTo())
-                    elif systemState == 'else':
-                        newSelectNode.setTrueNode(
-                            vmodel.getLastPushedLookupTable().getKey('t:{}'.format(targetName)).getPointTo())
-
-                targetNode.pointTo = newSelectNode
+            addTarget(arguments, True)
 
         elif commandId == 'list':
             if vmodel.shouldRecordCommand():
