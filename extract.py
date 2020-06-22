@@ -317,6 +317,7 @@ def addTarget(arguments, isExecutable=True):
     nextNode = None
     libraryType = None
     isObjectLibrary = False
+    interfaceLibrary = None
 
     # These values may exist in add_library only. There is a type property in TargetNode that we can set
     if arguments[0] in ('STATIC', 'SHARED', 'MODULE'):
@@ -327,6 +328,12 @@ def addTarget(arguments, isExecutable=True):
         arguments.pop(0)
         isObjectLibrary = True
         lookupTableName = "$<TARGET_OBJECTS:{}>".format(targetName)
+
+    # Interface libraries are useful for header-only libraries.
+    # more info at: http://mariobadr.com/creating-a-header-only-library-with-cmake.html
+    if arguments[0] == 'INTERFACE':
+        arguments.pop(0)
+        interfaceLibrary = True
 
     # IMPORTED target node doesn't have any more argument to expand
     # ALIAS target node points to another target node, so the logic behind it is a little different
@@ -345,6 +352,7 @@ def addTarget(arguments, isExecutable=True):
 
     targetNode.isExecutable = isExecutable
     targetNode.isObjectLibrary = isObjectLibrary
+    targetNode.interfaceLibrary = interfaceLibrary
 
     if 'IMPORTED' in arguments:
         targetNode.imported = True
@@ -526,12 +534,22 @@ class CMakeExtractorListener(CMakeListener):
             vmodel.nodes.append(foundRefNode)
             vmodel.nodes.append(notFoundRefNode)
 
+        # TODO: Current implementation of function does not support nested one. We should change this
         elif commandId == 'function':
             functionName = arguments.pop(0)
-            vmodel.functions[functionName] = {'arguments': arguments, 'commands': []}
+            vmodel.functions[functionName] = {'arguments': arguments, 'commands': [], 'isMacro': False}
             vmodel.currentFunctionCommand = vmodel.functions[functionName]['commands']
 
         elif commandId == 'endfunction':
+            vmodel.currentFunctionCommand = None
+
+        # TODO: Current implementation of macro does not support nested one. We should change this
+        elif commandId == 'macro':
+            macroName = arguments.pop(0)
+            vmodel.functions[macroName] = {'arguments': arguments, 'commands': [], 'isMacro': True}
+            vmodel.currentFunctionCommand = vmodel.functions[macroName]['commands']
+
+        elif commandId == 'endmacro':
             vmodel.currentFunctionCommand = None
 
         elif commandId == 'while':
@@ -701,14 +719,16 @@ class CMakeExtractorListener(CMakeListener):
             customFunction = vmodel.functions.get(commandId)
             if customFunction is None:
                 raise Exception('unknown command!')
-            vmodel.lookupTable.newScope()
+            if not customFunction.get('isMacro'):
+                vmodel.lookupTable.newScope()
             functionArguments = customFunction.get('arguments')
             for commandType, commandArgs in customFunction.get('commands'):
                 for arg in functionArguments:
                     newArgs = [args.replace("${{{}}}".format(arg), arguments[functionArguments.index(arg)])
                                for args in commandArgs]
                     processCommand(commandType, newArgs)
-            vmodel.lookupTable.dropScope()
+            if not customFunction.get('isMacro'):
+                vmodel.lookupTable.dropScope()
 
 
 def parseFile(filePath):

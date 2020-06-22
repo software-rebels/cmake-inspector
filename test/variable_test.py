@@ -640,7 +640,30 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertTrue(targetNode.isObjectLibrary)
         self.assertEqual('bar.cxx john.cxx', " ".join(flattenAlgorithm(targetNode.pointTo)))
 
+    def test_interface_library(self):
+        text = """
+        add_library(foo INTERFACE IMPORTED)
+        """
+        self.runTool(text)
+        libraryNode = self.lookup.getKey('t:foo')
+        self.assertTrue(libraryNode.interfaceLibrary)
+        self.assertTrue(libraryNode.imported)
+        self.assertIsNone(libraryNode.pointTo)
 
+    def test_macro_should_change_variable_in_current_scope(self):
+        text = """
+        set(This foo)
+        macro(simple REQUIRED_ARG)
+            set(${REQUIRED_ARG} "From SIMPLE")
+        endmacro()
+        simple(This)
+        set(bar ${This})
+        """
+        self.runTool(text)
+        self.vmodel.export()
+        self.assertEqual(self.lookup.getVariableHistory('${This}')[1], self.lookup.getKey('${This}'))
+        self.assertEqual(self.lookup.getVariableHistory('${This}')[1], self.lookup.getKey('${bar}').getPointTo())
+        self.assertEqual("\"From SIMPLE\"", self.lookup.getKey('${This}').getPointTo().getValue())
 
 
 if __name__ == '__main__':

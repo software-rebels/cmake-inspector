@@ -89,9 +89,12 @@ class TargetNode(Node):
         self.scope = None
         self.imported = False
         self.isAlias = False
+        # This property indicates whether this is an executable or a library
         self.isExecutable = True
+        # These properties are for libraries only
         self.libraryType = self.STATIC_LIBRARY
         self.isObjectLibrary = False
+        self.interfaceLibrary = False
 
     def getPointTo(self) -> Node:
         return self.pointTo
