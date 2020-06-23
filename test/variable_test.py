@@ -716,6 +716,23 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual(siteVar, fooVar.pointTo)
         self.assertEqual("foo", flattenAlgorithm(siteVar.pointTo[0])[0])
 
+    def test_separate_arguments(self):
+        text = """
+        separate_arguments(foo UNIX_COMMAND "--port=123 --host=127.0.0.1")
+        """
+        self.runTool(text)
+        fooVar = self.lookup.getKey("${foo}")
+        commandNode = self.vmodel.findNode("separate_arguments_0")
+        self.assertEqual(commandNode, fooVar.pointTo)
+        self.assertEqual("UNIX_COMMAND \"--port=123 --host=127.0.0.1\"",
+                         " ".join(getFlattedArguments(commandNode.pointTo[0])))
+
+    def test_cmake_minimum_required(self):
+        text = """
+        cmake_minimum_required(VERSION 3.2)
+        """
+        self.runTool(text)
+        self.assertEqual("3.2", self.vmodel.cmakeVersion)
 
 
 if __name__ == '__main__':

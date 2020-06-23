@@ -326,6 +326,7 @@ class VModel:
 
     def __init__(self):
         self.nodes: Optional[List[Node]] = []
+        self.cmakeVersion = None
         self.ifLevel = 0
         self.ifConditions = []
         self.targets = set()

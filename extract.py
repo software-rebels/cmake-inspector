@@ -589,6 +589,18 @@ class CMakeExtractorListener(CMakeListener):
             siteNameNode.pointTo.append(vmodel.expand(arguments))
             vmodel.nodes.append(refNode)
 
+        elif commandId == 'separate_arguments':
+            commandNode = CustomCommandNode('separate_arguments_{}'.format(vmodel.getNextCounter()))
+            varName = arguments.pop(0)
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            refNode = RefNode("{}_{}".format(varName, vmodel.getNextCounter()), commandNode)
+            lookupTable.setKey("${{{}}}".format(varName), refNode)
+            vmodel.nodes.append(refNode)
+
+        elif commandId == 'cmake_minimum_required':
+            version = arguments[1]
+            vmodel.cmakeVersion = version
+
 
         elif commandId == 'while':
             whileCommand(arguments)
