@@ -5,7 +5,7 @@ from extract import CMakeExtractorListener
 from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
 from datastructs import VModel, Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, flattenAlgorithm, \
-    CustomCommandNode
+    CustomCommandNode, getFlattedArguments
 
 
 class TestVariableDefinitions(unittest.TestCase):
@@ -469,7 +469,7 @@ class TestVariableDefinitions(unittest.TestCase):
         file(READ foo.txt bar offset 12 limit 20)
         """
         self.runTool(text)
-        self.assertEqual(self.vmodel.findNode('FILE.(READ foo.txt offset 12 limit 20)_0'),
+        self.assertEqual(self.vmodel.findNode('FILE.(READ)_0'),
                          self.lookup.getKey('${bar}').getPointTo())
 
     def test_file_read_from_filename_in_variable(self):
@@ -478,10 +478,11 @@ class TestVariableDefinitions(unittest.TestCase):
         file(READ ${john} bar offset 12 limit 20)
         """
         self.runTool(text)
-        self.assertEqual(self.vmodel.findNode('FILE.(READ ${john} offset 12 limit 20)_1'),
+        fileNode = self.vmodel.findNode('FILE.(READ)_1')
+        self.assertEqual(fileNode,
                          self.lookup.getKey('${bar}').getPointTo())
         self.assertIn(self.lookup.getKey("${john}"),
-                      self.vmodel.findNode('FILE.(READ ${john} offset 12 limit 20)_1').getChildren())
+                      fileNode.pointTo[0].getChildren())
 
     def test_file_STRINGS_from_filename_in_variable(self):
         text = """
@@ -489,10 +490,10 @@ class TestVariableDefinitions(unittest.TestCase):
         file(STRINGS ${john} bar offset 12 limit 20)
         """
         self.runTool(text)
-        self.assertEqual(self.vmodel.findNode('FILE.(STRINGS ${john} offset 12 limit 20)_1'),
+        self.assertEqual(self.vmodel.findNode('FILE.(STRINGS)_1'),
                          self.lookup.getKey('${bar}').getPointTo())
         self.assertIn(self.lookup.getKey("${john}"),
-                      self.vmodel.findNode('FILE.(STRINGS ${john} offset 12 limit 20)_1').getChildren())
+                      self.vmodel.findNode('FILE.(STRINGS)_1').pointTo[0].getChildren())
 
     def test_simple_file_glob(self):
         text = """
@@ -529,7 +530,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         fileNode = self.lookup.getKey("${john}").pointTo
         self.assertIsInstance(fileNode, CustomCommandNode)
-        self.assertEqual('bar sample.cxx', flattenAlgorithm(fileNode.getChildren()[0])[0])
+        self.assertEqual('bar sample.cxx', " ".join(getFlattedArguments(fileNode.pointTo[0])))
 
     def test_file_to_path(self):
         text = """
@@ -551,7 +552,7 @@ class TestVariableDefinitions(unittest.TestCase):
         barVariable = self.lookup.getKey("${bar}")
         fileNode = barVariable.pointTo
         self.assertIsInstance(fileNode, CustomCommandNode)
-        self.assertEqual("foo.cxx someformat UTC", " ".join(flattenAlgorithm(fileNode)))
+        self.assertEqual("foo.cxx someformat UTC", " ".join(getFlattedArguments(fileNode.pointTo[0])))
 
     def test_file_generate_output_command(self):
         text = """
@@ -560,7 +561,8 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         fileNode = self.vmodel.findNode('FILE.(GENERATE OUTPUT)_1')
-        self.assertEqual("outfile.txt INPUT infile.txt CONDITION bar", " ".join(flattenAlgorithm(fileNode)))
+        self.assertEqual("outfile.txt INPUT infile.txt CONDITION bar",
+                         " ".join(getFlattedArguments(fileNode.pointTo[0])))
 
     def test_file_copy_install(self):
         text = """
@@ -568,7 +570,8 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         fileNode = self.vmodel.findNode('FILE.(COPY)_0')
-        self.assertEqual('a.cxx b.cxx DESTINATION /home FILE_PERMISSIONS 644', " ".join(flattenAlgorithm(fileNode)))
+        self.assertEqual('a.cxx b.cxx DESTINATION /home FILE_PERMISSIONS 644',
+                         " ".join(getFlattedArguments(fileNode.pointTo[0])))
 
     def test_find_file_command(self):
         text = """
@@ -580,7 +583,7 @@ class TestVariableDefinitions(unittest.TestCase):
         fileNode = self.vmodel.findNode('find_file_0')
         self.assertEqual(fileNode, foundVar.pointTo)
         self.assertEqual(fileNode, notFoundVar.pointTo)
-        self.assertEqual('bar.txt /home /var', " ".join(flattenAlgorithm(fileNode)))
+        self.assertEqual('bar.txt /home /var', " ".join(getFlattedArguments(fileNode.pointTo[0])))
 
     def test_add_library_simple_command(self):
         text = """
@@ -590,7 +593,7 @@ class TestVariableDefinitions(unittest.TestCase):
         libraryNode = self.lookup.getKey('t:foo')
         self.assertEqual(False, libraryNode.isExecutable)
         self.assertEqual('SHARED', libraryNode.libraryType)
-        self.assertEqual('bar.cxx john.cxx', " ".join(flattenAlgorithm(libraryNode.pointTo)))
+        self.assertEqual('bar.cxx john.cxx', " ".join(getFlattedArguments(libraryNode.pointTo)))
 
     def test_add_library_in_if(self):
         text = """
@@ -638,7 +641,7 @@ class TestVariableDefinitions(unittest.TestCase):
         targetNode = self.lookup.getKey('$<TARGET_OBJECTS:foo>')
         self.assertIsNone(self.lookup.getKey('t:foo'))
         self.assertTrue(targetNode.isObjectLibrary)
-        self.assertEqual('bar.cxx john.cxx', " ".join(flattenAlgorithm(targetNode.pointTo)))
+        self.assertEqual('bar.cxx john.cxx', " ".join(getFlattedArguments(targetNode.pointTo)))
 
     def test_interface_library(self):
         text = """
@@ -660,10 +663,59 @@ class TestVariableDefinitions(unittest.TestCase):
         set(bar ${This})
         """
         self.runTool(text)
-        self.vmodel.export()
         self.assertEqual(self.lookup.getVariableHistory('${This}')[1], self.lookup.getKey('${This}'))
         self.assertEqual(self.lookup.getVariableHistory('${This}')[1], self.lookup.getKey('${bar}').getPointTo())
         self.assertEqual("\"From SIMPLE\"", self.lookup.getKey('${This}').getPointTo().getValue())
+
+    def test_configure_file(self):
+        text = """
+        set(foo bar)
+        set(john doe)
+        configure_file ( 
+          ${foo}/output.rb.in
+          ${john}/output.rb
+          ESCAPE_QUOTES
+        )
+        """
+        self.runTool(text)
+        functionNode = self.vmodel.findNode("configure_file_2")
+        self.assertEqual("bar/output.rb.in doe/output.rb ESCAPE_QUOTES",
+                         " ".join(getFlattedArguments(functionNode.pointTo[0])))
+
+    def test_execute_process(self):
+        text = """
+        set(timeout_var 60)
+        execute_process(COMMAND cmd1 args1
+                        COMMAND cmd2 args2
+                        TIMEOUT ${timeout_var}
+                        OUTPUT_VARIABLE out_var
+                        ERROR_VARIABLE error_var
+                        RESULT_VARIABLE result_var
+                        OUTPUT_QUIET
+                        )
+        """
+        self.runTool(text)
+        outputVar = self.lookup.getKey('${out_var}')
+        errorVar = self.lookup.getKey('${error_var}')
+        resultVar = self.lookup.getKey('${result_var}')
+        executeNode = self.vmodel.findNode('execute_process_1')
+        self.assertEqual(executeNode, outputVar.pointTo)
+        self.assertEqual(executeNode, errorVar.pointTo)
+        self.assertEqual(executeNode, resultVar.pointTo)
+        self.assertEqual("COMMAND cmd1 args1 COMMAND cmd2 args2 TIMEOUT 60 OUTPUT_VARIABLE out_var "
+                         "ERROR_VARIABLE error_var RESULT_VARIABLE result_var OUTPUT_QUIET",
+                         " ".join(getFlattedArguments(executeNode.pointTo[0])))
+
+    def test_site_name(self):
+        text = """
+        site_name(foo)
+        """
+        self.runTool(text)
+        fooVar = self.lookup.getKey("${foo}")
+        siteVar = self.vmodel.findNode("site_name_0")
+        self.assertEqual(siteVar, fooVar.pointTo)
+        self.assertEqual("foo", flattenAlgorithm(siteVar.pointTo[0])[0])
+
 
 
 if __name__ == '__main__':

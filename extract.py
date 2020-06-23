@@ -231,12 +231,8 @@ def fileCommand(arguments):
         fileCommandNode.pointTo.append(contents)
 
     elif action in ('READ', 'STRINGS', 'MD5', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512', 'TIMESTAMP'):
-        fileName = arguments.pop(0)
-        fileNode = vmodel.expand([fileName])
-        variableName = arguments.pop(0)
-        fileCommandNode = CustomCommandNode("FILE.({} {} {})_{}".format(action, fileName,
-                                                                        " ".join(arguments), vmodel.getNextCounter()))
-        fileCommandNode.pointTo.append(fileNode)
+        variableName = arguments.pop(1)
+        fileCommandNode = CustomCommandNode("FILE.({})_{}".format(action, vmodel.getNextCounter()))
         fileCommandNode.pointTo.append(vmodel.expand(arguments))
         refNode = RefNode("{}_{}".format(variableName, vmodel.getNextCounter()), fileCommandNode)
         lookupTable.setKey("${{{}}}".format(variableName), refNode)
@@ -551,6 +547,48 @@ class CMakeExtractorListener(CMakeListener):
 
         elif commandId == 'endmacro':
             vmodel.currentFunctionCommand = None
+
+        # TODO: We didn't check for if condition. We should write a function that handles all functions like this
+        elif commandId == 'configure_file':
+            configureFile = CustomCommandNode('configure_file_{}'.format(vmodel.getNextCounter()))
+            nextNode = vmodel.expand(arguments)
+            configureFile.pointTo.append(nextNode)
+            vmodel.nodes.append(configureFile)
+
+        # TODO: Same as previous command, on top of that, we define new variables here, so there are problems
+        #       with conditions
+        elif commandId == 'execute_process':
+            executeProcess = CustomCommandNode('execute_process_{}'.format(vmodel.getNextCounter()))
+            if 'RESULT_VARIABLE' in arguments:
+                resultVariable = arguments[arguments.index('RESULT_VARIABLE')+1]
+                refNode = RefNode('{}_{}'.format(resultVariable, vmodel.getNextCounter()), executeProcess)
+                lookupTable.setKey('${{{}}}'.format(resultVariable), refNode)
+                vmodel.nodes.append(refNode)
+
+            if 'OUTPUT_VARIABLE' in arguments:
+                outputVariable = arguments[arguments.index('OUTPUT_VARIABLE')+1]
+                refNode = RefNode('{}_{}'.format(outputVariable, vmodel.getNextCounter()), executeProcess)
+                lookupTable.setKey('${{{}}}'.format(outputVariable), refNode)
+                vmodel.nodes.append(refNode)
+
+            if 'ERROR_VARIABLE' in arguments:
+                errorVariable = arguments[arguments.index('ERROR_VARIABLE')+1]
+                refNode = RefNode('{}_{}'.format(errorVariable, vmodel.getNextCounter()), executeProcess)
+                lookupTable.setKey('${{{}}}'.format(errorVariable), refNode)
+                vmodel.nodes.append(refNode)
+
+            executeProcess.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(executeProcess)
+
+        # TODO: We should change variable definition to handle all creations and modifications of variables
+        elif commandId == 'site_name':
+            siteNameNode = CustomCommandNode('site_name_{}'.format(vmodel.getNextCounter()))
+            variableName = arguments[0]
+            refNode = RefNode("{}_{}".format(variableName, vmodel.getNextCounter()), siteNameNode)
+            lookupTable.setKey("${{{}}}".format(variableName), refNode)
+            siteNameNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(refNode)
+
 
         elif commandId == 'while':
             whileCommand(arguments)

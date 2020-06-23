@@ -308,9 +308,17 @@ def flattenAlgorithm(node: Node):
                     if str1 == '':
                         tempSet.add(str2)
                     else:
-                        tempSet.add("{} {}".format(str1, str2))
+                        tempSet.add("{}{}".format(str1, str2))
             result = tempSet
         return list(result)
+
+
+# Given a Node (often a ConcatNode) this algorithm will return flatted arguments
+def getFlattedArguments(argNode: Node):
+    result = []
+    for arg in argNode.getChildren():
+        result.append("".join(flattenAlgorithm(arg)))
+    return result
 
 
 class VModel:

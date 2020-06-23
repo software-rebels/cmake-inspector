@@ -34,10 +34,10 @@ endIfStatement
 	;
 
 add_test_command
-    : 'add_test' '(' 'NAME' test_name=single_argument 'COMMAND' (test_command+=single_argument)+ ')'
+    : 'add_test' '(' Identifier test_name=single_argument Identifier (test_command+=single_argument)+ ')'
     ;
 add_custom_command
-    : 'add_custom_command' '(' Identifier (output+=single_argument)* 'COMMAND' (command+=single_argument)* (otherArg+=add_custom_command_args)* ')'
+    : 'add_custom_command' '(' Identifier (output+=single_argument)* Identifier (command+=single_argument)* (otherArg+=add_custom_command_args)* ')'
     ;
 
 add_custom_command_args
