@@ -95,6 +95,8 @@ class TargetNode(Node):
         self.libraryType = self.STATIC_LIBRARY
         self.isObjectLibrary = False
         self.interfaceLibrary = False
+        # This property set for custom target only
+        self.isCustomTarget = False
 
     def getPointTo(self) -> Node:
         return self.pointTo

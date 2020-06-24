@@ -41,7 +41,7 @@ add_custom_command
     ;
 
 add_custom_command_args
-    : argType=('MAIN_DEPENDENCY' | 'DEPENDS' | 'BYPRODUCTS') (argValue+=single_argument)+
+    : argType=Identifier (argValue+=single_argument)+
     ;
 
 setCommand

@@ -5,7 +5,7 @@ from extract import CMakeExtractorListener
 from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
 from datastructs import VModel, Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, flattenAlgorithm, \
-    CustomCommandNode, getFlattedArguments
+    CustomCommandNode, getFlattedArguments, TargetNode
 
 
 class TestVariableDefinitions(unittest.TestCase):
@@ -733,6 +733,37 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         self.assertEqual("3.2", self.vmodel.cmakeVersion)
+
+    def test_add_custom_target_with_dependency(self):
+        text = """
+        add_executable(foo bar.cxx)
+        add_custom_target(john COMMAND joe DEPENDS foo SOURCES baz.cxx)
+        """
+        self.runTool(text)
+        self.vmodel.export()
+        self.assertIsInstance(self.lookup.getKey("t:john"), TargetNode)
+        self.assertIn(self.lookup.getKey("t:foo"), self.lookup.getKey("t:john").pointTo.listOfNodes)
+
+    def test_add_custom_target_without_dependency(self):
+        text = """
+        add_custom_target(john COMMAND joe SOURCES baz.cxx)
+        """
+        self.runTool(text)
+        targetNode = self.lookup.getKey("t:john")
+        self.assertEqual("COMMAND joe SOURCES baz.cxx", " ".join(getFlattedArguments(targetNode.pointTo)))
+
+    def test_math_function(self):
+        text = """
+        math(EXPR value "100 * 0xA")
+        """
+        self.runTool(text)
+        val = self.lookup.getKey("${value}")
+        mathNode = self.vmodel.findNode('MATH_0')
+        self.assertEqual(mathNode, val.pointTo)
+        self.assertEqual('"100 * 0xA"', mathNode.pointTo[0].getValue())
+
+
+
 
 
 if __name__ == '__main__':

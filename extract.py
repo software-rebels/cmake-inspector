@@ -515,10 +515,10 @@ class CMakeExtractorListener(CMakeListener):
         if commandId == 'set':
             raise Exception("This should not reach to this code!!!")
 
-        if commandId == 'add_definitions':
+        elif commandId == 'add_definitions':
             addCompileOptionsCommand(arguments)
 
-        if commandId == 'find_file':
+        elif commandId == 'find_file':
             variableName = arguments.pop(0)
             fileNode = CustomCommandNode('find_file_{}'.format(vmodel.getNextCounter()))
             fileNode.pointTo.append(vmodel.expand(arguments))
@@ -529,6 +529,55 @@ class CMakeExtractorListener(CMakeListener):
             lookupTable.setKey("${{{}}}".format(variableName + "-NOTFOUND"), notFoundRefNode)
             vmodel.nodes.append(foundRefNode)
             vmodel.nodes.append(notFoundRefNode)
+
+        elif commandId == 'math':
+            # Throw first argument away, it is always "EXPR" according to the document
+            arguments.pop(0)
+            varName = arguments.pop(0)
+            mathNode = CustomCommandNode("{}_{}".format('MATH', vmodel.getNextCounter()))
+            mathNode.pointTo.append(vmodel.expand(arguments))
+            refNode = RefNode("{}_{}".format(varName, vmodel.getNextCounter()), mathNode)
+            lookupTable.setKey("${{{}}}".format(varName), refNode)
+            vmodel.nodes.append(refNode)
+
+        # TODO: It may be a good idea to list commands and files under a different list
+        #       We should create a new class for this command to separate command and sources and etc ...
+        #       This new class should inherit TargetNode
+        elif commandId == 'add_custom_target':
+            targetName = arguments.pop(0)
+            dependedElement: List[TargetNode] = []
+            # Check if we have depend command
+            if 'DEPENDS' in arguments:
+                dependsIndex = arguments.index('DEPENDS')
+                # Trying to find the next argument after DEPENDS. Anything in between is the one that this command
+                # should depends on
+                nextArgIndex = len(arguments)
+                for otherArg in ['ALL', 'COMMAND', 'WORKING_DIRECTORY', 'COMMENT', 'VERBATIM', 'SOURCES']:
+                    if otherArg not in arguments:
+                        continue
+                    otherArgIndex = arguments.index(otherArg)
+                    if otherArgIndex > dependsIndex:
+                        nextArgIndex = min(nextArgIndex, otherArgIndex)
+
+                for i in range(dependsIndex + 1, nextArgIndex):
+                    # TODO: There is a bug here. As we add a number to the end of nodes, vmodel.findNode may not be
+                    #       be able to find the node based on name
+                    targetElement = lookupTable.getKey("t:{}".format(arguments[i])) \
+                                    or vmodel.findNode(arguments[i])
+                    if targetElement is None:
+                        raise Exception("There is a problem in finding dependency for {}".format(targetName))
+                    dependedElement.append(targetElement)
+
+                # Now we have to pop these arguments:
+                for i in range(dependsIndex, nextArgIndex):
+                    arguments.pop(dependsIndex)
+
+            targetNode = TargetNode("{}_{}".format(targetName, vmodel.getNextCounter()), vmodel.expand(arguments))
+            targetNode.isCustomTarget = True
+            targetNode.pointTo.listOfNodes += dependedElement
+            lookupTable.setKey("t:{}".format(targetName), targetNode)
+            vmodel.nodes.append(targetNode)
+
 
         # TODO: Current implementation of function does not support nested one. We should change this
         elif commandId == 'function':
@@ -560,19 +609,19 @@ class CMakeExtractorListener(CMakeListener):
         elif commandId == 'execute_process':
             executeProcess = CustomCommandNode('execute_process_{}'.format(vmodel.getNextCounter()))
             if 'RESULT_VARIABLE' in arguments:
-                resultVariable = arguments[arguments.index('RESULT_VARIABLE')+1]
+                resultVariable = arguments[arguments.index('RESULT_VARIABLE') + 1]
                 refNode = RefNode('{}_{}'.format(resultVariable, vmodel.getNextCounter()), executeProcess)
                 lookupTable.setKey('${{{}}}'.format(resultVariable), refNode)
                 vmodel.nodes.append(refNode)
 
             if 'OUTPUT_VARIABLE' in arguments:
-                outputVariable = arguments[arguments.index('OUTPUT_VARIABLE')+1]
+                outputVariable = arguments[arguments.index('OUTPUT_VARIABLE') + 1]
                 refNode = RefNode('{}_{}'.format(outputVariable, vmodel.getNextCounter()), executeProcess)
                 lookupTable.setKey('${{{}}}'.format(outputVariable), refNode)
                 vmodel.nodes.append(refNode)
 
             if 'ERROR_VARIABLE' in arguments:
-                errorVariable = arguments[arguments.index('ERROR_VARIABLE')+1]
+                errorVariable = arguments[arguments.index('ERROR_VARIABLE') + 1]
                 refNode = RefNode('{}_{}'.format(errorVariable, vmodel.getNextCounter()), executeProcess)
                 lookupTable.setKey('${{{}}}'.format(errorVariable), refNode)
                 vmodel.nodes.append(refNode)
@@ -600,7 +649,6 @@ class CMakeExtractorListener(CMakeListener):
         elif commandId == 'cmake_minimum_required':
             version = arguments[1]
             vmodel.cmakeVersion = version
-
 
         elif commandId == 'while':
             whileCommand(arguments)
