@@ -254,7 +254,11 @@ class Lookup:
         for table in reversed(self.items):
             if key in table:
                 return table.get(key)
-            return None
+        return None
+
+    def getOwnKey(self, key) -> Optional[Node]:
+        lastTable = self.items[-1]
+        return lastTable.get(key, None)
 
     def getVariableHistory(self, key) -> List[RefNode]:
         return self.variableHistory[key]
@@ -341,7 +345,10 @@ class VModel:
         self.systemState = []
         self.functions = {}
         self.currentFunctionCommand = None
-        self.COMPILE_OPTIONS = None
+        # These data stractures are for properties related to a directory
+        self.directory_to_properties = {'.': Lookup()}
+        self.DIRECTORY_PROPERTIES = self.directory_to_properties.get('.')
+        self.DIRECTORY_PROPERTIES.setKey('VARIABLES', self.lookupTable.items[-1])
 
     def pushSystemState(self, state, properties):
         self.systemState.append((state, properties))

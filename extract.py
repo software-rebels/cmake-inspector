@@ -12,7 +12,7 @@ from grammar.CMakeParser import CMakeParser
 from grammar.CMakeListener import CMakeListener
 # Our own library
 from datastructs import RefNode, TargetNode, VModel, Lookup, SelectNode, ConcatNode, \
-    CustomCommandNode, TestNode
+    CustomCommandNode, TestNode, LiteralNode
 from analyze import doGitAnalysis
 
 config.DATABASE_URL = 'bolt://neo4j:123@localhost:7687'
@@ -300,10 +300,11 @@ def addCompileOptionsCommand(arguments):
         targetNode = newSelectNode
 
     newCompileOptions = ConcatNode("COMPILE_OPTIONS_{}".format(vmodel.getNextCounter()))
-    if vmodel.COMPILE_OPTIONS:
-        newCompileOptions.listOfNodes = list(vmodel.COMPILE_OPTIONS.listOfNodes)
-    vmodel.COMPILE_OPTIONS = newCompileOptions
-    vmodel.COMPILE_OPTIONS.addNode(targetNode)
+    if vmodel.DIRECTORY_PROPERTIES.getOwnKey('COMPILE_OPTIONS'):
+        newCompileOptions.listOfNodes = list(vmodel.DIRECTORY_PROPERTIES.getKey('COMPILE_OPTIONS').listOfNodes)
+
+    vmodel.DIRECTORY_PROPERTIES.setKey('COMPILE_OPTIONS', newCompileOptions)
+    newCompileOptions.addNode(targetNode)
 
 
 # This function handles both add_library and add_executable
@@ -339,7 +340,7 @@ def addTarget(arguments, isExecutable=True):
     targetNode = lookupTable.getKey(lookupTableName)
     if targetNode is None:
         targetNode = TargetNode(targetName, nextNode)
-        targetNode.setDefinition(vmodel.COMPILE_OPTIONS)
+        targetNode.setDefinition(vmodel.DIRECTORY_PROPERTIES.getKey('COMPILE_OPTIONS'))
         lookupTable.setKey(lookupTableName, targetNode)
         vmodel.nodes.append(targetNode)
 
@@ -649,6 +650,63 @@ class CMakeExtractorListener(CMakeListener):
         elif commandId == 'cmake_minimum_required':
             version = arguments[1]
             vmodel.cmakeVersion = version
+
+        # TODO: If we are in a condition, instead of overwriting the value of the property,
+        #       we should add a select node and keep the current value
+        # set_directory_properties(PROPERTIES prop1 value1 prop2 value2)
+        elif commandId == 'set_directory_properties':
+            # We throw the first argument away as it is always PROPERTIES
+            arguments.pop(0)
+            while arguments:
+                propertyName = arguments.pop(0)
+                propertyConcatNode = ConcatNode("{}_{}".format(propertyName, vmodel.getNextCounter()))
+                propertyConcatNode.addNode(vmodel.expand([arguments.pop(0)]))
+                vmodel.DIRECTORY_PROPERTIES.setKey(propertyName, propertyConcatNode)
+
+        # 1. get_directory_property(<variable> [DIRECTORY <dir>] <prop-name>)
+        # 2. get_directory_property(<variable> [DIRECTORY <dir>] DEFINITION <var-name>)
+        elif commandId == 'get_directory_property':
+            varName = arguments.pop(0)
+            propertyLookupTable = vmodel.DIRECTORY_PROPERTIES
+            if 'DIRECTORY' in arguments:
+                arguments.pop(0)
+                dirName = arguments.pop(0)
+                propertyLookupTable = vmodel.directory_to_properties.get(dirName)
+
+            # This is for the second signature of the command
+            if 'DEFINITION' in arguments:
+                arguments.pop(0)
+                varNameToLookup = arguments.pop(0)
+                nextNode = propertyLookupTable.getKey('VARIABLES').get('${{{}}}'.format(varNameToLookup))
+            else:
+                propertyName = arguments.pop(0)
+                propertyNode = propertyLookupTable.getKey(propertyName)
+                nextNode = propertyNode
+            refNode = RefNode('{}_{}'.format(varName, vmodel.getNextCounter()), nextNode)
+            lookupTable.setKey('${{{}}}'.format(varName), refNode)
+            vmodel.nodes.append(refNode)
+
+        # get_cmake_property(VAR property)
+        elif commandId == 'get_cmake_property':
+            varName = arguments.pop(0)
+            propertyName = arguments.pop(0)
+            result = []
+            for directory in vmodel.directory_to_properties:
+                properties = vmodel.directory_to_properties.get(directory)
+                if properties.getKey(propertyName):
+                    propertyDic = properties.getKey(propertyName)
+                    result += list(propertyDic.keys())
+            concatNode = ConcatNode("get_cmake_property_{}_{}".format(propertyName, vmodel.getNextCounter()))
+            for item in result:
+                # TODO: A very very very bad code to extract variable name. So, we are converting
+                #       ${foo} to foo
+                if item[0] == '$':
+                    item = item[2:-1]
+                concatNode.addNode(LiteralNode(item, item))
+
+            refNode = RefNode("{}_{}".format(varName, vmodel.getNextCounter()), concatNode)
+            lookupTable.setKey("${{{}}}".format(varName), refNode)
+            vmodel.nodes.append(refNode)
 
         elif commandId == 'while':
             whileCommand(arguments)

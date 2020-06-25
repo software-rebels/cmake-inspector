@@ -740,7 +740,6 @@ class TestVariableDefinitions(unittest.TestCase):
         add_custom_target(john COMMAND joe DEPENDS foo SOURCES baz.cxx)
         """
         self.runTool(text)
-        self.vmodel.export()
         self.assertIsInstance(self.lookup.getKey("t:john"), TargetNode)
         self.assertIn(self.lookup.getKey("t:foo"), self.lookup.getKey("t:john").pointTo.listOfNodes)
 
@@ -762,9 +761,57 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual(mathNode, val.pointTo)
         self.assertEqual('"100 * 0xA"', mathNode.pointTo[0].getValue())
 
+    def test_set_directory_properties_without_condition(self):
+        text = """
+        set_directory_properties(PROPERTIES INCLUDE_DIRECTORIES foo LINK_DIRECTORIES bar)
+        """
+        self.runTool(text)
+        self.assertIsInstance(self.vmodel.DIRECTORY_PROPERTIES.getKey('INCLUDE_DIRECTORIES'), ConcatNode)
+        self.assertEqual('foo',
+                         flattenAlgorithm(self.vmodel.DIRECTORY_PROPERTIES.getKey('INCLUDE_DIRECTORIES'))[0])
+        self.assertEqual('bar',
+                         flattenAlgorithm(self.vmodel.DIRECTORY_PROPERTIES.getKey('LINK_DIRECTORIES'))[0])
 
+    def test_get_directory_property_without_condition_without_new_directory(self):
+        text = """
+        set_directory_properties(PROPERTIES INCLUDE_DIRECTORIES foo LINK_DIRECTORIES bar)
+        get_directory_property(john INCLUDE_DIRECTORIES)
+        get_directory_property(doe DIRECTORY . LINK_DIRECTORIES)
+        get_directory_property(baz SOMETHING)
+        """
+        self.runTool(text)
+        johnVar = self.lookup.getKey("${john}")
+        doeVar = self.lookup.getKey("${doe}")
+        bazVar = self.lookup.getKey("${baz}")
+        self.assertEqual('foo',
+                         flattenAlgorithm(johnVar.pointTo)[0])
+        self.assertEqual('bar',
+                         flattenAlgorithm(doeVar.pointTo)[0])
+        self.assertIsNone(bazVar.pointTo)
 
+    def test_get_directory_property_without_condition_without_new_directory_for_variable(self):
+        text = """
+        set(foo bar)
+        get_directory_property(john DEFINITION foo)
+        get_directory_property(doe DIRECTORY . DEFINITION foo)
+        get_directory_property(baz DEFINITION SOMETHING)
+        """
+        self.runTool(text)
+        johnVar = self.lookup.getKey("${john}")
+        doeVar = self.lookup.getKey("${doe}")
+        bazVar = self.lookup.getKey("${baz}")
+        self.assertEqual(self.lookup.getKey('${foo}'), johnVar.pointTo)
+        self.assertEqual(self.lookup.getKey('${foo}'), doeVar.pointTo)
+        self.assertIsNone(bazVar.pointTo)
 
+    def test_get_cmake_property_variables_very_simple_usage(self):
+        text = """
+        set(foo bar)
+        set(john doe)
+        get_cmake_property(baz VARIABLES)
+        """
+        self.runTool(text)
+        self.assertEqual("foo john", " ".join(getFlattedArguments(self.lookup.getKey("${baz}").pointTo)))
 
 if __name__ == '__main__':
     unittest.main()
