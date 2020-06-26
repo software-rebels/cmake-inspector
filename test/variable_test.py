@@ -44,6 +44,16 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual(2, len(varHistory))
         self.assertEqual("exp2", self.lookup.getKey("${var}").getValue())
 
+    def test_list_assignment_with_symbolic_node(self):
+        text = """
+        set(LIBFOO_TAR_HEADERS
+          "${CMAKE_CURRENT_BINARY_DIR}/include/foo/foo.h"
+          "${CMAKE_CURRENT_BINARY_DIR}/include/foo/foo_utils.h"
+        )
+        """
+        self.runTool(text)
+        self.assertIsNone(self.lookup.getKey("${CMAKE_CURRENT_BINARY_DIR}").pointTo)
+
     def test_variable_convert_to_list(self):
         text = """
         set(var expression)
@@ -812,6 +822,92 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         self.assertEqual("foo john", " ".join(getFlattedArguments(self.lookup.getKey("${baz}").pointTo)))
+
+    def test_add_custom_command_super_simple(self):
+        text = """
+        add_custom_command(
+            OUTPUT foo
+            COMMAND touch bar
+            COMMAND john doe
+        )
+        """
+        self.runTool(text)
+        foo = self.vmodel.findNode('foo')
+        self.assertIsInstance(foo.pointTo, CustomCommandNode)
+        customCommand = foo.pointTo
+        self.assertEqual(2, len(customCommand.commands))
+        self.assertEqual('touch bar', " ".join(getFlattedArguments(customCommand.commands[0])))
+
+    def test_add_custom_command_with_main_dependency(self):
+        text = """
+        add_executable(exec file.cxx)
+        add_custom_command(
+            OUTPUT foo
+            COMMAND touch bar
+            MAIN_DEPENDENCY exec
+        )
+        """
+        self.runTool(text)
+        foo = self.vmodel.findNode('foo')
+        customCommand = foo.pointTo
+        self.assertEqual(self.vmodel.findNode('exec'), customCommand.depends[0])
+
+    def test_add_custom_command_with_main_dependency_and_depends(self):
+        text = """
+        add_executable(exec file.cxx)
+        add_library(libb file2.cxx)
+        add_custom_command(
+            OUTPUT foo
+            COMMAND touch bar
+            MAIN_DEPENDENCY exec
+            DEPENDS libb
+        )
+        """
+        self.runTool(text)
+        foo = self.vmodel.findNode('foo')
+        customCommand = foo.pointTo
+        self.assertIsInstance(customCommand.depends[0], ConcatNode)
+
+    def test_add_custom_command_simple_with_variable(self):
+        text = """
+        set(LIBFOO_TAR_HEADERS
+          "${CMAKE_CURRENT_BINARY_DIR}/include/foo/foo.h"
+          "${CMAKE_CURRENT_BINARY_DIR}/include/foo/foo_utils.h"
+        )
+        
+        add_custom_command(OUTPUT ${LIBFOO_TAR_HEADERS}
+          COMMAND make -E tar xzf "${CMAKE_CURRENT_SOURCE_DIR}/libfoo/foo.tar"
+          COMMAND make -E touch ${LIBFOO_TAR_HEADERS}
+          WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/include/foo"
+          DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/libfoo/foo.tar"
+          COMMENT "Unpacking foo.tar"
+          VERBATIM
+        )
+        """
+        self.runTool(text)
+        # TODO: We have problem in this sample
+
+    def test_add_custom_command_for_target_pre_build(self):
+        text = """
+        add_executable(foo bar.cxx)
+        add_custom_command(TARGET foo PRE_BUILD
+                           COMMAND cmd1)
+        """
+        self.runTool(text)
+        lib = self.vmodel.findNode('foo')
+        self.assertIsInstance(lib.linkLibraries.getChildren()[0], CustomCommandNode)
+
+    def test_add_custom_command_for_target_post_build(self):
+        text = """
+        add_executable(foo bar.cxx)
+        add_custom_command(TARGET foo POST_BUILD
+                           COMMAND cmd1)
+        """
+        self.runTool(text)
+        command = self.vmodel.findNode('custom_command_0')
+        lib = self.vmodel.findNode('foo')
+        self.assertEqual(lib, command.depends[0])
+
 
 if __name__ == '__main__':
     unittest.main()

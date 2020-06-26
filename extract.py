@@ -12,7 +12,7 @@ from grammar.CMakeParser import CMakeParser
 from grammar.CMakeListener import CMakeListener
 # Our own library
 from datastructs import RefNode, TargetNode, VModel, Lookup, SelectNode, ConcatNode, \
-    CustomCommandNode, TestNode, LiteralNode
+    CustomCommandNode, TestNode, LiteralNode, flattenAlgorithm
 from analyze import doGitAnalysis
 
 config.DATABASE_URL = 'bolt://neo4j:123@localhost:7687'
@@ -469,32 +469,6 @@ class CMakeExtractorListener(CMakeListener):
         vmodel.popLookupTable()
         vmodel.popSystemState()
 
-    def enterAdd_custom_command(self, ctx: CMakeParser.Add_custom_commandContext):
-        dependedElement: List[TargetNode] = []
-        # Check if we have depend command
-        for item in ctx.otherArg:
-            if item.argType.text == 'DEPENDS':
-                for targetValue in item.argValue:
-                    targetElement = vmodel.findNode(targetValue.getText())
-                    if targetElement is not None:
-                        # raise Exception("This should not happen! NOT_IMPLEMENTED")
-                        dependedElement.append(targetElement)
-
-        # Currently we only support one dependency
-        if len(dependedElement) > 1:
-            raise Exception("NOT_IMPLEMENTED")
-
-        customCommandNode = CustomCommandNode("\n".join([cmd.getText() for cmd in ctx.command]))
-        if dependedElement:
-            customCommandNode.pointTo = dependedElement[0]
-
-        for item in ctx.output:
-            if vmodel.findNode(item.getText()):
-                raise Exception('NOT_IMPLEMENTED')
-
-            variableNode = RefNode(item.getText(), customCommandNode)
-            vmodel.addNode(variableNode)
-
     def enterAdd_test_command(self, ctx: CMakeParser.Add_test_commandContext):
         targetNode = vmodel.findNode(ctx.test_command[0].getText())
         testNode = TestNode("TEST_" + ctx.test_name.getText(), targetNode)
@@ -540,6 +514,77 @@ class CMakeExtractorListener(CMakeListener):
             refNode = RefNode("{}_{}".format(varName, vmodel.getNextCounter()), mathNode)
             lookupTable.setKey("${{{}}}".format(varName), refNode)
             vmodel.nodes.append(refNode)
+
+        # TODO: We should keep the outputs in lookup table
+        #       We cannot handle scenario given in : https://gist.github.com/socantre/7ee63133a0a3a08f3990
+        #       This is a very common use of this command, but we don't have solution for that
+        # add_custom_command(OUTPUT output1 [output2 ...]
+        #        COMMAND command1 [ARGS] [args1...]
+        #        [COMMAND command2 [ARGS] [args2...] ...]
+        #        [MAIN_DEPENDENCY depend]
+        #        [DEPENDS [depends...]]
+        #        [IMPLICIT_DEPENDS <lang1> depend1
+        #                         [<lang2> depend2] ...]
+        #        [WORKING_DIRECTORY dir]
+        #        [COMMENT comment] [VERBATIM] [APPEND])
+        # -----------------------------------------------------
+        # add_custom_command(TARGET target
+        #            PRE_BUILD | PRE_LINK | POST_BUILD
+        #            COMMAND command1 [ARGS] [args1...]
+        #            [COMMAND command2 [ARGS] [args2...] ...]
+        #            [WORKING_DIRECTORY dir]
+        #            [COMMENT comment] [VERBATIM])
+        elif commandId == 'add_custom_command':
+            OPTIONS = ['OUTPUT', 'COMMAND', 'MAIN_DEPENDENCY', 'DEPENDS', 'IMPLICIT_DEPENDS',
+                       'WORKING_DIRECTORY', 'COMMENT', 'VERBATIM', 'APPEND']
+            customCommand = CustomCommandNode("custom_command_{}".format(vmodel.getNextCounter()))
+            depends = []
+            commandSig = arguments.pop(0)
+            if commandSig == 'TARGET':
+                targetName = arguments.pop(0)
+                target = lookupTable.getKey("t:{}".format(targetName))
+                commandType = arguments.pop(0)
+                if commandType == 'POST_BUILD':
+                    depends.append(targetName)
+                    vmodel.nodes.append(customCommand)
+                else:
+                    target.addLinkLibrary(customCommand, vmodel.getNextCounter())
+            else:
+                while arguments[0] not in OPTIONS:
+                    outName = arguments.pop(0)
+                    if lookupTable.getKey(outName):
+                        variable = lookupTable.getKey(outName)
+                        variable.pointTo.addToBeginning(customCommand)
+                    else:
+                        refNode = RefNode(outName, customCommand)
+                        vmodel.nodes.append(refNode)
+
+            while 'COMMAND' in arguments:
+                # From that index until the next command we parse the commands
+                commands = []
+                commandStartingIndex = arguments.index('COMMAND')
+                # pop 'COMMAND'
+                arguments.pop(commandStartingIndex)
+                while len(arguments) > commandStartingIndex and arguments[commandStartingIndex] not in OPTIONS:
+                    commands.append(arguments.pop(commandStartingIndex))
+                customCommand.commands.append(vmodel.expand(commands))
+
+            if 'MAIN_DEPENDENCY' in arguments:
+                mdIndex = arguments.index('MAIN_DEPENDENCY')
+                # pop 'MAIN_DEPENDENCY'
+                arguments.pop(mdIndex)
+                depends.append(arguments.pop(mdIndex))
+
+            if 'DEPENDS' in arguments:
+                dIndex = arguments.index('DEPENDS')
+                # pop 'DEPENDS'
+                arguments.pop(dIndex)
+                while len(arguments) > dIndex and arguments[dIndex] not in OPTIONS:
+                    depends.append(arguments.pop(dIndex))
+
+            if depends:
+                customCommand.depends.append(vmodel.expand(depends))
+
 
         # TODO: It may be a good idea to list commands and files under a different list
         #       We should create a new class for this command to separate command and sources and etc ...
@@ -748,8 +793,8 @@ class CMakeExtractorListener(CMakeListener):
             elif 'IN' in forEachArguments:
                 forEachArguments.pop(0)
                 while forEachArguments:
-                    type = forEachArguments.pop(0)
-                    if type == 'LISTS':
+                    commandSig = forEachArguments.pop(0)
+                    if commandSig == 'LISTS':
                         while forEachArguments and forEachArguments[0] != 'ITEMS':
                             listName = forEachArguments.pop(0)
                             # variableObject = lookupTable.getKey('${{{}}}'.format(listName))
@@ -762,7 +807,7 @@ class CMakeExtractorListener(CMakeListener):
                             for commandType, commandArgs in forEachCommands:
                                 newArgs = [i.replace(forEachVariableName, listFullName) for i in commandArgs]
                                 processCommand(commandType, newArgs)
-                    if type == 'ITEMS':
+                    if commandSig == 'ITEMS':
                         while forEachArguments:
                             item = forEachArguments.pop(0)
                             for commandType, commandArgs in forEachCommands:

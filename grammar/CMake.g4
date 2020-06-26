@@ -10,7 +10,7 @@ grammar CMake;
 cmakefile
 	: commands* EOF
 	;
-commands: ifCommand|setCommand|optionCommand|add_custom_command|add_test_command|
+commands: ifCommand|setCommand|optionCommand|add_test_command|
 command_invocation;
 
 ifCommand
@@ -35,13 +35,6 @@ endIfStatement
 
 add_test_command
     : 'add_test' '(' Identifier test_name=single_argument Identifier (test_command+=single_argument)+ ')'
-    ;
-add_custom_command
-    : 'add_custom_command' '(' Identifier (output+=single_argument)* Identifier (command+=single_argument)* (otherArg+=add_custom_command_args)* ')'
-    ;
-
-add_custom_command_args
-    : argType=Identifier (argValue+=single_argument)+
     ;
 
 setCommand

@@ -80,24 +80,6 @@ class CMakeListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by CMakeParser#add_custom_command.
-    def enterAdd_custom_command(self, ctx:CMakeParser.Add_custom_commandContext):
-        pass
-
-    # Exit a parse tree produced by CMakeParser#add_custom_command.
-    def exitAdd_custom_command(self, ctx:CMakeParser.Add_custom_commandContext):
-        pass
-
-
-    # Enter a parse tree produced by CMakeParser#add_custom_command_args.
-    def enterAdd_custom_command_args(self, ctx:CMakeParser.Add_custom_command_argsContext):
-        pass
-
-    # Exit a parse tree produced by CMakeParser#add_custom_command_args.
-    def exitAdd_custom_command_args(self, ctx:CMakeParser.Add_custom_command_argsContext):
-        pass
-
-
     # Enter a parse tree produced by CMakeParser#setCommand.
     def enterSetCommand(self, ctx:CMakeParser.SetCommandContext):
         pass
