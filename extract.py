@@ -624,6 +624,29 @@ class CMakeExtractorListener(CMakeListener):
             lookupTable.setKey("t:{}".format(targetName), targetNode)
             vmodel.nodes.append(targetNode)
 
+        # build_command(<variable>
+        #       [CONFIGURATION <config>]
+        #       [TARGET <target>]
+        #       [PROJECT_NAME <projname>] # legacy, causes warning
+        #      )
+        elif commandId == 'build_command':
+            varName = arguments.pop(0)
+            commandNode = CustomCommandNode("build_command_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            refNode = RefNode("{}_{}".format(varName, vmodel.getNextCounter()), commandNode)
+            lookupTable.setKey("${{{}}}".format(varName), refNode)
+
+            vmodel.nodes.append(refNode)
+
+        # create_test_sourcelist(sourceListName driverName
+        #                test1 test2 test3
+        #                EXTRA_INCLUDE include.h
+        #                FUNCTION function)
+        elif commandId == 'create_test_sourcelist':
+            commandNode = CustomCommandNode("create_test_sourcelist_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
+
 
         # TODO: Current implementation of function does not support nested one. We should change this
         elif commandId == 'function':

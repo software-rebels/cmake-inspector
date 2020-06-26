@@ -908,6 +908,31 @@ class TestVariableDefinitions(unittest.TestCase):
         lib = self.vmodel.findNode('foo')
         self.assertEqual(lib, command.depends[0])
 
+    def test_build_command_with_variable(self):
+        text = """
+        build_command(foo
+              CONFIGURATION bar_config
+              TARGET john_target
+              PROJECT_NAME doe_project
+             )
+        """
+        self.runTool(text)
+        fooVar = self.lookup.getKey("${foo}")
+        self.assertIsInstance(fooVar.pointTo, CustomCommandNode)
+        commandNode = fooVar.pointTo
+        self.assertEqual("CONFIGURATION bar_config TARGET john_target PROJECT_NAME doe_project",
+                         " ".join(getFlattedArguments(commandNode.pointTo[0])))
+
+    def test_create_test_sourcelist_simple(self):
+        text = """
+        create_test_sourcelist(sourceListName driverName
+                       test1 test2 test3
+                       EXTRA_INCLUDE include.h
+                       FUNCTION function)
+        """
+        self.runTool(text)
+        self.assertEqual("sourceListName driverName test1 test2 test3 EXTRA_INCLUDE include.h FUNCTION function",
+                         " ".join(getFlattedArguments(self.vmodel.findNode("create_test_sourcelist_0").pointTo[0])))
 
 if __name__ == '__main__':
     unittest.main()
