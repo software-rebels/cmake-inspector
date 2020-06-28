@@ -469,11 +469,6 @@ class CMakeExtractorListener(CMakeListener):
         vmodel.popLookupTable()
         vmodel.popSystemState()
 
-    def enterAdd_test_command(self, ctx: CMakeParser.Add_test_commandContext):
-        targetNode = vmodel.findNode(ctx.test_command[0].getText())
-        testNode = TestNode("TEST_" + ctx.test_name.getText(), targetNode)
-        vmodel.addNode(testNode)
-
     def enterOptionCommand(self, ctx: CMakeParser.OptionCommandContext):
         arguments = [child.getText() for child in ctx.argument().getChildren() if not isinstance(child, TerminalNode)]
         optionName = arguments.pop(0)
@@ -585,6 +580,51 @@ class CMakeExtractorListener(CMakeListener):
             if depends:
                 customCommand.depends.append(vmodel.expand(depends))
 
+        # add_test(NAME <name> COMMAND <command> [<arg>...]
+        #  [CONFIGURATIONS <config>...]
+        #  [WORKING_DIRECTORY <dir>])
+        # --------------------------------------------------
+        # add_test(<name> <command> [<arg>...])
+        elif commandId == 'add_test':
+            # Check if we should proceed with first signature or the second one
+            if arguments[0] == 'NAME':
+                arguments.pop(0)  # NAME
+                testName = arguments.pop(0)
+                testNode = TestNode(testName)
+                arguments.pop(0)  # COMMAND
+
+                if 'CONFIGURATIONS' in arguments:
+                    cIndex = arguments.index('CONFIGURATIONS')
+                    arguments.pop(cIndex)  # 'CONFIGURATIONS'
+                    configArgs = []
+                    while cIndex < len(arguments) and arguments[cIndex] not in ['COMMAND', 'WORKING_DIRECTORY']:
+                        configArgs.append(arguments.pop(cIndex))
+                    testNode.configurations = vmodel.expand(configArgs)
+
+                if 'WORKING_DIRECTORY' in arguments:
+                    wdIndex = arguments.index('WORKING_DIRECTORY')
+                    arguments.pop(wdIndex)  # WORKING_DIRECTORY
+                    testNode.working_directory = vmodel.expand([arguments.pop(wdIndex)])
+
+                testNode.command = vmodel.expand(arguments)
+            else:
+                # We go with the second sig
+                testName = arguments.pop(0)
+                testNode = TestNode(testName)
+                testNode.command = vmodel.expand(arguments)
+
+            vmodel.nodes.append(testNode)
+
+        # cmake_host_system_information(RESULT <variable> QUERY <key> ...)
+        elif commandId == 'cmake_host_system_information':
+            arguments.pop(0)  # First argument is RESULT
+            variableName = arguments.pop(0)
+            arguments.pop(0)  # This one is always QUERY
+            commandNode = CustomCommandNode("cmake_host_system_information_{}".format(vmodel.getNextCounter()))
+            commandNode.commands.append(vmodel.expand(arguments))
+            refNode = RefNode("{}_{}".format(variableName, vmodel.getNextCounter()), commandNode)
+            lookupTable.setKey("${{{}}}".format(variableName), refNode)
+            vmodel.nodes.append(refNode)
 
         # TODO: It may be a good idea to list commands and files under a different list
         #       We should create a new class for this command to separate command and sources and etc ...

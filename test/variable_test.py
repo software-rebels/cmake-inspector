@@ -5,7 +5,7 @@ from extract import CMakeExtractorListener
 from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
 from datastructs import VModel, Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, flattenAlgorithm, \
-    CustomCommandNode, getFlattedArguments, TargetNode
+    CustomCommandNode, getFlattedArguments, TargetNode, TestNode
 
 
 class TestVariableDefinitions(unittest.TestCase):
@@ -933,6 +933,55 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         self.assertEqual("sourceListName driverName test1 test2 test3 EXTRA_INCLUDE include.h FUNCTION function",
                          " ".join(getFlattedArguments(self.vmodel.findNode("create_test_sourcelist_0").pointTo[0])))
+
+    def test_add_simple_test_first_sig_without_executable_command(self):
+        text = """
+        add_test(NAME mytest COMMAND testDriver --config enable_ai)
+        """
+        self.runTool(text)
+        testNode = self.vmodel.findNode('mytest')
+        self.assertIsInstance(testNode, TestNode)
+        self.assertEqual("testDriver --config enable_ai", " ".join(getFlattedArguments(testNode.command)))
+
+    def test_add_test_first_sig_without_executable_command_with_configuration(self):
+        text = """
+        add_test(NAME mytest COMMAND testDriver --config enable_ai
+                             CONFIGURATIONS AMD
+                             WORKING_DIRECTORY /program)
+        """
+        self.runTool(text)
+        testNode = self.vmodel.findNode('mytest')
+        self.assertIsInstance(testNode, TestNode)
+        self.assertEqual("testDriver --config enable_ai", " ".join(getFlattedArguments(testNode.command)))
+        self.assertEqual("AMD", " ".join(getFlattedArguments(testNode.configurations)))
+        self.assertEqual("/program", " ".join(getFlattedArguments(testNode.working_directory)))
+
+    def test_add_test_with_executable_command(self):
+        text = """
+        add_executable(foo bar.cxx)
+        add_test(NAME mytest COMMAND foo --config enable_ai)
+        """
+        self.runTool(text)
+        testNode = self.vmodel.findNode('mytest')
+        self.assertEqual(self.lookup.getKey("t:foo"), testNode.command.getChildren()[0])
+
+    def test_add_test_second_signature(self):
+        text = """
+        add_test(mytest doSth --config enable_ai)
+        """
+        self.runTool(text)
+        testNode = self.vmodel.findNode('mytest')
+        self.assertEqual("doSth --config enable_ai", " ".join(getFlattedArguments(testNode.command)))
+
+    def test_cmake_host_system_information_without_condition(self):
+        text = """
+        cmake_host_system_information(RESULT foo QUERY HOSTNAME FQDN)
+        """
+        self.runTool(text)
+        fooVar = self.lookup.getKey("${foo}")
+        commandNode = fooVar.pointTo
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual("HOSTNAME FQDN", " ".join(getFlattedArguments(commandNode.commands[0])))
 
 if __name__ == '__main__':
     unittest.main()

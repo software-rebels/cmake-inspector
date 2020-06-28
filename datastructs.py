@@ -121,7 +121,6 @@ class TargetNode(Node):
                 concatNode.addNode(self.linkLibraries)
             self.linkLibraries = concatNode
 
-
     def setDefinition(self, node: Node):
         self.definitions = node
 
@@ -130,15 +129,20 @@ class TargetNode(Node):
 
 
 class TestNode(Node):
-    def __init__(self, name: str, pointTo: Node):
+    def __init__(self, name: str):
         super().__init__(name)
-        self.pointTo = pointTo
-
-    def getPointTo(self) -> Node:
-        return self.pointTo
+        self.command = None
+        self.configurations = None
+        self.working_directory = None
 
     def getChildren(self):
-        return [self.pointTo]
+        result = [self.command]
+        if self.configurations:
+            result.append(self.configurations)
+        if self.working_directory:
+            result.append(self.working_directory)
+        return result
+
 
 
 class RefNode(Node):
@@ -341,6 +345,8 @@ def flattenAlgorithm(node: Node):
 # Given a Node (often a ConcatNode) this algorithm will return flatted arguments
 def getFlattedArguments(argNode: Node):
     result = []
+    if isinstance(argNode, LiteralNode):
+        return [argNode.getValue()]
     for arg in argNode.getChildren():
         result.append("".join(flattenAlgorithm(arg)))
     return result
