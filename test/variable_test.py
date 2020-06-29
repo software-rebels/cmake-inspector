@@ -1004,6 +1004,64 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertIsInstance(commandNode, CustomCommandNode)
         self.assertEqual(self.lookup.getKey("t:libB"),
                          commandNode.commands[0].getChildren()[1])
+        
+    def test_get_source_file_property_simple(self):
+        text = """
+        set(libFile lib.cxx)
+        add_library(foo ${libFile})
+        get_source_file_property(bar ${libFile} LOCATION)
+        """
+        self.runTool(text)
+        barVar = self.lookup.getKey("${bar}")
+        commandNode = barVar.pointTo
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual("lib.cxx", commandNode.commands[0].getChildren()[0].pointTo.getValue())
+
+    def test_get_target_property_simple(self):
+        text = """
+        set(libFile lib.cxx)
+        add_library(foo ${libFile})
+        get_target_property(bar foo COMPILE_FEATURES)
+        """
+        self.runTool(text)
+        barVar = self.lookup.getKey("${bar}")
+        commandNode = barVar.pointTo
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual(self.lookup.getKey("t:foo"), commandNode.commands[0].getChildren()[0])
+
+    def test_get_test_property_simple(self):
+        text = """
+        add_test(mytest doSth --config enable_ai)
+        get_test_property(bar mytest DEPENDS)
+        """
+        self.runTool(text)
+        barVar = self.lookup.getKey("${bar}")
+        commandNode = barVar.pointTo
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual(self.vmodel.findNode("mytest"), commandNode.commands[0].getChildren()[0])
+
+    def test_export_targets_simple(self):
+        text = """
+        add_library(foo foo.cxx bar.cxx)
+        add_library(john doe.cxx)
+        export(TARGETS foo john NAMESPACE np FILE exported.cmake)
+        """
+        self.runTool(text)
+        exportNode = self.vmodel.findNode('EXPORT_0')
+        self.assertIsInstance(exportNode, CustomCommandNode)
+        self.assertEqual(self.lookup.getKey("t:foo"), exportNode.commands[0].getChildren()[1])
+        self.assertEqual(self.lookup.getKey("t:john"), exportNode.commands[0].getChildren()[2])
+
+    def test_define_property(self):
+        text = """
+        define_property(DIRECTORY
+                 PROPERTY PERMISSION
+                 BRIEF_DOCS PermissionBriefDoc
+                 FULL_DOCS PermissionFullDoc)
+        """
+        self.runTool(text)
+        self.assertIn('PERMISSION', self.vmodel.definedProperties.get('DIRECTORY'))
+        self.assertFalse(self.vmodel.definedProperties.get('DIRECTORY').get('PERMISSION').get('INHERITED'))
 
 if __name__ == '__main__':
     unittest.main()

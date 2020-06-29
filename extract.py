@@ -712,14 +712,44 @@ class CMakeExtractorListener(CMakeListener):
         #       VARIABLE>
         #      PROPERTY <name>
         #      [SET | DEFINED | BRIEF_DOCS | FULL_DOCS])
-        elif commandId == 'get_property':
+        # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # get_source_file_property(VAR file property)
+        # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # get_target_property(VAR target property)
+        # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # get_test_property(test property VAR)
+        elif commandId in ('get_property', 'get_source_file_property',
+                           'get_target_property', 'get_test_property'):
             varName = arguments.pop(0)
-            commandNode = CustomCommandNode("get_property_{}".format(vmodel.getNextCounter()))
+            commandNode = CustomCommandNode("{}_{}".format(commandId, vmodel.getNextCounter()))
             refNode = RefNode("{}_{}".format(varName, vmodel.getNextCounter()), commandNode)
             lookupTable.setKey("${{{}}}".format(varName), refNode)
             vmodel.nodes.append(refNode)
             otherArgs = vmodel.expand(arguments)
             commandNode.commands.append(otherArgs)
+
+        # define_property(<GLOBAL | DIRECTORY | TARGET | SOURCE |
+        #          TEST | VARIABLE | CACHED_VARIABLE>
+        #          PROPERTY <name> [INHERITED]
+        #          BRIEF_DOCS <brief-doc> [docs...]
+        #          FULL_DOCS <full-doc> [docs...])
+        elif commandId == 'define_property':
+            _inherited = False
+            scope = arguments.pop(0)
+            arguments.pop(0)   # This is always PROPERTY
+            propertyName = arguments.pop(0)   # TODO: This could be a variable, we should expand this
+            if arguments[0] == 'INHERITED':
+                _inherited = True
+                arguments.pop(0)
+            brief_doc = arguments[arguments.index('BRIEF_DOCS') + 1]
+            full_doc = arguments[arguments.index('FULL_DOCS') + 1]
+            scopeMap = vmodel.definedProperties.get(scope)
+            scopeMap[propertyName] = {'INHERITED': _inherited, 'BRIEF_DOCS': brief_doc, 'FULL_DOCS': full_doc}
+
+        elif commandId == 'export':
+            commandNode = CustomCommandNode("EXPORT_{}".format(vmodel.getNextCounter()))
+            commandNode.commands.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
 
         # TODO: Current implementation of function does not support nested one. We should change this
         elif commandId == 'function':

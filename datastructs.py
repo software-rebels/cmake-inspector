@@ -370,6 +370,16 @@ class VModel:
         self.systemState = []
         self.functions = {}
         self.currentFunctionCommand = None
+        # Defined properties
+        self.definedProperties = {
+            'GLOBAL': {},
+            'DIRECTORY': {},
+            'TARGET': {},
+            'SOURCE': {},
+            'TEST': {},
+            'VARIABLE': {},
+            'CACHED_VARIABLE': {}
+        }
         # These data stractures are for properties related to a directory
         self.directory_to_properties = {'.': Lookup()}
         self.DIRECTORY_PROPERTIES = self.directory_to_properties.get('.')
