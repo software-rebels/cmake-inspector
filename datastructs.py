@@ -617,6 +617,7 @@ class VModel:
 
     def export(self, writeToNeo=False):
         dot = Digraph(comment='SDG')
+        dot.graph_attr['ordering'] = 'out'
         clusterId = 0
         for cluster in self.getNodesCluster():
             newGraph = Digraph(name="cluster_" + str(clusterId))

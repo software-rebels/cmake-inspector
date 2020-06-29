@@ -983,5 +983,27 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertIsInstance(commandNode, CustomCommandNode)
         self.assertEqual("HOSTNAME FQDN", " ".join(getFlattedArguments(commandNode.commands[0])))
 
+    def test_get_filename_component_without_condition(self):
+        text = """
+        get_filename_component(foo bar.cxx DIRECTORY BASE_DIR /home)
+        """
+        self.runTool(text)
+        fooVar = self.lookup.getKey("${foo}")
+        commandNode = fooVar.pointTo
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual("bar.cxx DIRECTORY BASE_DIR /home", " ".join(getFlattedArguments( commandNode.commands[0])))
+
+    def test_get_property(self):
+        text = """
+        add_library(libB lib.cxx)
+        get_property(INC_DIR_LIST TARGET libB PROPERTY INTERFACE_INCLUDE_DIRECTORIES SET)
+        """
+        self.runTool(text)
+        varObject = self.lookup.getKey("${INC_DIR_LIST}")
+        commandNode = varObject.pointTo
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual(self.lookup.getKey("t:libB"),
+                         commandNode.commands[0].getChildren()[1])
+
 if __name__ == '__main__':
     unittest.main()

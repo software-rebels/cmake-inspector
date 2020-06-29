@@ -664,6 +664,20 @@ class CMakeExtractorListener(CMakeListener):
             lookupTable.setKey("t:{}".format(targetName), targetNode)
             vmodel.nodes.append(targetNode)
 
+        # get_filename_component(<var> <FileName> <mode> [CACHE])
+        # -------------------------------------------------------
+        # get_filename_component(<var> <FileName> <mode> [BASE_DIR <dir>] [CACHE])
+        # -------------------------------------------------------
+        # get_filename_component(<var> <FileName> PROGRAM [PROGRAM_ARGS <arg_var>] [CACHE])
+        elif commandId == 'get_filename_component':
+            varName = arguments.pop(0)
+            commandNode = CustomCommandNode("get_filename_component_{}".format(vmodel.getNextCounter()))
+            refNode = RefNode("{}_{}".format(varName, vmodel.getNextCounter()), commandNode)
+            lookupTable.setKey("${{{}}}".format(varName), refNode)
+            vmodel.nodes.append(refNode)
+            otherArgs = vmodel.expand(arguments)
+            commandNode.commands.append(otherArgs)
+
         # build_command(<variable>
         #       [CONFIGURATION <config>]
         #       [TARGET <target>]
@@ -687,6 +701,25 @@ class CMakeExtractorListener(CMakeListener):
             commandNode.pointTo.append(vmodel.expand(arguments))
             vmodel.nodes.append(commandNode)
 
+        # get_property(<variable>
+        #      <GLOBAL             |
+        #       DIRECTORY [dir]    |
+        #       TARGET    <target> |
+        #       SOURCE    <source> |
+        #       INSTALL   <file>   |
+        #       TEST      <test>   |
+        #       CACHE     <entry>  |
+        #       VARIABLE>
+        #      PROPERTY <name>
+        #      [SET | DEFINED | BRIEF_DOCS | FULL_DOCS])
+        elif commandId == 'get_property':
+            varName = arguments.pop(0)
+            commandNode = CustomCommandNode("get_property_{}".format(vmodel.getNextCounter()))
+            refNode = RefNode("{}_{}".format(varName, vmodel.getNextCounter()), commandNode)
+            lookupTable.setKey("${{{}}}".format(varName), refNode)
+            vmodel.nodes.append(refNode)
+            otherArgs = vmodel.expand(arguments)
+            commandNode.commands.append(otherArgs)
 
         # TODO: Current implementation of function does not support nested one. We should change this
         elif commandId == 'function':
