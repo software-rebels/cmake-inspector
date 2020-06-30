@@ -991,7 +991,7 @@ class TestVariableDefinitions(unittest.TestCase):
         fooVar = self.lookup.getKey("${foo}")
         commandNode = fooVar.pointTo
         self.assertIsInstance(commandNode, CustomCommandNode)
-        self.assertEqual("bar.cxx DIRECTORY BASE_DIR /home", " ".join(getFlattedArguments( commandNode.commands[0])))
+        self.assertEqual("bar.cxx DIRECTORY BASE_DIR /home", " ".join(getFlattedArguments(commandNode.commands[0])))
 
     def test_get_property(self):
         text = """
@@ -1004,7 +1004,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertIsInstance(commandNode, CustomCommandNode)
         self.assertEqual(self.lookup.getKey("t:libB"),
                          commandNode.commands[0].getChildren()[1])
-        
+
     def test_get_source_file_property_simple(self):
         text = """
         set(libFile lib.cxx)
@@ -1127,6 +1127,92 @@ class TestVariableDefinitions(unittest.TestCase):
         fooLibTarget = self.lookup.getKey("t:fooLib")
         self.assertEqual("lib1.cxx lib2.cxx", " ".join(getFlattedArguments(fooLibTarget.sources)))
         self.assertEqual("option1 option2 option3", " ".join(getFlattedArguments(fooLibTarget.compileOptions)))
+
+    def test_string_regex_match_without_condition(self):
+        text = """
+        set(foo bar)
+        string(REGEX MATCH .* john ${foo})
+        """
+        self.runTool(text)
+        johnVar = self.lookup.getKey("${john}")
+        commandNode = johnVar.getPointTo()
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual("REGEX MATCH .* bar", " ".join(getFlattedArguments(commandNode.commands[0])))
+
+    def test_string_regex_replace_without_condition(self):
+        text = """
+        set(foo bar)
+        string(REGEX REPLACE .* [a-b]* john ${foo})
+        """
+        self.runTool(text)
+        johnVar = self.lookup.getKey("${john}")
+        commandNode = johnVar.getPointTo()
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual("REGEX REPLACE .* [a-b]* bar", " ".join(getFlattedArguments(commandNode.commands[0])))
+
+    def test_string_replace_without_condition(self):
+        text = """
+        set(foo bar)
+        string(REPLACE .* [a-b]* john ${foo} doe)
+        """
+        self.runTool(text)
+        johnVar = self.lookup.getKey("${john}")
+        commandNode = johnVar.getPointTo()
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual("REPLACE .* [a-b]* bar doe", " ".join(getFlattedArguments(commandNode.commands[0])))
+
+    def test_string_concat_without_condition(self):
+        text = """
+        set(foo bar)
+        string(CONCAT john ${foo} doe)
+        """
+        self.runTool(text)
+        johnVar = self.lookup.getKey("${john}")
+        commandNode = johnVar.getPointTo()
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual("CONCAT bar doe", " ".join(getFlattedArguments(commandNode.commands[0])))
+
+    def test_string_compare_without_condition(self):
+        text = """
+        set(foo bar)
+        string(COMPARE EQUAL ${foo} doe john)
+        """
+        self.runTool(text)
+        johnVar = self.lookup.getKey("${john}")
+        commandNode = johnVar.getPointTo()
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual("COMPARE EQUAL bar doe", " ".join(getFlattedArguments(commandNode.commands[0])))
+
+    def test_string_ascii_without_condition(self):
+        text = """
+        string(ASCII 12 123 125 john)
+        """
+        self.runTool(text)
+        johnVar = self.lookup.getKey("${john}")
+        commandNode = johnVar.getPointTo()
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual("ASCII 12 123 125", " ".join(getFlattedArguments(commandNode.commands[0])))
+
+    def test_string_tolower_without_condition(self):
+        text = """
+        string(TOLOWER Mehran john)
+        """
+        self.runTool(text)
+        johnVar = self.lookup.getKey("${john}")
+        commandNode = johnVar.getPointTo()
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual("TOLOWER Mehran", " ".join(getFlattedArguments(commandNode.commands[0])))
+
+    def test_string_substring_without_condition(self):
+        text = """
+        string(SUBSTRING Mehran 0 2 john)
+        """
+        self.runTool(text)
+        johnVar = self.lookup.getKey("${john}")
+        commandNode = johnVar.getPointTo()
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual("SUBSTRING Mehran 0 2", " ".join(getFlattedArguments(commandNode.commands[0])))
+
 
 
 if __name__ == '__main__':

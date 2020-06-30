@@ -1060,6 +1060,31 @@ class CMakeExtractorListener(CMakeListener):
             refNode = RefNode('{}_{}'.format(varName, vmodel.getNextCounter()), nextNode)
             lookupTable.setKey('${{{}}}'.format(varName), refNode)
             vmodel.nodes.append(refNode)
+        # 23 different variant of this command explained at https://cmake.org/cmake/help/v3.1/command/string.html
+        elif commandId == 'string':
+            stringCommandNode = CustomCommandNode("string_{}".format(vmodel.getNextCounter()))
+            commandType = arguments[0]
+            if commandType == 'REGEX':
+                regexType = arguments[1]
+                if regexType in ('MATCH', 'MATCHALL'):
+                    outVar = arguments.pop(3)
+                elif regexType == 'REPLACE':
+                    outVar = arguments.pop(4)
+            elif commandType in ('REPLACE', 'FIND'):
+                outVar = arguments.pop(3)
+            elif commandType in ('CONCAT', 'MD5', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512', 'TIMESTAMP', 'UUID'):
+                outVar = arguments.pop(1)
+            elif commandType in ('COMPARE', 'SUBSTRING'):
+                outVar = arguments.pop(4)
+            elif commandType in ('ASCII', 'RANDOM'):
+                outVar = arguments.pop()
+            elif commandType in ('CONFIGURE', 'TOUPPER', 'TOLOWER', 'LENGTH', 'STRIP',
+                                 'MAKE_C_IDENTIFIER', 'GENEX_STRIP'):
+                outVar = arguments.pop(2)
+
+            util_create_and_add_refNode_for_variable(outVar, stringCommandNode)
+            stringCommandNode.commands.append(vmodel.expand(arguments))
+
 
         # get_cmake_property(VAR property)
         elif commandId == 'get_cmake_property':
