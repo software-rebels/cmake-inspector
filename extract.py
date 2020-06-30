@@ -12,7 +12,7 @@ from grammar.CMakeParser import CMakeParser
 from grammar.CMakeListener import CMakeListener
 # Our own library
 from datastructs import RefNode, TargetNode, VModel, Lookup, SelectNode, ConcatNode, \
-    CustomCommandNode, TestNode, LiteralNode, flattenAlgorithm
+    CustomCommandNode, TestNode, LiteralNode, flattenAlgorithm, Node
 from analyze import doGitAnalysis
 
 config.DATABASE_URL = 'bolt://neo4j:123@localhost:7687'
@@ -27,8 +27,64 @@ def util_getStringFromList(lst: List):
     return " ".join(lst)
 
 
+def util_extract_variable_name(argName: str, arguments: List) -> Optional[str]:
+    if argName in arguments:
+        argIndex = arguments.index(argName)
+        arguments.pop(argIndex)
+        return arguments.pop(argIndex)
+    return None
+
+
+def util_create_and_add_refNode_for_variable(varName: str, nextNode: Node,
+                                             parentScope=False, relatedProperty=None) -> RefNode:
+    variable_name = "${{{}}}".format(varName)
+    # Each variable has its own RefNode
+    variableNode = RefNode("{}_{}".format(variable_name, vmodel.getNextCounter()), nextNode)
+    if relatedProperty:
+        variableNode.relatedProperty = relatedProperty
+
+    variableNode.pointTo = util_handleConditions(nextNode, variable_name)
+
+    # Finally, we add the new RefNode to the graph and our lookup table
+    vmodel.nodes.append(variableNode)
+    lookupTable.setKey(variable_name, variableNode, parentScope)
+    return variableNode
+
+
+# This function looks for previously defined node in the lookup table which works for variables and targets, but
+# not for other nodes that we don't push to lookup table. This third argument helps to manually pass that node.
+def util_handleConditions(nextNode, newNodeName, prevNode=None):
+    # If inside condition, we just create a SelectNode after newly created RefNode (Node)
+    # which true edge points to the new node created for the arguments.
+    # If the variable were already defined before the if, the false edge points to that
+    systemState = None
+    stateProperty = None
+    if vmodel.getCurrentSystemState():
+        systemState, stateProperty = vmodel.getCurrentSystemState()
+    if systemState == 'if' or systemState == 'else' or systemState == 'elseif':
+        selectNodeName = "SELECT_{}_{}_{}".format(newNodeName,
+                                                  util_getStringFromList(stateProperty), vmodel.getNextCounter())
+        newSelectNode = SelectNode(selectNodeName, stateProperty)
+
+        if systemState == 'if' or systemState == 'elseif':
+            newSelectNode.setTrueNode(nextNode)
+        elif systemState == 'else':
+            newSelectNode.setFalseNode(nextNode)
+        # Inside if statement, we set true node to the variable defined outside if which pushed
+        # to this stack before entering the if statement
+        if prevNode or vmodel.getLastPushedLookupTable().getKey(newNodeName):
+            if systemState == 'if' or systemState == 'elseif':
+                newSelectNode.setFalseNode(prevNode or vmodel.getLastPushedLookupTable().getKey(newNodeName))
+            elif systemState == 'else':
+                newSelectNode.setTrueNode(prevNode or vmodel.getLastPushedLookupTable().getKey(newNodeName))
+
+        return newSelectNode
+    return nextNode
+
+
 def setCommand(arguments):
-    variable_name = "${{{}}}".format(arguments.pop(0))
+    rawVarName = arguments.pop(0)
+    variable_name = "${{{}}}".format(rawVarName)
     parentScope = False
     if 'PARENT_SCOPE' in arguments:
         parentScope = True
@@ -39,39 +95,7 @@ def setCommand(arguments):
     else:  # SET (VAR) // Removes the definition of VAR.
         lookupTable.deleteKey(variable_name)
         return
-    # Each variable has its own RefNode
-    variableNode = RefNode("{}_{}".format(variable_name, vmodel.getNextCounter()), node)
-
-    # If inside condition, we just create a SelectNode after newly created RefNode which true edge points to the new
-    # node created for the arguments. If the variable were already defined before the if, the false edge
-    # points to that
-    systemState = None
-    stateProperty = None
-    if vmodel.getCurrentSystemState():
-        systemState, stateProperty = vmodel.getCurrentSystemState()
-
-    if systemState == 'if' or systemState == 'else' or systemState == 'elseif':
-        selectNodeName = "SELECT_{}_{}_{}".format(variable_name,
-                                                  util_getStringFromList(stateProperty), vmodel.getNextCounter())
-        newSelectNode = SelectNode(selectNodeName, stateProperty)
-
-        if systemState == 'if' or systemState == 'elseif':
-            newSelectNode.setTrueNode(node)
-        elif systemState == 'else':
-            newSelectNode.setFalseNode(node)
-        # Inside if statement, we set true node to the variable defined outside if which pushed
-        # to this stack before entering the if statement
-        if vmodel.getLastPushedLookupTable().getKey(variable_name):
-            if systemState == 'if' or systemState == 'elseif':
-                newSelectNode.setFalseNode(vmodel.getLastPushedLookupTable().getKey(variable_name))
-            elif systemState == 'else':
-                newSelectNode.setTrueNode(vmodel.getLastPushedLookupTable().getKey(variable_name))
-
-        variableNode.pointTo = newSelectNode
-
-    # Finally, we add the new RefNode to the graph and our lookup table
-    vmodel.nodes.append(variableNode)
-    lookupTable.setKey(variable_name, variableNode, parentScope)
+    util_create_and_add_refNode_for_variable(rawVarName, node, parentScope)
 
 
 def listCommand(arguments):
@@ -335,7 +359,7 @@ def addTarget(arguments, isExecutable=True):
     # IMPORTED target node doesn't have any more argument to expand
     # ALIAS target node points to another target node, so the logic behind it is a little different
     if arguments[0] not in ('IMPORTED', 'ALIAS'):
-        nextNode = vmodel.expand(arguments)
+        nextNode = vmodel.expand(arguments, True)
 
     targetNode = lookupTable.getKey(lookupTableName)
     if targetNode is None:
@@ -356,7 +380,7 @@ def addTarget(arguments, isExecutable=True):
 
     if 'ALIAS' in arguments:
         aliasTarget = lookupTable.getKey('t:{}'.format(arguments[1]))
-        targetNode.pointTo = aliasTarget
+        targetNode.sources = aliasTarget
 
     systemState = None
     stateProperty = None
@@ -383,7 +407,7 @@ def addTarget(arguments, isExecutable=True):
                 newSelectNode.setTrueNode(
                     vmodel.getLastPushedLookupTable().getKey(lookupTableName).getPointTo())
 
-        targetNode.pointTo = newSelectNode
+        targetNode.sources = newSelectNode
 
 
 # Current strategy for foreach loop does not support nested foreach! If this is a case, we should change
@@ -660,7 +684,7 @@ class CMakeExtractorListener(CMakeListener):
 
             targetNode = TargetNode("{}_{}".format(targetName, vmodel.getNextCounter()), vmodel.expand(arguments))
             targetNode.isCustomTarget = True
-            targetNode.pointTo.listOfNodes += dependedElement
+            targetNode.sources.listOfNodes += dependedElement
             lookupTable.setKey("t:{}".format(targetName), targetNode)
             vmodel.nodes.append(targetNode)
 
@@ -736,8 +760,8 @@ class CMakeExtractorListener(CMakeListener):
         elif commandId == 'define_property':
             _inherited = False
             scope = arguments.pop(0)
-            arguments.pop(0)   # This is always PROPERTY
-            propertyName = arguments.pop(0)   # TODO: This could be a variable, we should expand this
+            arguments.pop(0)  # This is always PROPERTY
+            propertyName = arguments.pop(0)  # TODO: This could be a variable, we should expand this
             if arguments[0] == 'INHERITED':
                 _inherited = True
                 arguments.pop(0)
@@ -821,6 +845,186 @@ class CMakeExtractorListener(CMakeListener):
         elif commandId == 'cmake_minimum_required':
             version = arguments[1]
             vmodel.cmakeVersion = version
+
+        # try_run(RUN_RESULT_VAR COMPILE_RESULT_VAR
+        #         bindir srcfile [CMAKE_FLAGS <Flags>]
+        #         [COMPILE_DEFINITIONS <flags>]
+        #         [COMPILE_OUTPUT_VARIABLE comp]
+        #         [RUN_OUTPUT_VARIABLE run]
+        #         [OUTPUT_VARIABLE var]
+        #         [ARGS <arg1> <arg2>...])
+        elif commandId == 'try_run':
+            runResultVar = arguments.pop(0)
+            compileResultVar = arguments.pop(0)
+            compileOutputVar = util_extract_variable_name('COMPILE_OUTPUT_VARIABLE', arguments)
+            runOutputVar = util_extract_variable_name('RUN_OUTPUT_VARIABLE', arguments)
+            outputVar = util_extract_variable_name('OUTPUT_VARIABLE', arguments)
+
+            commandNode = CustomCommandNode("try_run_{}".format(vmodel.getNextCounter()))
+            commandNode.commands.append(vmodel.expand(arguments))
+            # Essential variables
+            util_create_and_add_refNode_for_variable(runResultVar, commandNode,
+                                                     relatedProperty='RUN_RESULT_VAR')
+            util_create_and_add_refNode_for_variable(compileResultVar, commandNode,
+                                                     relatedProperty='COMPILE_RESULT_VAR')
+            # Optional Variables
+            if compileOutputVar:
+                util_create_and_add_refNode_for_variable(compileOutputVar, commandNode,
+                                                         relatedProperty='COMPILE_OUTPUT_VARIABLE')
+            if runOutputVar:
+                util_create_and_add_refNode_for_variable(runOutputVar, commandNode,
+                                                         relatedProperty='RUN_OUTPUT_VARIABLE')
+            if outputVar:
+                util_create_and_add_refNode_for_variable(outputVar, commandNode,
+                                                         relatedProperty='OUTPUT_VARIABLE')
+
+        # try_compile(RESULT_VAR <bindir> <srcdir>
+        #     <projectName> [targetName] [CMAKE_FLAGS flags...]
+        #     [OUTPUT_VARIABLE <var>])
+        elif commandId == 'try_compile':
+            resultVar = arguments.pop(0)
+            outputVar = util_extract_variable_name('OUTPUT_VARIABLE', arguments)
+            commandNode = CustomCommandNode("try_compile_{}".format(vmodel.getNextCounter()))
+            commandNode.commands.append(vmodel.expand(arguments))
+            # Essential variable
+            util_create_and_add_refNode_for_variable(resultVar, commandNode,
+                                                     relatedProperty="RESULT_VAR")
+            # Optional variable
+            if outputVar:
+                util_create_and_add_refNode_for_variable(outputVar, commandNode,
+                                                         relatedProperty='OUTPUT_VARIABLE')
+        # target_sources( < target >
+        #                 < INTERFACE | PUBLIC | PRIVATE > [items1...]
+        #                 [ < INTERFACE | PUBLIC | PRIVATE > [items2...]...])
+        elif commandId == 'target_sources':
+            targetName = arguments.pop(0)
+            targetInstance = lookupTable.getKey("t:{}".format(targetName))
+            assert isinstance(targetInstance, TargetNode)
+            sources = []
+            interfaceSources = []
+            while arguments:
+                if arguments[0] in ('INTERFACE', 'PUBLIC', 'PRIVATE'):
+                    scope = arguments.pop(0)
+                sourceItem = arguments.pop(0)
+                if scope.upper() in ('PRIVATE', 'PUBLIC'):
+                    sources.append(sourceItem)
+                if scope.upper() in ('INTERFACE', 'PUBLIC'):
+                    interfaceSources.append(sourceItem)
+
+            if sources:
+                expandedSources = vmodel.expand(sources, True)
+                assert isinstance(expandedSources, ConcatNode)
+                if targetInstance.sources:
+                    expandedSources.listOfNodes = targetInstance.sources.listOfNodes + expandedSources.listOfNodes
+                    targetInstance.sources = util_handleConditions(expandedSources,
+                                                                   expandedSources.name,
+                                                                   targetInstance.sources)
+                else:
+                    targetInstance.sources = util_handleConditions(expandedSources,
+                                                                   expandedSources.name)
+
+            if interfaceSources:
+                expandedInterfaceSources = vmodel.expand(interfaceSources, True)
+                assert isinstance(expandedInterfaceSources, ConcatNode)
+                if targetInstance.interfaceSources:
+                    expandedInterfaceSources.listOfNodes = targetInstance.interfaceSources.listOfNodes + \
+                                                           expandedInterfaceSources.listOfNodes
+                    targetInstance.interfaceSources = util_handleConditions(expandedInterfaceSources,
+                                                                            expandedInterfaceSources.name,
+                                                                            targetInstance.interfaceSources)
+                else:
+                    targetInstance.interfaceSources = util_handleConditions(expandedInterfaceSources,
+                                                                            expandedInterfaceSources.name)
+
+        # target_compile_features(<target> <PRIVATE|PUBLIC|INTERFACE> <feature> [...])
+        # This code is very similar to target_sources but I couldn't merge them
+        elif commandId == 'target_compile_features':
+            targetName = arguments.pop(0)
+            targetInstance = lookupTable.getKey("t:{}".format(targetName))
+            assert isinstance(targetInstance, TargetNode)
+            features = []
+            interfaceFeatures = []
+            while arguments:
+                if arguments[0] in ('INTERFACE', 'PUBLIC', 'PRIVATE'):
+                    scope = arguments.pop(0)
+                featureItem = arguments.pop(0)
+                if scope.upper() in ('PRIVATE', 'PUBLIC'):
+                    features.append(featureItem)
+                if scope.upper() in ('INTERFACE', 'PUBLIC'):
+                    interfaceFeatures.append(featureItem)
+
+            if features:
+                expandedSources = vmodel.expand(features, True)
+                assert isinstance(expandedSources, ConcatNode)
+                if targetInstance.compileFeatures:
+                    expandedSources.listOfNodes = targetInstance.compileFeatures.listOfNodes + \
+                                                  expandedSources.listOfNodes
+                    targetInstance.compileFeatures = util_handleConditions(expandedSources,
+                                                                           expandedSources.name,
+                                                                           targetInstance.compileFeatures)
+                else:
+                    targetInstance.compileFeatures = util_handleConditions(expandedSources,
+                                                                           expandedSources.name)
+
+            if interfaceFeatures:
+                expandedInterfaceFeatures = vmodel.expand(interfaceFeatures, True)
+                assert isinstance(expandedInterfaceFeatures, ConcatNode)
+                if targetInstance.interfaceCompileFeatures:
+                    expandedInterfaceFeatures.listOfNodes = targetInstance.interfaceCompileFeatures.listOfNodes + \
+                                                            expandedInterfaceFeatures.listOfNodes
+                    targetInstance.interfaceCompileFeatures = \
+                        util_handleConditions(expandedInterfaceFeatures,
+                                              expandedInterfaceFeatures.name,
+                                              targetInstance.interfaceCompileFeatures)
+                else:
+                    targetInstance.interfaceCompileFeatures = util_handleConditions(expandedInterfaceFeatures,
+                                                                                    expandedInterfaceFeatures.name)
+        # target_compile_options(<target> [BEFORE]
+        #           <INTERFACE|PUBLIC|PRIVATE> [items1...]
+        #           [<INTERFACE|PUBLIC|PRIVATE> [items2...] ...])
+        # The code is very similar to target_sources and previous command, but I couldn't merge them
+        elif commandId == 'target_compile_options':
+            targetName = arguments.pop(0)
+            targetInstance = lookupTable.getKey("t:{}".format(targetName))
+            assert isinstance(targetInstance, TargetNode)
+            options = []
+            interfaceOptions = []
+            while arguments:
+                if arguments[0] in ('INTERFACE', 'PUBLIC', 'PRIVATE'):
+                    scope = arguments.pop(0)
+                featureItem = arguments.pop(0)
+                if scope.upper() in ('PRIVATE', 'PUBLIC'):
+                    options.append(featureItem)
+                if scope.upper() in ('INTERFACE', 'PUBLIC'):
+                    interfaceOptions.append(featureItem)
+
+            if options:
+                expandedOptions = vmodel.expand(options, True)
+                assert isinstance(expandedOptions, ConcatNode)
+                if targetInstance.compileOptions:
+                    expandedOptions.listOfNodes = targetInstance.compileOptions.listOfNodes + \
+                                                  expandedOptions.listOfNodes
+                    targetInstance.compileOptions = util_handleConditions(expandedOptions,
+                                                                          expandedOptions.name,
+                                                                          targetInstance.compileOptions)
+                else:
+                    targetInstance.compileOptions = util_handleConditions(expandedOptions,
+                                                                          expandedOptions.name)
+
+            if interfaceOptions:
+                expandedInterfaceOptions = vmodel.expand(interfaceOptions, True)
+                assert isinstance(expandedInterfaceOptions, ConcatNode)
+                if targetInstance.interfaceCompileOptions:
+                    expandedInterfaceOptions.listOfNodes = targetInstance.interfaceCompileOptions.listOfNodes + \
+                                                           expandedInterfaceOptions.listOfNodes
+                    targetInstance.interfaceCompileOptions = \
+                        util_handleConditions(expandedInterfaceOptions,
+                                              expandedInterfaceOptions.name,
+                                              targetInstance.interfaceCompileOptions)
+                else:
+                    targetInstance.interfaceCompileOptions = util_handleConditions(expandedInterfaceOptions,
+                                                                                   expandedInterfaceOptions.name)
+
 
         # TODO: If we are in a condition, instead of overwriting the value of the property,
         #       we should add a select node and keep the current value

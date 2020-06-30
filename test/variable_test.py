@@ -427,7 +427,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         self.assertIsInstance(self.lookup.getKey("t:foo").getPointTo(), SelectNode)
         self.assertIsInstance(self.lookup.getKey("t:foo").getPointTo().trueNode, SelectNode)
-        self.assertEqual("john.c", self.lookup.getKey("t:foo").getPointTo().falseNode.getValue())
+        self.assertEqual("john.c", self.lookup.getKey("t:foo").getPointTo().falseNode.getChildren()[0].getValue())
 
     def test_add_compile_option(self):
         text = """
@@ -471,7 +471,7 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         self.assertIn(self.lookup.getKey("${var2}"),
-                      self.vmodel.findNode('FILE.(APPEND baz.txt)_1').getChildren()[1].getChildren())
+                      self.vmodel.findNode('FILE.(APPEND baz.txt)_2').getChildren()[1].getChildren())
         self.assertEqual("bar", self.lookup.getKey("${var2}").getValue())
 
     def test_file_read_from_file_into_variable(self):
@@ -530,7 +530,7 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         self.assertTrue(self.lookup.getKey("t:foo").imported)
-        self.assertEqual(self.lookup.getKey("t:foo"), self.lookup.getKey("t:bar").pointTo)
+        self.assertEqual(self.lookup.getKey("t:foo"), self.lookup.getKey("t:bar").getPointTo())
 
     def test_file_relative_path(self):
         text = """
@@ -603,7 +603,7 @@ class TestVariableDefinitions(unittest.TestCase):
         libraryNode = self.lookup.getKey('t:foo')
         self.assertEqual(False, libraryNode.isExecutable)
         self.assertEqual('SHARED', libraryNode.libraryType)
-        self.assertEqual('bar.cxx john.cxx', " ".join(getFlattedArguments(libraryNode.pointTo)))
+        self.assertEqual('bar.cxx john.cxx', " ".join(getFlattedArguments(libraryNode.getPointTo())))
 
     def test_add_library_in_if(self):
         text = """
@@ -618,7 +618,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         self.assertIsInstance(self.lookup.getKey("t:foo").getPointTo(), SelectNode)
         self.assertIsInstance(self.lookup.getKey("t:foo").getPointTo().trueNode, SelectNode)
-        self.assertEqual("john.c", self.lookup.getKey("t:foo").getPointTo().falseNode.getValue())
+        self.assertEqual("john.c", self.lookup.getKey("t:foo").getPointTo().falseNode.getChildren()[0].getValue())
         self.assertEqual('STATIC', self.lookup.getKey("t:foo").libraryType)
 
     def test_add_imported_library(self):
@@ -630,7 +630,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual(False, libraryNode.isExecutable)
         self.assertEqual('MODULE', libraryNode.libraryType)
         self.assertTrue(libraryNode.imported)
-        self.assertIsNone(libraryNode.pointTo)
+        self.assertIsNone(libraryNode.getPointTo())
 
     def test_add_aliased_library(self):
         text = """
@@ -641,7 +641,7 @@ class TestVariableDefinitions(unittest.TestCase):
         fooL = self.lookup.getKey('t:foo')
         johnL = self.lookup.getKey('t:john')
         self.assertEqual(False, johnL.isExecutable)
-        self.assertEqual(fooL, johnL.pointTo)
+        self.assertEqual(fooL, johnL.getPointTo())
 
     def test_add_object_library(self):
         text = """
@@ -651,7 +651,7 @@ class TestVariableDefinitions(unittest.TestCase):
         targetNode = self.lookup.getKey('$<TARGET_OBJECTS:foo>')
         self.assertIsNone(self.lookup.getKey('t:foo'))
         self.assertTrue(targetNode.isObjectLibrary)
-        self.assertEqual('bar.cxx john.cxx', " ".join(getFlattedArguments(targetNode.pointTo)))
+        self.assertEqual('bar.cxx john.cxx', " ".join(getFlattedArguments(targetNode.getPointTo())))
 
     def test_interface_library(self):
         text = """
@@ -661,7 +661,7 @@ class TestVariableDefinitions(unittest.TestCase):
         libraryNode = self.lookup.getKey('t:foo')
         self.assertTrue(libraryNode.interfaceLibrary)
         self.assertTrue(libraryNode.imported)
-        self.assertIsNone(libraryNode.pointTo)
+        self.assertIsNone(libraryNode.getPointTo())
 
     def test_macro_should_change_variable_in_current_scope(self):
         text = """
@@ -751,7 +751,7 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         self.assertIsInstance(self.lookup.getKey("t:john"), TargetNode)
-        self.assertIn(self.lookup.getKey("t:foo"), self.lookup.getKey("t:john").pointTo.listOfNodes)
+        self.assertIn(self.lookup.getKey("t:foo"), self.lookup.getKey("t:john").getPointTo().listOfNodes)
 
     def test_add_custom_target_without_dependency(self):
         text = """
@@ -759,7 +759,7 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         targetNode = self.lookup.getKey("t:john")
-        self.assertEqual("COMMAND joe SOURCES baz.cxx", " ".join(getFlattedArguments(targetNode.pointTo)))
+        self.assertEqual("COMMAND joe SOURCES baz.cxx", " ".join(getFlattedArguments(targetNode.getPointTo())))
 
     def test_math_function(self):
         text = """
@@ -904,7 +904,7 @@ class TestVariableDefinitions(unittest.TestCase):
                            COMMAND cmd1)
         """
         self.runTool(text)
-        command = self.vmodel.findNode('custom_command_0')
+        command = self.vmodel.findNode('custom_command_1')
         lib = self.vmodel.findNode('foo')
         self.assertEqual(lib, command.depends[0])
 
@@ -1047,7 +1047,7 @@ class TestVariableDefinitions(unittest.TestCase):
         export(TARGETS foo john NAMESPACE np FILE exported.cmake)
         """
         self.runTool(text)
-        exportNode = self.vmodel.findNode('EXPORT_0')
+        exportNode = self.vmodel.findNode('EXPORT_1')
         self.assertIsInstance(exportNode, CustomCommandNode)
         self.assertEqual(self.lookup.getKey("t:foo"), exportNode.commands[0].getChildren()[1])
         self.assertEqual(self.lookup.getKey("t:john"), exportNode.commands[0].getChildren()[2])
@@ -1062,6 +1062,72 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         self.assertIn('PERMISSION', self.vmodel.definedProperties.get('DIRECTORY'))
         self.assertFalse(self.vmodel.definedProperties.get('DIRECTORY').get('PERMISSION').get('INHERITED'))
+
+    def test_try_run(self):
+        text = """
+        try_run(RUN_RESULT
+                COMPILE_RESULT
+                ${CMAKE_CURRENT_BINARY_DIR}/library_magic_val
+                "test_library_magic_val.c"
+                RUN_OUTPUT_VARIABLE VAL_OUTPUT)
+        """
+        self.runTool(text)
+        runVar = self.lookup.getKey("${RUN_RESULT}")
+        compileVar = self.lookup.getKey("${COMPILE_RESULT}")
+        runOutputVar = self.lookup.getKey("${VAL_OUTPUT}")
+        commandNode = self.vmodel.findNode('try_run_0')
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual(commandNode, runVar.pointTo)
+        self.assertEqual(commandNode, compileVar.pointTo)
+        self.assertEqual(commandNode, runOutputVar.pointTo)
+        self.assertEqual("RUN_RESULT_VAR", runVar.relatedProperty)
+        self.assertEqual("\"test_library_magic_val.c\"", commandNode.pointTo[0].getChildren()[1].getValue())
+
+    def test_try_compile(self):
+        text = """
+        try_compile(RESULT_VAR binDir srcDir
+                    testProject all
+                    OUTPUT_VARIABLE OUT_VAR)
+        """
+        self.runTool(text)
+        resultVar = self.lookup.getKey('${RESULT_VAR}')
+        outVar = self.lookup.getKey("${OUT_VAR}")
+        commandNode = self.vmodel.findNode('try_compile_0')
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual(commandNode, resultVar.pointTo)
+        self.assertEqual(commandNode, outVar.pointTo)
+        self.assertEqual('RESULT_VAR', resultVar.relatedProperty)
+        self.assertEqual('binDir srcDir testProject all', " ".join(getFlattedArguments(commandNode.commands[0])))
+
+    def test_target_sources_private_only_without_condition(self):
+        text = """
+        add_library(fooLib lib1.cxx)
+        target_sources(fooLib PRIVATE lib2.cxx lib3.cxx)
+        """
+        self.runTool(text)
+        fooLibTarget = self.lookup.getKey("t:fooLib")
+        self.assertEqual("lib1.cxx lib2.cxx lib3.cxx", " ".join(getFlattedArguments(fooLibTarget.sources)))
+
+    def test_target_compile_features_private_only_without_condition(self):
+        text = """
+        add_library(fooLib lib1.cxx lib2.cxx)
+        target_compile_features(fooLib PRIVATE feature1 feature2)
+        """
+        self.runTool(text)
+        fooLibTarget = self.lookup.getKey("t:fooLib")
+        self.assertEqual("lib1.cxx lib2.cxx", " ".join(getFlattedArguments(fooLibTarget.sources)))
+        self.assertEqual("feature1 feature2", " ".join(getFlattedArguments(fooLibTarget.compileFeatures)))
+
+    def test_target_compile_options_private_only_without_condition(self):
+        text = """
+        add_library(fooLib lib1.cxx lib2.cxx)
+        target_compile_options(fooLib PRIVATE option1 option2 PRIVATE option3)
+        """
+        self.runTool(text)
+        fooLibTarget = self.lookup.getKey("t:fooLib")
+        self.assertEqual("lib1.cxx lib2.cxx", " ".join(getFlattedArguments(fooLibTarget.sources)))
+        self.assertEqual("option1 option2 option3", " ".join(getFlattedArguments(fooLibTarget.compileOptions)))
+
 
 if __name__ == '__main__':
     unittest.main()
