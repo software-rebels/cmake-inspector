@@ -1236,7 +1236,39 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertIsInstance(commandNode, CustomCommandNode)
         self.assertEqual('-Djohn', commandNode.commands[0].getValue())
 
+    def test_load_cache(self):
+        text = """
+        load_cache(/anotherproject READ_WITH_PREFIX
+           foo entry1 entry2)
+        """
+        self.runTool(text)
+        entry1Var = self.lookup.getKey('${fooentry1}')
+        entry2Var = self.lookup.getKey('${fooentry2}')
+        cacheCommand = entry1Var.getPointTo()
+        self.assertIsInstance(cacheCommand, CustomCommandNode)
+        self.assertEqual(cacheCommand, entry2Var.getPointTo())
+        self.assertEqual('/anotherproject', cacheCommand.commands[0].getValue())
 
+    def test_link_libraries(self):
+        text = """
+        add_library(foo bar.cxx)
+        link_libraries(foo)
+        add_executable(john doe.cxx)
+        """
+        self.runTool(text)
+        johnTarget = self.lookup.getKey("t:john")
+        fooTarget = self.lookup.getKey("t:foo")
+        self.assertEqual(fooTarget, johnTarget.linkLibraries.getChildren()[0])
+        self.assertEqual(fooTarget, self.vmodel.DIRECTORY_PROPERTIES.getKey('LINK_LIBRARIES').getChildren()[0])
+
+    def test_link_directories(self):
+        text = """
+        link_directories(directory1 directory2)
+        """
+        self.runTool(text)
+        self.assertEqual("directory1 directory2",
+                         " ".join(getFlattedArguments(self.vmodel.DIRECTORY_PROPERTIES.getKey('LINK_DIRECTORIES')
+                                                      .getChildren()[0])))
 
 
 

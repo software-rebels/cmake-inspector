@@ -311,6 +311,30 @@ def addCompileOptionsCommand(arguments):
     newCompileOptions.addNode(targetNode)
 
 
+def addLinkLibraries(arguments):
+    nextNode = vmodel.expand(arguments)
+    targetNode = util_handleConditions(nextNode, nextNode.name, None)
+
+    newLinkLibraries = ConcatNode("LINK_LIBRARIES_{}".format(vmodel.getNextCounter()))
+    if vmodel.DIRECTORY_PROPERTIES.getOwnKey('LINK_LIBRARIES'):
+        newLinkLibraries.listOfNodes = list(vmodel.DIRECTORY_PROPERTIES.getKey('LINK_LIBRARIES').listOfNodes)
+
+    vmodel.DIRECTORY_PROPERTIES.setKey('LINK_LIBRARIES', newLinkLibraries)
+    newLinkLibraries.addNode(targetNode)
+
+
+def addLinkDirectories(arguments):
+    nextNode = vmodel.expand(arguments)
+    targetNode = util_handleConditions(nextNode, nextNode.name, None)
+
+    newLinkDirectories = ConcatNode("LINK_DIRECTORIES_{}".format(vmodel.getNextCounter()))
+    if vmodel.DIRECTORY_PROPERTIES.getOwnKey('LINK_DIRECTORIES'):
+        newLinkDirectories.listOfNodes = list(vmodel.DIRECTORY_PROPERTIES.getKey('LINK_DIRECTORIES').listOfNodes)
+
+    vmodel.DIRECTORY_PROPERTIES.setKey('LINK_DIRECTORIES', newLinkDirectories)
+    newLinkDirectories.addNode(targetNode)
+
+
 # This function handles both add_library and add_executable
 def addTarget(arguments, isExecutable=True):
     targetName = arguments.pop(0)
@@ -345,6 +369,7 @@ def addTarget(arguments, isExecutable=True):
     if targetNode is None:
         targetNode = TargetNode(targetName, nextNode)
         targetNode.setDefinition(vmodel.DIRECTORY_PROPERTIES.getKey('COMPILE_OPTIONS'))
+        targetNode.linkLibraries = vmodel.DIRECTORY_PROPERTIES.getKey('LINK_LIBRARIES')
         lookupTable.setKey(lookupTableName, targetNode)
         vmodel.nodes.append(targetNode)
 
@@ -498,6 +523,24 @@ class CMakeExtractorListener(CMakeListener):
             fileNode = CustomCommandNode('remove_definitions_{}'.format(vmodel.getNextCounter()))
             fileNode.commands.append(vmodel.expand(arguments))
             vmodel.nodes.append(util_handleConditions(fileNode, fileNode.name))
+
+        # load_cache(pathToCacheFile READ_WITH_PREFIX
+        #    prefix entry1...)
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # load_cache(pathToCacheFile [EXCLUDE entry1...]
+        #    [INCLUDE_INTERNALS entry1...])
+        elif commandId == 'load_cache':
+            cacheNode = CustomCommandNode('load_cache_{}'.format(vmodel.getNextCounter()))
+
+            if 'READ_WITH_PREFIX' in arguments:
+                argIndex = arguments.index('READ_WITH_PREFIX')
+                arguments.pop(argIndex)  # This is always 'READ_WITH_PREFIX'
+                prefix = arguments.pop(argIndex)
+                while len(arguments) > argIndex:
+                    varname = arguments.pop(argIndex)
+                    util_create_and_add_refNode_for_variable("{}{}".format(prefix, varname), cacheNode)
+
+            cacheNode.commands.append(vmodel.expand(arguments))
 
         elif commandId == 'find_file':
             variableName = arguments.pop(0)
@@ -1214,6 +1257,16 @@ class CMakeExtractorListener(CMakeListener):
 
         elif commandId == 'add_compile_options':
             addCompileOptionsCommand(arguments)
+
+        # link_libraries([item1 [item2 [...]]]
+        #        [[debug|optimized|general] <item>] ...)
+        elif commandId == 'link_libraries':
+            addLinkLibraries(arguments)
+
+        # link_directories(directory1 directory2 ...)
+        elif commandId == 'link_directories':
+            addLinkDirectories(arguments)
+
 
         elif commandId == 'target_compile_definitions':
             # This command add a definition to the current ones. So we should add it in all the possible paths
