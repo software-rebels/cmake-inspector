@@ -301,27 +301,7 @@ def fileCommand(arguments):
 
 def addCompileOptionsCommand(arguments):
     nextNode = vmodel.expand(arguments)
-    targetNode = nextNode
-
-    systemState = None
-    stateProperty = None
-    if vmodel.getCurrentSystemState():
-        systemState, stateProperty = vmodel.getCurrentSystemState()
-
-    if systemState == 'if' or systemState == 'else' or systemState == 'elseif':
-        selectNodeName = "SELECT_{}_{}_{}".format(nextNode.name,
-                                                  util_getStringFromList(stateProperty),
-                                                  vmodel.getNextCounter())
-        newSelectNode = SelectNode(selectNodeName, stateProperty)
-
-        if systemState == 'if' or systemState == 'elseif':
-            newSelectNode.setTrueNode(nextNode)
-        elif systemState == 'else':
-            newSelectNode.setFalseNode(nextNode)
-        # Inside if statement, we set true node to the variable defined outside if which pushed
-        # to this stack before entering the if statement
-
-        targetNode = newSelectNode
+    targetNode = util_handleConditions(nextNode, nextNode.name, None)
 
     newCompileOptions = ConcatNode("COMPILE_OPTIONS_{}".format(vmodel.getNextCounter()))
     if vmodel.DIRECTORY_PROPERTIES.getOwnKey('COMPILE_OPTIONS'):
@@ -509,8 +489,15 @@ class CMakeExtractorListener(CMakeListener):
         if commandId == 'set':
             raise Exception("This should not reach to this code!!!")
 
+        # add_definitions(-DFOO -DBAR ...)
         elif commandId == 'add_definitions':
             addCompileOptionsCommand(arguments)
+
+        # remove_definitions(-DFOO -DBAR ...)
+        elif commandId == 'remove_definitions':
+            fileNode = CustomCommandNode('remove_definitions_{}'.format(vmodel.getNextCounter()))
+            fileNode.commands.append(vmodel.expand(arguments))
+            vmodel.nodes.append(util_handleConditions(fileNode, fileNode.name))
 
         elif commandId == 'find_file':
             variableName = arguments.pop(0)
@@ -751,6 +738,32 @@ class CMakeExtractorListener(CMakeListener):
             vmodel.nodes.append(refNode)
             otherArgs = vmodel.expand(arguments)
             commandNode.commands.append(otherArgs)
+
+        # set_property(<GLOBAL                    |
+        #       DIRECTORY [dir]                   |
+        #       TARGET    [target1 [target2 ...]] |
+        #       SOURCE    [src1 [src2 ...]]       |
+        #       INSTALL   [file1 [file2 ...]]     |
+        #       TEST      [test1 [test2 ...]]     |
+        #       CACHE     [entry1 [entry2 ...]]>
+        #      [APPEND] [APPEND_STRING]
+        #      PROPERTY <name> [value1 [value2 ...]])
+        # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # set_source_files_properties([file1 [file2 [...]]]
+        #                     PROPERTIES prop1 value1
+        #                     [prop2 value2 [...]])
+        # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # set_target_properties(target1 target2 ...
+        #               PROPERTIES prop1 value1
+        #               prop2 value2 ...)
+        # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # set_tests_properties(test1 [test2...] PROPERTIES prop1 value1 prop2 value2)
+        # TODO: we have different implementation
+        elif commandId in ('set_property', 'set_source_files_properties',
+                           'set_target_properties', 'set_tests_properties'):
+            commandNode = CustomCommandNode("{}_{}".format(commandId, vmodel.getNextCounter()))
+            commandNode.commands.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
 
         # define_property(<GLOBAL | DIRECTORY | TARGET | SOURCE |
         #          TEST | VARIABLE | CACHED_VARIABLE>

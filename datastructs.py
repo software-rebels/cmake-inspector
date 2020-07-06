@@ -396,7 +396,7 @@ class VModel:
             'VARIABLE': {},
             'CACHED_VARIABLE': {}
         }
-        # These data stractures are for properties related to a directory
+        # These data structures are for properties related to a directory
         self.directory_to_properties = {'.': Lookup()}
         self.DIRECTORY_PROPERTIES = self.directory_to_properties.get('.')
         self.DIRECTORY_PROPERTIES.setKey('VARIABLES', self.lookupTable.items[-1])

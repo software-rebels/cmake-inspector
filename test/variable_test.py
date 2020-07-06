@@ -794,9 +794,9 @@ class TestVariableDefinitions(unittest.TestCase):
         doeVar = self.lookup.getKey("${doe}")
         bazVar = self.lookup.getKey("${baz}")
         self.assertEqual('foo',
-                         flattenAlgorithm(johnVar.pointTo)[0])
+                         flattenAlgorithm(johnVar.getPointTo())[0])
         self.assertEqual('bar',
-                         flattenAlgorithm(doeVar.pointTo)[0])
+                         flattenAlgorithm(doeVar.getPointTo())[0])
         self.assertIsNone(bazVar.pointTo)
 
     def test_get_directory_property_without_condition_without_new_directory_for_variable(self):
@@ -1212,6 +1212,31 @@ class TestVariableDefinitions(unittest.TestCase):
         commandNode = johnVar.getPointTo()
         self.assertIsInstance(commandNode, CustomCommandNode)
         self.assertEqual("SUBSTRING Mehran 0 2", " ".join(getFlattedArguments(commandNode.commands[0])))
+
+    def test_set_property_without_condition(self):
+        text = """
+        set(foo /bar)
+        set_property(DIRECTORY ${foo} PROPERTY LABELS val1 val2)
+        """
+        self.runTool(text)
+        setProperty = self.vmodel.findNode('set_property_1')
+        self.assertEqual('DIRECTORY /bar PROPERTY LABELS val1 val2',
+                         " ".join(getFlattedArguments(setProperty.commands[0])))
+
+    def test_remove_definitions(self):
+        text = """
+        add_definitions(-Djohn)
+        add_library(foo bar.cxx)
+        if(AMD)
+            remove_definitions(-Djohn)
+        endif(AMD)
+        """
+        self.runTool(text)
+        commandNode = self.vmodel.findNode('remove_definitions_2')
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual('-Djohn', commandNode.commands[0].getValue())
+
+
 
 
 
