@@ -541,6 +541,39 @@ class CMakeExtractorListener(CMakeListener):
                     util_create_and_add_refNode_for_variable("{}{}".format(prefix, varname), cacheNode)
 
             cacheNode.commands.append(vmodel.expand(arguments))
+        # find_library (<VAR> name1 [path1 path2 ...])
+        # +++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # find_path (<VAR> name1 [path1 path2 ...])
+        elif commandId in ('find_library', 'find_path', 'find_program'):
+            varFound = arguments.pop(0)
+            varNotFound = varFound + '-NOTFOUND'
+            findLibraryNode = CustomCommandNode("{}_{}".format(commandId, vmodel.getNextCounter()))
+            findLibraryNode.commands.append(vmodel.expand(arguments))
+            util_create_and_add_refNode_for_variable(varFound, findLibraryNode, relatedProperty='FOUND')
+            util_create_and_add_refNode_for_variable(varNotFound, findLibraryNode, relatedProperty='NOTFOUND')
+
+        # find_package( < package > [version][EXACT][QUIET][MODULE]
+        #                 [REQUIRED][[COMPONENTS][components...]]
+        #                 [OPTIONAL_COMPONENTS
+        #                 components...]
+        #                 [NO_POLICY_SCOPE])
+        elif commandId == 'find_package':
+            packageName = arguments[0]
+            findPackageNode = CustomCommandNode("find_package_{}".format(vmodel.getNextCounter()))
+            findPackageNode.commands.append(vmodel.expand(arguments))
+            util_create_and_add_refNode_for_variable(packageName+"_FOUND", findPackageNode)
+
+        # include( < file | module > [OPTIONAL][RESULT_VARIABLE < VAR >]
+        #          [NO_POLICY_SCOPE])
+        elif commandId == 'include':
+            commandNode = CustomCommandNode("include_{}".format(vmodel.getNextCounter()))
+            if 'RESULT_VARIABLE' in arguments:
+                varIndex = arguments.index('RESULT_VARIABLE')
+                arguments.pop(varIndex) # This is RESULT_VAR
+                util_create_and_add_refNode_for_variable(arguments.pop(varIndex), commandNode,
+                                                         relatedProperty='RESULT_VARIABLE')
+            commandNode.commands.append(vmodel.expand(arguments))
+            vmodel.nodes.append(util_handleConditions(commandNode, commandNode.getName()))
 
         elif commandId == 'find_file':
             variableName = arguments.pop(0)
@@ -1253,7 +1286,7 @@ class CMakeExtractorListener(CMakeListener):
             fileCommand(arguments)
 
         elif commandId == 'target_include_directories':
-            pass
+            raise Exception("FORGOT_TO_IMPLEMENT!")
 
         elif commandId == 'add_compile_options':
             addCompileOptionsCommand(arguments)

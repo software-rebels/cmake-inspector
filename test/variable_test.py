@@ -1270,6 +1270,86 @@ class TestVariableDefinitions(unittest.TestCase):
                          " ".join(getFlattedArguments(self.vmodel.DIRECTORY_PROPERTIES.getKey('LINK_DIRECTORIES')
                                                       .getChildren()[0])))
 
+    def test_find_library_without_condition(self):
+        text = """
+        find_library(Magick++_LIBRARY
+              NAMES Magick++
+              PATHS /libraries
+        )
+        """
+        self.runTool(text)
+        foundVar = self.lookup.getKey('${Magick++_LIBRARY}')
+        notFoundVar = self.lookup.getKey('${Magick++_LIBRARY-NOTFOUND}')
+        commandNode = foundVar.getPointTo()
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual(commandNode, notFoundVar.getPointTo())
+        self.assertEqual("NAMES Magick++ PATHS /libraries",
+                         " ".join(getFlattedArguments(commandNode.commands[0])))
+
+    def test_find_package_without_condition(self):
+        text = """
+        find_package(Foo CONFIG REQUIRED)
+        """
+        self.runTool(text)
+        foundVar = self.lookup.getKey("${Foo_FOUND}")
+        commandNode = foundVar.getPointTo()
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual("Foo CONFIG REQUIRED", " ".join(getFlattedArguments(commandNode.commands[0])))
+
+    def test_find_file_without_condition(self):
+        text = """
+        find_path (Magick++_LIBRARY Magick++ /files)
+        """
+        self.runTool(text)
+        foundVar = self.lookup.getKey('${Magick++_LIBRARY}')
+        notFoundVar = self.lookup.getKey('${Magick++_LIBRARY-NOTFOUND}')
+        commandNode = foundVar.getPointTo()
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual(commandNode, notFoundVar.getPointTo())
+        self.assertEqual("Magick++ /files",
+                         " ".join(getFlattedArguments(commandNode.commands[0])))
+
+    def test_find_program_without_condition(self):
+        text = """
+        find_program(Magick++_LIBRARY Magick++ /files)
+        """
+        self.runTool(text)
+        foundVar = self.lookup.getKey('${Magick++_LIBRARY}')
+        notFoundVar = self.lookup.getKey('${Magick++_LIBRARY-NOTFOUND}')
+        commandNode = foundVar.getPointTo()
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual(commandNode, notFoundVar.getPointTo())
+        self.assertEqual("Magick++ /files",
+                         " ".join(getFlattedArguments(commandNode.commands[0])))
+
+    def test_include_without_condition(self):
+        text = """
+        set(foo bar)
+        include(${foo} RESULT_VARIABLE john)
+        """
+        self.runTool(text)
+        johnVar = self.lookup.getKey("${john}")
+        commandNode = johnVar.getPointTo()
+        self.assertIsInstance(commandNode, CustomCommandNode)
+        self.assertEqual("bar", commandNode.commands[0].getPointTo().getValue())
+
+    def test_simple_while_with_break_loop(self):
+        text = """
+        set(a foo)
+        set(condition TRUE)
+        while(condition)
+          set(a ${a}bar)
+          set(b mehran${a})
+        endwhile()
+        """
+        self.runTool(text)
+        self.assertIsInstance(self.lookup.getKey('${a}').pointTo, CustomCommandNode)
+        self.assertIsInstance(self.lookup.getKey('${b}').pointTo, CustomCommandNode)
+        customCommand = self.lookup.getKey('${b}').pointTo
+        self.assertIn(self.lookup.getVariableHistory('${a}')[1], customCommand.pointTo)
+        self.assertIn(self.lookup.getVariableHistory('${b}')[0], customCommand.pointTo)
+
+
 
 
 if __name__ == '__main__':
