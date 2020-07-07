@@ -221,6 +221,7 @@ def whileCommand(arguments):
     customCommand = CustomCommandNode("WHILE({})".format(util_getStringFromList(arguments)))
     vmodel.pushSystemState('while', customCommand)
     vmodel.pushCurrentLookupTable()
+    vmodel.nodeStack.append(list(vmodel.nodes))
 
 
 # We compare lookup table before while and after that. For any changed variable, or newly created one,
@@ -229,9 +230,13 @@ def whileCommand(arguments):
 def endwhileCommand():
     lastPushedLookup = vmodel.getLastPushedLookupTable()
     state, command = vmodel.popSystemState()
+    prevNodeStack = vmodel.nodeStack.pop()
+    for item in vmodel.nodes:
+        if item not in prevNodeStack:
+            command.pointTo.append(item)
     for key in lookupTable.items[-1].keys():
         if key not in lastPushedLookup.items[-1].keys() or lookupTable.getKey(key) != lastPushedLookup.getKey(key):
-            command.pointTo.append(lookupTable.getKey(key))
+            # command.pointTo.append(lookupTable.getKey(key))
             refNode = RefNode("{}_{}".format(key, vmodel.getNextCounter()), command)
             lookupTable.setKey(key, refNode)
             vmodel.nodes.append(refNode)
@@ -511,6 +516,14 @@ class CMakeExtractorListener(CMakeListener):
         global project_dir
         commandId = ctx.Identifier().getText().lower()
         arguments = [child.getText() for child in ctx.argument().getChildren() if not isinstance(child, TerminalNode)]
+
+        if vmodel.shouldRecordCommand() and commandId not in ('endfunction', 'endmacro'):
+            forEachCommands.append((commandId, arguments))
+            return
+        if vmodel.currentFunctionCommand is not None and commandId not in ('endfunction', 'endmacro'):
+            vmodel.currentFunctionCommand.append((commandId, arguments))
+            return
+
         if commandId == 'set':
             raise Exception("This should not reach to this code!!!")
 
@@ -1203,6 +1216,15 @@ class CMakeExtractorListener(CMakeListener):
         elif commandId == 'endwhile':
             endwhileCommand()
 
+        # break()
+        elif commandId == 'break':
+            breakCommand = CustomCommandNode("break_{}".format(vmodel.getNextCounter()))
+            vmodel.nodes.append(util_handleConditions(breakCommand, breakCommand.getName()))
+
+        # return()
+        elif commandId == 'return':
+            pass
+
         elif commandId == 'unset':
             variable_name = "${{{}}}".format(arguments.pop(0))
             parentScope = False
@@ -1277,10 +1299,7 @@ class CMakeExtractorListener(CMakeListener):
             addTarget(arguments, True)
 
         elif commandId == 'list':
-            if vmodel.shouldRecordCommand():
-                forEachCommands.append(('list', arguments))
-            else:
-                listCommand(arguments)
+            listCommand(arguments)
 
         elif commandId == 'file':
             fileCommand(arguments)

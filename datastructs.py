@@ -400,6 +400,8 @@ class VModel:
         self.directory_to_properties = {'.': Lookup()}
         self.DIRECTORY_PROPERTIES = self.directory_to_properties.get('.')
         self.DIRECTORY_PROPERTIES.setKey('VARIABLES', self.lookupTable.items[-1])
+        # A temp variable to keep changes between nodes
+        self.nodeStack = []
 
     def pushSystemState(self, state, properties):
         self.systemState.append((state, properties))

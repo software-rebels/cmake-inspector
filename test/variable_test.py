@@ -1339,6 +1339,7 @@ class TestVariableDefinitions(unittest.TestCase):
         set(condition TRUE)
         while(condition)
           set(a ${a}bar)
+          break()
           set(b mehran${a})
         endwhile()
         """
@@ -1348,9 +1349,10 @@ class TestVariableDefinitions(unittest.TestCase):
         customCommand = self.lookup.getKey('${b}').pointTo
         self.assertIn(self.lookup.getVariableHistory('${a}')[1], customCommand.pointTo)
         self.assertIn(self.lookup.getVariableHistory('${b}')[0], customCommand.pointTo)
-
+        self.assertEqual(self.vmodel.findNode('break_4'), customCommand.pointTo[1])
 
 
 
 if __name__ == '__main__':
     unittest.main()
+
