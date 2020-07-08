@@ -1351,6 +1351,16 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertIn(self.lookup.getVariableHistory('${b}')[0], customCommand.pointTo)
         self.assertEqual(self.vmodel.findNode('break_4'), customCommand.pointTo[1])
 
+    def test_target_include_directory_without_condition(self):
+        text = """
+        add_library(foo bar.cxx)
+        target_include_directories(foo PRIVATE /private PUBLIC /public INTERFACE /interface)
+        """
+        self.runTool(text)
+        targetNode = self.lookup.getKey("t:foo")
+        self.assertEqual("/private /public", " ".join(getFlattedArguments(targetNode.includeDirectories)))
+        self.assertEqual("/public /interface", " ".join(getFlattedArguments(targetNode.interfaceIncludeDirectories)))
+
 
 
 if __name__ == '__main__':

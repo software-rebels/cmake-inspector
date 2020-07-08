@@ -375,6 +375,7 @@ def addTarget(arguments, isExecutable=True):
         targetNode = TargetNode(targetName, nextNode)
         targetNode.setDefinition(vmodel.DIRECTORY_PROPERTIES.getKey('COMPILE_OPTIONS'))
         targetNode.linkLibraries = vmodel.DIRECTORY_PROPERTIES.getKey('LINK_LIBRARIES')
+        targetNode.includeDirectories = vmodel.DIRECTORY_PROPERTIES.getKey('INCLUDE_DIRECTORIES')
         lookupTable.setKey(lookupTableName, targetNode)
         vmodel.nodes.append(targetNode)
 
@@ -574,7 +575,7 @@ class CMakeExtractorListener(CMakeListener):
             packageName = arguments[0]
             findPackageNode = CustomCommandNode("find_package_{}".format(vmodel.getNextCounter()))
             findPackageNode.commands.append(vmodel.expand(arguments))
-            util_create_and_add_refNode_for_variable(packageName+"_FOUND", findPackageNode)
+            util_create_and_add_refNode_for_variable(packageName + "_FOUND", findPackageNode)
 
         # include( < file | module > [OPTIONAL][RESULT_VARIABLE < VAR >]
         #          [NO_POLICY_SCOPE])
@@ -582,7 +583,7 @@ class CMakeExtractorListener(CMakeListener):
             commandNode = CustomCommandNode("include_{}".format(vmodel.getNextCounter()))
             if 'RESULT_VARIABLE' in arguments:
                 varIndex = arguments.index('RESULT_VARIABLE')
-                arguments.pop(varIndex) # This is RESULT_VAR
+                arguments.pop(varIndex)  # This is RESULT_VAR
                 util_create_and_add_refNode_for_variable(arguments.pop(varIndex), commandNode,
                                                          relatedProperty='RESULT_VARIABLE')
             commandNode.commands.append(vmodel.expand(arguments))
@@ -1304,8 +1305,62 @@ class CMakeExtractorListener(CMakeListener):
         elif commandId == 'file':
             fileCommand(arguments)
 
+        # target_include_directories( < target > [SYSTEM][BEFORE]
+        #         < INTERFACE | PUBLIC | PRIVATE > [items1...]
+        #       [ < INTERFACE | PUBLIC | PRIVATE > [items2...]...])
         elif commandId == 'target_include_directories':
-            raise Exception("FORGOT_TO_IMPLEMENT!")
+            targetName = arguments.pop(0)
+            targetNode = lookupTable.getKey("t:{}".format(targetName))
+            assert isinstance(targetNode, TargetNode)
+            includeDirectories = []
+            interfaceIncludeDirectories = []
+            interfaceSystemIncludeDirectories = []
+            shouldPrepended = False
+            systemArg = False
+
+            if 'BEFORE' in arguments:
+                shouldPrepended = True
+                arguments.pop(arguments.index('BEFORE'))
+
+            if 'SYSTEM' in arguments:
+                systemArg = True
+                arguments.pop(arguments.index('SYSTEM'))
+
+            while arguments:
+                if arguments[0] in ('INTERFACE', 'PUBLIC', 'PRIVATE'):
+                    scope = arguments.pop(0)
+                item = arguments.pop(0)
+                if systemArg and scope.upper() in ('PUBLIC', 'INTERFACE'):
+                    interfaceSystemIncludeDirectories.append(item)
+                    continue
+                if scope.upper() in ('PRIVATE', 'PUBLIC'):
+                    includeDirectories.append(item)
+                if scope.upper() in ('INTERFACE', 'PUBLIC'):
+                    interfaceIncludeDirectories.append(item)
+
+            def handleProperty(propertyList, targetProperty):
+                if propertyList:
+                    extendedProperties = vmodel.expand(propertyList, True)
+                    assert isinstance(extendedProperties, ConcatNode)
+                    if getattr(targetNode, targetProperty) is None:
+                        setattr(targetNode, targetProperty, ConcatNode("{}_{}_{}"
+                                                                          .format(targetNode.getName(),
+                                                                                  targetProperty,
+                                                                                  vmodel.getNextCounter())))
+                    if shouldPrepended:
+                        extendedProperties.listOfNodes = extendedProperties.listOfNodes + \
+                                                         getattr(targetNode, targetProperty).listOfNodes
+                    else:
+                        extendedProperties.listOfNodes = getattr(targetNode, targetProperty).listOfNodes + \
+                                                         extendedProperties.listOfNodes
+                    setattr(targetNode, targetProperty,
+                            util_handleConditions(extendedProperties,
+                                                  extendedProperties.name,
+                                                  getattr(targetNode, targetProperty)))
+
+            handleProperty(includeDirectories, 'includeDirectories')
+            handleProperty(interfaceIncludeDirectories, 'interfaceIncludeDirectories')
+            handleProperty(interfaceSystemIncludeDirectories, 'interfaceSystemIncludeDirectories')
 
         elif commandId == 'add_compile_options':
             addCompileOptionsCommand(arguments)
@@ -1318,7 +1373,6 @@ class CMakeExtractorListener(CMakeListener):
         # link_directories(directory1 directory2 ...)
         elif commandId == 'link_directories':
             addLinkDirectories(arguments)
-
 
         elif commandId == 'target_compile_definitions':
             # This command add a definition to the current ones. So we should add it in all the possible paths
