@@ -1361,6 +1361,35 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual("/private /public", " ".join(getFlattedArguments(targetNode.includeDirectories)))
         self.assertEqual("/public /interface", " ".join(getFlattedArguments(targetNode.interfaceIncludeDirectories)))
 
+    def test_foreach_list_without_condition(self):
+        text = """
+        set(lstVar foo bar john doe)
+        set(lstvarb mehran meidani)
+        set(listVar 1 2)
+        foreach(var IN LISTS lstVar lstvarb ITEMS "Sample Item")
+          list(APPEND listVar ${var})
+        endforeach(var)
+        """
+        self.runTool(text)
+        self.vmodel.export()
+
+    def test_foreach_list_with_option_and_condition(self):
+        text = """
+        option(op1 Yes)
+        if(op1)
+           set(varA foo bar)
+        else()
+           set(varA john doe)
+        endif()
+        set(listVar 1 2)
+        foreach(var IN LISTS varA)
+          list(APPEND listVar ${var})
+        endforeach(var)
+        """
+        self.runTool(text)
+        self.vmodel.export()
+
+
 
 
 if __name__ == '__main__':

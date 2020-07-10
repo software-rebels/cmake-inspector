@@ -518,7 +518,7 @@ class CMakeExtractorListener(CMakeListener):
         commandId = ctx.Identifier().getText().lower()
         arguments = [child.getText() for child in ctx.argument().getChildren() if not isinstance(child, TerminalNode)]
 
-        if vmodel.shouldRecordCommand() and commandId not in ('endfunction', 'endmacro'):
+        if vmodel.shouldRecordCommand() and commandId not in ('endforeach',):
             forEachCommands.append((commandId, arguments))
             return
         if vmodel.currentFunctionCommand is not None and commandId not in ('endfunction', 'endmacro'):
@@ -848,7 +848,7 @@ class CMakeExtractorListener(CMakeListener):
         #               prop2 value2 ...)
         # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # set_tests_properties(test1 [test2...] PROPERTIES prop1 value1 prop2 value2)
-        # TODO: we have different implementation
+        # TODO: we have different implementation for these commands and set_directory_properties
         elif commandId in ('set_property', 'set_source_files_properties',
                            'set_target_properties', 'set_tests_properties'):
             commandNode = CustomCommandNode("{}_{}".format(commandId, vmodel.getNextCounter()))
@@ -1264,12 +1264,6 @@ class CMakeExtractorListener(CMakeListener):
                     if commandSig == 'LISTS':
                         while forEachArguments and forEachArguments[0] != 'ITEMS':
                             listName = forEachArguments.pop(0)
-                            # variableObject = lookupTable.getKey('${{{}}}'.format(listName))
-                            # possibleValues = variableObject.getTerminalNodes()
-                            # for item in possibleValues:
-                            #     for commandType, commandArgs in forEachCommands:
-                            #         newArgs = [i.replace(forEachVariableName, item.getValue()) for i in commandArgs]
-                            #         processCommand(commandType, newArgs)
                             listFullName = '${{{}}}'.format(listName)
                             for commandType, commandArgs in forEachCommands:
                                 newArgs = [i.replace(forEachVariableName, listFullName) for i in commandArgs]
@@ -1443,10 +1437,18 @@ class CMakeExtractorListener(CMakeListener):
             else:
                 targetNode.linkLibraries = linkLibraries
 
+        # project( < PROJECT - NAME > [ < language - name > ...])
+        elif commandId == 'project':
+            projectName = arguments.pop(0)
+            vmodel.langs = list(arguments)
+
         else:
             customFunction = vmodel.functions.get(commandId)
             if customFunction is None:
-                raise Exception('unknown command!')
+                customCommand = CustomCommandNode("{}_{}".format(commandId, vmodel.getNextCounter()))
+                customCommand.commands.append(vmodel.expand(arguments))
+                vmodel.nodes.append(util_handleConditions(customCommand, customCommand.getName()))
+                return
             if not customFunction.get('isMacro'):
                 vmodel.lookupTable.newScope()
             functionArguments = customFunction.get('arguments')
@@ -1474,7 +1476,7 @@ def main(argv):
     global project_dir
     project_dir = argv[1]
     parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
-    vmodel.checkIntegrity()
+    # vmodel.checkIntegrity()
     vmodel.export(False)
     # !!!!!!!!!!!!!! This is for test
     # targetNode = vmodel.findNode("zlib")
