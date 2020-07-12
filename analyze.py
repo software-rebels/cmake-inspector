@@ -1,9 +1,20 @@
-from datastructs import VModel
+from datastructs import VModel, Lookup, RefNode
 from pydriller import RepositoryMining
 import itertools
 import csv
 
 import matplotlib.pyplot as plt
+
+
+def printInputVariablesAndOptions(vmodel: VModel, lookup: Lookup):
+    print("#### Input variables are:")
+    for item in vmodel.getNodeSet():
+        if isinstance(item, RefNode):
+            if not item.getChildren():
+                print(item.getName())
+    print("#### Input options are:")
+    for option in vmodel.options:
+        print(option)
 
 
 def doChangeAnalysis(fileNode):
