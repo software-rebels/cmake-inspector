@@ -200,6 +200,25 @@ class RefNode(Node):
         return self.pointTo.getName()
 
 
+class OptionNode(Node):
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.depends = None
+        self.description = None
+        self.default = None
+
+    def getPointTo(self) -> Node:
+        return self.depends
+
+    def getChildren(self):
+        if self.depends:
+            return [self.depends]
+        return None
+
+    def getValue(self):
+        return self.getName()
+
+
 class CustomCommandNode(Node):
     def __init__(self, name: str):
         super().__init__(name)
@@ -546,7 +565,7 @@ class VModel:
                 node = self.lookupTable.getKey("${{{}}}".format(variableName[0]))
                 # Create an empty RefNode for variables which are not defined like ${CMAKE_CURRENT_BINARY_DIR}
                 if not node:
-                    node = RefNode("{}".format(variableName[0]), None)
+                    node = RefNode("{}_{}".format(variableName[0], self.getNextCounter()), None)
                     self.lookupTable.setKey("${{{}}}".format(variableName[0]), node)
                 if not isinstance(node, RefNode):
                     raise Exception("NOT_IMPLEMENTED")
@@ -812,6 +831,8 @@ def getNodeShape(node: Node):
         return 'component'
     if isinstance(node, RefNode):
         return 'cds'
+    if isinstance(node, OptionNode):
+        return 'larrow'
     return 'ellipse'
 
 

@@ -10,7 +10,7 @@ grammar CMake;
 cmakefile
 	: commands* EOF
 	;
-commands: ifCommand|setCommand|optionCommand|command_invocation;
+commands: ifCommand|optionCommand|command_invocation;
 
 ifCommand
 	: ifStatement (ifBody=commands)* (elseIfStatement (elseIfBody=commands)*)* (elseStatement (elseBody=commands)*)? endIfStatement
@@ -30,10 +30,6 @@ elseStatement
 
 endIfStatement
 	: 'endif' argument
-	;
-
-setCommand
-	: 'set' argument
 	;
 
 optionCommand

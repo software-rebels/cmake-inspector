@@ -12,7 +12,7 @@ from grammar.CMakeParser import CMakeParser
 from grammar.CMakeListener import CMakeListener
 # Our own library
 from datastructs import RefNode, TargetNode, VModel, Lookup, SelectNode, ConcatNode, \
-    CustomCommandNode, TestNode, LiteralNode, flattenAlgorithm, Node
+    CustomCommandNode, TestNode, LiteralNode, flattenAlgorithm, Node, OptionNode
 from analyze import doGitAnalysis
 from analyze import printInputVariablesAndOptions
 
@@ -222,6 +222,8 @@ def whileCommand(arguments):
     customCommand = CustomCommandNode("WHILE({})".format(util_getStringFromList(arguments)))
     vmodel.pushSystemState('while', customCommand)
     vmodel.pushCurrentLookupTable()
+    # We want to show the dependency between while command and newly created nodes. We compare nodes before and after
+    # while loop and connect while command node to them.
     vmodel.nodeStack.append(list(vmodel.nodes))
 
 
@@ -422,19 +424,15 @@ def addTarget(arguments, isExecutable=True):
         targetNode.sources = newSelectNode
 
 
-# Current strategy for foreach loop does not support nested foreach! If this is a case, we should change
-# create a activation record style class for each foreach command
-forEachVariableName = None
-forEachArguments = []
-forEachCommands = []
-
-
+# Very similar to while command
 def forEachCommand(arguments):
-    global forEachVariableName
-    global forEachArguments
-    forEachVariableName = "${{{}}}".format(arguments.pop(0))
-    forEachArguments = arguments
-    vmodel.enableRecordCommands()
+    customCommand = CustomCommandNode("foreach_{}".format(vmodel.getNextCounter()))
+    customCommand.commands.append(vmodel.expand(arguments))
+    vmodel.pushSystemState('foreach', customCommand)
+    vmodel.pushCurrentLookupTable()
+    # We want to show the dependency between foreach command and newly created nodes. We compare nodes before and after
+    # while loop and connect while command node to them.
+    vmodel.nodeStack.append(list(vmodel.nodes))
 
 
 def processCommand(commandId, args):
@@ -452,16 +450,6 @@ class CMakeExtractorListener(CMakeListener):
         global lookupTable
         vmodel = VModel.getInstance()
         lookupTable = Lookup.getInstance()
-
-    def enterSetCommand(self, ctx: CMakeParser.SetCommandContext):
-        # Extract arguments
-        arguments = [child.getText() for child in ctx.argument().getChildren() if not isinstance(child, TerminalNode)]
-        if vmodel.shouldRecordCommand():
-            forEachCommands.append(('set', arguments))
-        elif vmodel.currentFunctionCommand is not None:
-            vmodel.currentFunctionCommand.append(('set', arguments))
-        else:
-            setCommand(arguments)
 
     def enterIfCommand(self, ctx: CMakeParser.IfCommandContext):
         vmodel.setInsideIf()
@@ -492,7 +480,6 @@ class CMakeExtractorListener(CMakeListener):
                 vmodel.popSystemState()
                 elseCondition.append('OR')
             else:
-                vmodel.popSystemState()
                 break
 
         vmodel.popLookupTable()
@@ -503,7 +490,12 @@ class CMakeExtractorListener(CMakeListener):
         vmodel.setOutsideIf()
         vmodel.ifConditions.pop()
         vmodel.popLookupTable()
-        vmodel.popSystemState()
+        # In case of an if statement without else command, the state of the if itself and multiple else ifs
+        # still exists. We should keep popping until we reach to the if
+        while True:
+            state, condition = vmodel.popSystemState()
+            if state == 'if':
+                break
 
     def enterOptionCommand(self, ctx: CMakeParser.OptionCommandContext):
         arguments = [child.getText() for child in ctx.argument().getChildren() if not isinstance(child, TerminalNode)]
@@ -513,21 +505,24 @@ class CMakeExtractorListener(CMakeListener):
             arguments.pop(0)  # Remove description from the option command
             optionInitialValue = arguments.pop(0)
         vmodel.addOption(optionName, optionInitialValue)
+        optionNode = OptionNode(optionName)
+        optionNode.default = optionInitialValue
+        vmodel.nodes.append(util_handleConditions(optionNode, optionNode.name))
 
     def enterCommand_invocation(self, ctx: CMakeParser.Command_invocationContext):
         global project_dir
         commandId = ctx.Identifier().getText().lower()
         arguments = [child.getText() for child in ctx.argument().getChildren() if not isinstance(child, TerminalNode)]
 
-        if vmodel.shouldRecordCommand() and commandId not in ('endforeach',):
-            forEachCommands.append((commandId, arguments))
-            return
         if vmodel.currentFunctionCommand is not None and commandId not in ('endfunction', 'endmacro'):
             vmodel.currentFunctionCommand.append((commandId, arguments))
             return
 
         if commandId == 'set':
-            raise Exception("This should not reach to this code!!!")
+            if vmodel.currentFunctionCommand is not None:
+                vmodel.currentFunctionCommand.append(('set', arguments))
+            else:
+                setCommand(arguments)
 
         # add_definitions(-DFOO -DBAR ...)
         elif commandId == 'add_definitions':
@@ -587,8 +582,20 @@ class CMakeExtractorListener(CMakeListener):
                 arguments.pop(varIndex)  # This is RESULT_VAR
                 util_create_and_add_refNode_for_variable(arguments.pop(varIndex), commandNode,
                                                          relatedProperty='RESULT_VARIABLE')
-            commandNode.commands.append(vmodel.expand(arguments))
-            vmodel.nodes.append(util_handleConditions(commandNode, commandNode.getName()))
+
+            systemState = None
+            stateProperty = None
+            if vmodel.getCurrentSystemState():
+                systemState, stateProperty = vmodel.getCurrentSystemState()
+
+            args = vmodel.expand(arguments)
+            commandNode.commands.append(args)
+            # We execute the command if we can find the CMake file and there is no condition to execute it
+            if os.path.exists(os.path.join(project_dir, args.getValue())) and systemState is None:
+                parseFile(os.path.join(project_dir, args.getValue()))
+            else:
+                print("No!")
+                vmodel.nodes.append(util_handleConditions(commandNode, commandNode.getName()))
 
         elif commandId == 'find_file':
             variableName = arguments.pop(0)
@@ -1238,49 +1245,22 @@ class CMakeExtractorListener(CMakeListener):
             forEachCommand(arguments)
 
         elif commandId == 'endforeach':
-            vmodel.disableRecordCommands()
-
-            # Whether we should use range mode or continue as variables
-            if 'RANGE' in forEachArguments:
-                start = 0
-                step = 1
-                # single number, the range will have elements 0 to “total”.
-                if len(forEachArguments) == 2:
-                    stop = forEachArguments[1]
-                elif len(forEachArguments) == 3:
-                    start = forEachArguments[1]
-                    stop = forEachArguments[2]
-                elif len(forEachArguments) == 4:
-                    start = forEachArguments[1]
-                    stop = forEachArguments[2]
-                    step = forEachArguments[3]
-                for index in range(start, stop, step):
-                    for commandType, commandArgs in forEachCommands:
-                        newArgs = [i.replace(forEachVariableName, index) for i in commandArgs]
-                        processCommand(commandType, newArgs)
-            elif 'IN' in forEachArguments:
-                forEachArguments.pop(0)
-                while forEachArguments:
-                    commandSig = forEachArguments.pop(0)
-                    if commandSig == 'LISTS':
-                        while forEachArguments and forEachArguments[0] != 'ITEMS':
-                            listName = forEachArguments.pop(0)
-                            listFullName = '${{{}}}'.format(listName)
-                            for commandType, commandArgs in forEachCommands:
-                                newArgs = [i.replace(forEachVariableName, listFullName) for i in commandArgs]
-                                processCommand(commandType, newArgs)
-                    if commandSig == 'ITEMS':
-                        while forEachArguments:
-                            item = forEachArguments.pop(0)
-                            for commandType, commandArgs in forEachCommands:
-                                newArgs = [i.replace(forEachVariableName, item) for i in commandArgs]
-                                processCommand(commandType, newArgs)
-
-            else:
-                for arg in forEachArguments:
-                    for commandType, commandArgs in forEachCommands:
-                        newArgs = [i.replace(forEachVariableName, arg) for i in commandArgs]
-                        processCommand(commandType, newArgs)
+            lastPushedLookup = vmodel.getLastPushedLookupTable()
+            state, command = vmodel.popSystemState()
+            forEachVariableName = command.commands[0].getChildren()[0].getValue()
+            prevNodeStack = vmodel.nodeStack.pop()
+            for item in vmodel.nodes:
+                if item not in prevNodeStack:
+                    command.depends.append(item)
+            for key in lookupTable.items[-1].keys():
+                if key not in lastPushedLookup.items[-1].keys() or \
+                        lookupTable.getKey(key) != lastPushedLookup.getKey(key):
+                    # We don't want to create a ref node for the variable that is the argument of foreach command
+                    if key == "${{{}}}".format(forEachVariableName):
+                        continue
+                    refNode = RefNode("{}_{}".format(key, vmodel.getNextCounter()), command)
+                    lookupTable.setKey(key, refNode)
+                    vmodel.nodes.append(refNode)
 
         elif commandId == 'add_subdirectory':
             tempProjectDir = project_dir
@@ -1478,7 +1458,7 @@ def main(argv):
     project_dir = argv[1]
     parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
     # vmodel.checkIntegrity()
-    # vmodel.export(False)
+    vmodel.export(False)
     # !!!!!!!!!!!!!! This is for test
     # targetNode = vmodel.findNode("zlib")
     # sampleFile = vmodel.findNode("contrib/masmx86/inffas32.asm")

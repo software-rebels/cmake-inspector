@@ -71,15 +71,6 @@ class CMakeListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by CMakeParser#setCommand.
-    def enterSetCommand(self, ctx:CMakeParser.SetCommandContext):
-        pass
-
-    # Exit a parse tree produced by CMakeParser#setCommand.
-    def exitSetCommand(self, ctx:CMakeParser.SetCommandContext):
-        pass
-
-
     # Enter a parse tree produced by CMakeParser#optionCommand.
     def enterOptionCommand(self, ctx:CMakeParser.OptionCommandContext):
         pass

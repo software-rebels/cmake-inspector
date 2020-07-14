@@ -1387,8 +1387,16 @@ class TestVariableDefinitions(unittest.TestCase):
         endforeach(var)
         """
         self.runTool(text)
-        self.vmodel.export()
 
+    def test_foreach_simple_usage(self):
+        text = """
+        set(foo bar john doe)
+        foreach(argument ${foo})
+          set(bar ${argument})
+        endforeach()
+        """
+        self.runTool(text)
+        self.vmodel.export()
 
 
 
