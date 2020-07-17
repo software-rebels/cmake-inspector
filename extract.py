@@ -66,6 +66,7 @@ def util_handleConditions(nextNode, newNodeName, prevNode=None):
         selectNodeName = "SELECT_{}_{}_{}".format(newNodeName,
                                                   util_getStringFromList(stateProperty), vmodel.getNextCounter())
         newSelectNode = SelectNode(selectNodeName, stateProperty)
+        newSelectNode.args = vmodel.expand(stateProperty)
 
         if systemState == 'if' or systemState == 'elseif':
             newSelectNode.setTrueNode(nextNode)
@@ -454,20 +455,52 @@ class CMakeExtractorListener(CMakeListener):
     def enterIfCommand(self, ctx: CMakeParser.IfCommandContext):
         vmodel.setInsideIf()
         vmodel.pushCurrentLookupTable()
-        vmodel.ifConditions.append(" ".join([argument.getText() for argument in ctx.ifStatement().argument().children if
-                                             not isinstance(argument, TerminalNode)]))
+        arguments = [argument.getText() for argument in ctx.ifStatement().argument().children if
+                                             not isinstance(argument, TerminalNode)]
+        processedArgs = []
 
-        vmodel.pushSystemState('if', ([argument.getText() for argument in ctx.ifStatement().argument().children]))
+        reservedWords = [
+            'NOT', 'AND', 'OR', 'COMMAND', 'POLICY', 'TARGET', 'EXISTS', 'IS_NEWER_THAN', 'IS_DIRECTORY',
+            'IS_SYMLINK', 'IS_ABSOLUTE', 'MATCHES', 'LESS', 'GREATER', 'EQUAL', 'STRLESS', 'STRGREATER',
+            'STREQUAL', 'VERSION_LESS', 'VERSION_EQUAL', 'VERSION_GREATER', 'DEFINED',
+            'ON', 'OFF', 'YES', 'NO', 'TRUE', 'FALSE'
+        ]
+        vmodel.ifConditions.append(" ".join(arguments))
+        for arg in [argument for argument in ctx.ifStatement().argument().children if
+                                             not isinstance(argument, TerminalNode)]:
+            if arg.getChild(0).symbol.type == CMakeParser.Quoted_argument or \
+                    arg.getText().lower() in reservedWords or \
+                    arg.getText().isnumeric():
+                processedArgs.append(arg.getText())
+            else:
+                processedArgs.append("${{{}}}".format(arg.getText()))
+
+        vmodel.pushSystemState('if', processedArgs)
 
     def enterElseIfStatement(self, ctx: CMakeParser.ElseIfStatementContext):
         vmodel.popLookupTable()
         vmodel.pushCurrentLookupTable()
         state, condition = vmodel.getCurrentSystemState()
+
+        reservedWords = [
+            'NOT', 'AND', 'OR', 'COMMAND', 'POLICY', 'TARGET', 'EXISTS', 'IS_NEWER_THAN', 'IS_DIRECTORY',
+            'IS_SYMLINK', 'IS_ABSOLUTE', 'MATCHES', 'LESS', 'GREATER', 'EQUAL', 'STRLESS', 'STRGREATER',
+            'STREQUAL', 'VERSION_LESS', 'VERSION_EQUAL', 'VERSION_GREATER', 'DEFINED',
+            'ON', 'OFF', 'YES', 'NO', 'TRUE', 'FALSE'
+        ]
+        elseIfCondition = []
+        for arg in [argument for argument in ctx.argument().children if
+                    not isinstance(argument, TerminalNode)]:
+            if arg.getChild(0).symbol.type == CMakeParser.Quoted_argument or \
+                    arg.getText().lower() in reservedWords or \
+                    arg.getText().isnumeric():
+                elseIfCondition.append(arg.getText())
+            else:
+                elseIfCondition.append("${{{}}}".format(arg.getText()))
         # We create a new condition list. Add previous condition (which drives from and if or prev else if)
         # and NOT it and AND it with our condition. This new list will later be parsed to evaluate the query.
         # We keep previous condition for else statement
-        condition = ['((', 'NOT'] + condition + [')', 'AND'] + [argument.getText() for argument in
-                                                                ctx.argument().children] + [')']
+        condition = ['((', 'NOT'] + condition + [')', 'AND'] + elseIfCondition + [')']
         vmodel.pushSystemState('elseif', condition)
 
     def enterElseStatement(self, ctx: CMakeParser.ElseStatementContext):
@@ -507,7 +540,7 @@ class CMakeExtractorListener(CMakeListener):
         vmodel.addOption(optionName, optionInitialValue)
         optionNode = OptionNode(optionName)
         optionNode.default = optionInitialValue
-        vmodel.nodes.append(util_handleConditions(optionNode, optionNode.name))
+        util_create_and_add_refNode_for_variable(optionName, optionNode)
 
     def enterCommand_invocation(self, ctx: CMakeParser.Command_invocationContext):
         global project_dir
@@ -1422,6 +1455,28 @@ class CMakeExtractorListener(CMakeListener):
         elif commandId == 'project':
             projectName = arguments.pop(0)
             vmodel.langs = list(arguments)
+
+        elif commandId == 'cmake_dependent_option':
+            optionName = arguments.pop(0)
+            description = arguments.pop(0)
+            initialValue = arguments.pop(0)
+            depends = arguments.pop(0)
+
+            depends = depends.replace('"', '')
+            depends = depends.replace(';', ' ')
+            depends = depends.split(' ')
+
+            for idx, item in enumerate(depends):
+                if lookupTable.getKey("${{{}}}".format(item)):
+                    depends[idx] = "${{{}}}".format(item)
+
+            optionNode = OptionNode(optionName)
+            optionNode.description = description
+            optionNode.default = True if initialValue.lower() == 'ON' else False
+            optionNode.dependentOption = True
+            optionNode.depends = vmodel.expand(depends)
+
+            util_create_and_add_refNode_for_variable(optionName, optionNode)
 
         else:
             customFunction = vmodel.functions.get(commandId)

@@ -5,7 +5,7 @@ from extract import CMakeExtractorListener
 from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
 from datastructs import VModel, Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, flattenAlgorithm, \
-    CustomCommandNode, getFlattedArguments, TargetNode, TestNode
+    CustomCommandNode, getFlattedArguments, TargetNode, TestNode, OptionNode
 
 
 class TestVariableDefinitions(unittest.TestCase):
@@ -198,7 +198,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual("john", self.lookup.getKey("${var}").getPointTo().trueNode.getValue())
         self.assertEqual(self.lookup.getVariableHistory("${var}")[1],
                          self.lookup.getKey("${var}").getPointTo().falseNode)
-        self.assertEqual('(( NOT ( 0 ) ) AND ( 1 ) )', self.lookup.getKey("${var}").getPointTo().condition)
+        self.assertEqual('(( NOT 0 ) AND 1 )', self.lookup.getKey("${var}").getPointTo().condition)
 
     def test_variable_in_if_else_if_and_else_statements(self):
         text = """
@@ -216,7 +216,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual("doe", self.lookup.getKey("${var}").getPointTo().falseNode.getValue())
         self.assertEqual(self.lookup.getVariableHistory("${var}")[2],
                          self.lookup.getKey("${var}").getPointTo().trueNode)
-        self.assertEqual('(( NOT ( 0 ) ) AND ( 1 ) ) OR ( 0 )', self.lookup.getKey("${var}").getPointTo().condition)
+        self.assertEqual('(( NOT 0 ) AND 1 ) OR 0', self.lookup.getKey("${var}").getPointTo().condition)
 
     def test_list_length_on_if_statements(self):
         text = """
@@ -1361,6 +1361,56 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual("/private /public", " ".join(getFlattedArguments(targetNode.includeDirectories)))
         self.assertEqual("/public /interface", " ".join(getFlattedArguments(targetNode.interfaceIncludeDirectories)))
 
+    def test_if_condition_on_variable_that_mutates(self):
+        text = """
+        set(foo ON)
+        if(foo)
+            set(john doe)
+        endif(foo)
+        set(foo OFF)
+        
+        if(foo)
+            set(john doe2)
+        endif(foo)
+        """
+        self.runTool(text)
+        johnVersions = self.lookup.getVariableHistory('${john}')
+        fooVersions = self.lookup.getVariableHistory('${foo}')
+        firstSelectNode = johnVersions[0].getPointTo()
+        secondSelectNode = johnVersions[1].getPointTo()
+        self.assertEqual(fooVersions[0], firstSelectNode.args)
+        self.assertEqual(fooVersions[1], secondSelectNode.args)
+
+    def test_if_condition_on_option(self):
+        text = """
+        option(foo "something" ON)
+        if(foo)
+            set(john doe)
+        endif()
+        """
+        self.runTool(text)
+        fooVar = self.lookup.getKey('${foo}')
+        johnVar = self.lookup.getKey('${john}')
+        optionNode = fooVar.getPointTo()
+        self.assertIsInstance(optionNode, OptionNode)
+        self.assertEqual(fooVar, johnVar.getPointTo().args)
+
+    def test_dependent_option(self):
+        text = """
+        option(USE_BAR "something" ON)
+        option(USE_ZOT "something2" OFF)
+        CMAKE_DEPENDENT_OPTION(USE_FOO "Use Foo" ON
+                       "USE_BAR;NOT USE_ZOT" OFF)
+        """
+        self.runTool(text)
+        fooVar = self.lookup.getKey("${USE_FOO}")
+        barVar = self.lookup.getKey("${USE_BAR}")
+        zotVar = self.lookup.getKey("${USE_ZOT}")
+        fooOption = fooVar.getPointTo()
+        self.assertIsInstance(fooOption, OptionNode)
+        self.assertEqual(barVar, fooOption.depends.getChildren()[0])
+        self.assertEqual(zotVar, fooOption.depends.getChildren()[2])
+
     def test_foreach_list_without_condition(self):
         text = """
         set(lstVar foo bar john doe)
@@ -1371,7 +1421,7 @@ class TestVariableDefinitions(unittest.TestCase):
         endforeach(var)
         """
         self.runTool(text)
-        self.vmodel.export()
+
 
     def test_foreach_list_with_option_and_condition(self):
         text = """
@@ -1396,7 +1446,7 @@ class TestVariableDefinitions(unittest.TestCase):
         endforeach()
         """
         self.runTool(text)
-        self.vmodel.export()
+
 
 
 

@@ -203,9 +203,10 @@ class RefNode(Node):
 class OptionNode(Node):
     def __init__(self, name: str):
         super().__init__(name)
-        self.depends = None
-        self.description = None
-        self.default = None
+        self.depends: Optional[Node] = None
+        self.description: Optional[str] = None
+        self.default: bool = False
+        self.dependentOption: Optional[bool] = False
 
     def getPointTo(self) -> Node:
         return self.depends
@@ -278,6 +279,7 @@ class SelectNode(Node):
         self.falseNode: Optional[Node] = None
         self.conditionList = copy.deepcopy(condition)
         self.condition = " ".join(condition)
+        self.args = None
 
     def getNodeName(self):
         return "SELECT\n" + self.condition
@@ -294,6 +296,8 @@ class SelectNode(Node):
             result.append(self.trueNode)
         if self.falseNode:
             result.append(self.falseNode)
+        if self.args:
+            result.append(self.args)
         return result
 
 
@@ -863,8 +867,14 @@ def getEdgeLabel(firstNode: Node, secondNode: Node):
     if isinstance(firstNode, SelectNode):
         if firstNode.trueNode == secondNode:
             return "TRUE"
-        else:
+        elif firstNode.falseNode == secondNode:
             return "FALSE"
+        elif firstNode.args == secondNode:
+            return "CONDITION"
+    if isinstance(firstNode, OptionNode):
+        if firstNode.depends == secondNode:
+            return 'DEPENDS'
+
     if isinstance(firstNode, RefNode):
         return firstNode.relatedProperty
 
