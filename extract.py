@@ -1475,6 +1475,7 @@ class CMakeExtractorListener(CMakeListener):
             optionNode.default = True if initialValue.lower() == 'ON' else False
             optionNode.dependentOption = True
             optionNode.depends = vmodel.expand(depends)
+            vmodel.addOption(optionName, True if initialValue.lower() == 'ON' else False)
 
             util_create_and_add_refNode_for_variable(optionName, optionNode)
 
@@ -1513,7 +1514,7 @@ def main(argv):
     project_dir = argv[1]
     parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
     # vmodel.checkIntegrity()
-    vmodel.export(False)
+    # vmodel.export(False)
     # !!!!!!!!!!!!!! This is for test
     # targetNode = vmodel.findNode("zlib")
     # sampleFile = vmodel.findNode("contrib/masmx86/inffas32.asm")
