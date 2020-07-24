@@ -106,6 +106,9 @@ class TargetNode(Node):
         self.interfaceLibrary = False
         # This property set for custom target only
         self.isCustomTarget = False
+        # This property is for custom target indicating whether this target should compiled by
+        # default or not
+        self.defaultBuildTarget = False
 
     def getPointTo(self) -> Node:
         return self.sources

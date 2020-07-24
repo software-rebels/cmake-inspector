@@ -1,6 +1,7 @@
 # Bultin Libraries
 import sys
 import os
+import code
 from typing import List, Optional
 # Third-party
 from antlr4 import FileStream, CommonTokenStream, ParseTreeWalker
@@ -13,7 +14,7 @@ from grammar.CMakeListener import CMakeListener
 # Our own library
 from datastructs import RefNode, TargetNode, VModel, Lookup, SelectNode, ConcatNode, \
     CustomCommandNode, TestNode, LiteralNode, flattenAlgorithm, Node, OptionNode
-from analyze import doGitAnalysis
+from analyze import doGitAnalysis, printSourceFiles
 from analyze import printInputVariablesAndOptions
 
 config.DATABASE_URL = 'bolt://neo4j:123@localhost:7687'
@@ -469,7 +470,7 @@ class CMakeExtractorListener(CMakeListener):
         for arg in [argument for argument in ctx.ifStatement().argument().children if
                                              not isinstance(argument, TerminalNode)]:
             if arg.getChild(0).symbol.type == CMakeParser.Quoted_argument or \
-                    arg.getText().lower() in reservedWords or \
+                    arg.getText().upper() in reservedWords or \
                     arg.getText().isnumeric():
                 processedArgs.append(arg.getText())
             else:
@@ -492,7 +493,7 @@ class CMakeExtractorListener(CMakeListener):
         for arg in [argument for argument in ctx.argument().children if
                     not isinstance(argument, TerminalNode)]:
             if arg.getChild(0).symbol.type == CMakeParser.Quoted_argument or \
-                    arg.getText().lower() in reservedWords or \
+                    arg.getText().upper() in reservedWords or \
                     arg.getText().isnumeric():
                 elseIfCondition.append(arg.getText())
             else:
@@ -622,13 +623,19 @@ class CMakeExtractorListener(CMakeListener):
                 systemState, stateProperty = vmodel.getCurrentSystemState()
 
             args = vmodel.expand(arguments)
-            commandNode.commands.append(args)
+            commandNode.depends.append(args)
+
+            prevNodeStack = list(vmodel.nodes)
             # We execute the command if we can find the CMake file and there is no condition to execute it
-            if os.path.exists(os.path.join(project_dir, args.getValue())) and systemState is None:
+            if os.path.exists(os.path.join(project_dir, args.getValue())):
                 parseFile(os.path.join(project_dir, args.getValue()))
             else:
-                print("No!")
+                print("No! : {}".format(arguments))
                 vmodel.nodes.append(util_handleConditions(commandNode, commandNode.getName()))
+
+            for item in vmodel.nodes:
+                if item not in prevNodeStack:
+                    commandNode.commands.append(item)
 
         elif commandId == 'find_file':
             variableName = arguments.pop(0)
@@ -691,7 +698,10 @@ class CMakeExtractorListener(CMakeListener):
                     outName = arguments.pop(0)
                     if lookupTable.getKey(outName):
                         variable = lookupTable.getKey(outName)
-                        variable.pointTo.addToBeginning(customCommand)
+                        if isinstance(variable.getPointTo(), ConcatNode):
+                            variable.pointTo.addToBeginning(customCommand)
+                        else:
+                            variable.pointTo = customCommand
                     else:
                         refNode = RefNode(outName, customCommand)
                         vmodel.nodes.append(refNode)
@@ -774,6 +784,12 @@ class CMakeExtractorListener(CMakeListener):
         elif commandId == 'add_custom_target':
             targetName = arguments.pop(0)
             dependedElement: List[TargetNode] = []
+            defaultBuildTarget = False
+            # Check for some keywords in the command
+            if 'ALL' in arguments:
+                allIndex = arguments.index('ALL')
+                arguments.pop(allIndex)
+                defaultBuildTarget = True
             # Check if we have depend command
             if 'DEPENDS' in arguments:
                 dependsIndex = arguments.index('DEPENDS')
@@ -793,7 +809,9 @@ class CMakeExtractorListener(CMakeListener):
                     targetElement = lookupTable.getKey("t:{}".format(arguments[i])) \
                                     or vmodel.findNode(arguments[i])
                     if targetElement is None:
-                        raise Exception("There is a problem in finding dependency for {}".format(targetName))
+                        targetElement = RefNode(arguments[i], None)
+                        lookupTable.setKey(arguments[i], targetElement)
+                        # raise Exception("There is a problem in finding dependency for {}".format(targetName))
                     dependedElement.append(targetElement)
 
                 # Now we have to pop these arguments:
@@ -802,6 +820,7 @@ class CMakeExtractorListener(CMakeListener):
 
             targetNode = TargetNode("{}_{}".format(targetName, vmodel.getNextCounter()), vmodel.expand(arguments))
             targetNode.isCustomTarget = True
+            targetNode.defaultBuildTarget = defaultBuildTarget
             targetNode.sources.listOfNodes += dependedElement
             lookupTable.setKey("t:{}".format(targetName), targetNode)
             vmodel.nodes.append(targetNode)
@@ -1386,70 +1405,21 @@ class CMakeExtractorListener(CMakeListener):
             # This command add a definition to the current ones. So we should add it in all the possible paths
             targetName = arguments.pop(0)
             scope = None
-            targetNode = vmodel.findNode(targetName)
-            if arguments[0] in ('INTERFACE', 'PUBLIC', 'PRIVATE'):
-                scope = arguments.pop(0)
+            targetNode = lookupTable.getKey('t:{}'.format(targetName))
+            assert isinstance(targetNode, TargetNode)
             nextNode = vmodel.expand(arguments)
             if scope:
                 nextNode.name = scope + "_" + nextNode.name
             # vmodel.addNode(nextNode)
-            if vmodel.isInsideIf():
-                if targetNode.definitions is not None:
-                    # TODO: Should create a select node and set the true edge
-                    raise Exception('NOT_IMPLEMENTED')
-
-                newSelectNode = SelectNode(targetName + "_DEFINITIONS", vmodel.ifConditions)
-                newSelectNode.trueNode = nextNode
-                newSelectNode.falseNode = targetNode.getDefinition()
-                targetNode.setDefinition(newSelectNode)
-            else:
-                if targetNode.definitions is None:
-                    targetNode.setDefinition(nextNode)
-                else:
-                    if isinstance(targetNode.getDefinition(), ConcatNode):
-                        targetNode.getDefinition().addNode(nextNode)
-                    if isinstance(targetNode.getDefinition(), SelectNode):
-                        if targetNode.getDefinition().trueNode:
-                            targetNode.getDefinition().trueNode = vmodel.convertOrGetConcatNode(
-                                targetNode.getDefinition().trueNode)
-                            targetNode.getDefinition().trueNode.addNode(nextNode)
-                        else:
-                            targetNode.getDefinition().trueNode = nextNode
-
-                        if targetNode.getDefinition().falseNode:
-                            targetNode.getDefinition().falseNode = vmodel.convertOrGetConcatNode(
-                                targetNode.getDefinition().falseNode)
-                            targetNode.getDefinition().falseNode.addNode(nextNode)
-                        else:
-                            targetNode.getDefinition().falseNode = nextNode
+            targetNode.setDefinition(util_handleConditions(nextNode, nextNode, targetNode.getDefinition()))
 
         elif commandId == 'target_link_libraries':
-            targetName = arguments.pop(0)
-            scope = None
-            targetNode = vmodel.findNode(targetName)
-            if arguments[0] in ('INTERFACE', 'PUBLIC', 'PRIVATE'):
-                scope = arguments.pop(0)
+            customCommand = CustomCommandNode('target_link_libraries_{}'.format(vmodel.getNextCounter()))
+            customCommand.commands.append(vmodel.expand(arguments))
+            vmodel.nodes.append(
+                util_handleConditions(customCommand, customCommand.name, None)
+            )
 
-            linkLibraries = None
-            argumentSet = vmodel.flatten(arguments)
-            if len(argumentSet) > 1:
-                linkLibraries = ConcatNode("CONCAT_" + ",".join(argumentSet))
-                for target in argumentSet:
-                    node = vmodel.findNode(target)
-                    # Linking to an external library
-                    if node is None:
-                        node = RefNode(target, None)
-                    linkLibraries.addNode(node)
-            else:
-                linkLibraries = vmodel.findNode(argumentSet.pop())
-
-            if vmodel.isInsideIf():
-                newSelectNode = SelectNode(targetName + "_LIBRARIES", vmodel.ifConditions)
-                newSelectNode.trueNode = linkLibraries
-                newSelectNode.falseNode = targetNode.linkLibraries
-                targetNode.linkLibraries = newSelectNode
-            else:
-                targetNode.linkLibraries = linkLibraries
 
         # project( < PROJECT - NAME > [ < language - name > ...])
         elif commandId == 'project':
@@ -1523,7 +1493,9 @@ def main(argv):
     # !!!!!!!!!!!!!! Until here
     # vmodel.findAndSetTargets()
     # doGitAnalysis(project_dir)
-    printInputVariablesAndOptions(vmodel, lookupTable)
+    # code.interact(local=dict(globals(), **locals()))
+    # printInputVariablesAndOptions(vmodel, lookupTable)
+    printSourceFiles(vmodel, lookupTable)
 
 
 if __name__ == "__main__":

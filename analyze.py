@@ -1,4 +1,4 @@
-from datastructs import VModel, Lookup, RefNode
+from datastructs import VModel, Lookup, RefNode, TargetNode, LiteralNode
 from pydriller import RepositoryMining
 import itertools
 import csv
@@ -15,6 +15,31 @@ def printInputVariablesAndOptions(vmodel: VModel, lookup: Lookup):
     print("#### Input options are:")
     for option in vmodel.options:
         print(option)
+
+
+def printSourceFiles(vmodel: VModel, lookup: Lookup):
+    targets = []
+    for scope in lookup.items:
+        for k in scope:
+            if isinstance(scope.get(k), TargetNode):
+                targets.append(scope.get(k))
+
+    print("### PRINTING TARGETS:")
+    for t in targets:
+        print(t.getName())
+
+    visitedNodes = set()
+    for t in targets:
+        assert isinstance(t, TargetNode)
+        visitedNodes.add(t)
+        targetChildren = VModel.getNodeChildren(t.sources)
+        print("### Source files for {}:".format(t.getName()))
+        for item in targetChildren:
+            if isinstance(item, LiteralNode) or item.getChildren() is None:
+                print(item.getName())
+
+
+
 
 
 def doChangeAnalysis(fileNode):

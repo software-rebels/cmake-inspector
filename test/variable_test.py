@@ -1411,6 +1411,50 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual(barVar, fooOption.depends.getChildren()[0])
         self.assertEqual(zotVar, fooOption.depends.getChildren()[2])
 
+    def test_target_link_libraries(self):
+        text = """
+        set(RENDERER_LIBRARIES lib1 lib2)
+        if(NOT APPLE)
+            set(R1_NAME renderer_opengl1_${ARCH})
+        else()
+            set(R1_NAME renderer_opengl1${LIB_SUFFIX})
+        endif()
+        
+        if(MSVC)
+            target_link_libraries(${R1_NAME} ${RENDERER_LIBRARIES})
+        else()
+            target_link_libraries(${R1_NAME} ${RENDERER_LIBRARIES} 'm')
+        endif(MSVC)
+        """
+        self.runTool(text)
+
+    def test_target_compile_definition(self):
+        text = """
+        add_executable(foo bar.cxx)
+        if(APPLE)
+            target_compile_definitions(foo PUBLIC item1 item2)
+        endif()
+        """
+        self.runTool(text)
+        fooTarget = self.lookup.getKey("t:foo")
+        self.assertIsInstance(fooTarget, TargetNode)
+        definitionNode = fooTarget.getDefinition()
+        self.assertIsInstance(definitionNode, SelectNode)
+        self.assertIsInstance(definitionNode.trueNode, ConcatNode)
+        self.assertEqual("PUBLIC item1 item2", " ".join(getFlattedArguments(definitionNode.trueNode)))
+
+    def test_make_dependency_to_a_file_before_generated(self):
+        text = """
+        add_custom_target(mod_pk3 ALL DEPENDS foo)
+        add_custom_command(OUTPUT foo COMMAND john)
+        """
+        self.runTool(text)
+        targetNode = self.lookup.getKey("t:mod_pk3")
+        self.assertIsInstance(targetNode, TargetNode)
+        fooNode = targetNode.sources.getChildren()[0]
+        self.assertIsInstance(fooNode, RefNode)
+        self.assertIsInstance(fooNode.getPointTo(), CustomCommandNode)
+
     def test_foreach_list_without_condition(self):
         text = """
         set(lstVar foo bar john doe)
@@ -1421,7 +1465,6 @@ class TestVariableDefinitions(unittest.TestCase):
         endforeach(var)
         """
         self.runTool(text)
-
 
     def test_foreach_list_with_option_and_condition(self):
         text = """
@@ -1448,8 +1491,5 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
 
 
-
-
 if __name__ == '__main__':
     unittest.main()
-
