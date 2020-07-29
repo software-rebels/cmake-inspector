@@ -1,6 +1,7 @@
-from datastructs import VModel, Lookup, RefNode, TargetNode, LiteralNode
+from datastructs import VModel, Lookup, RefNode, TargetNode, LiteralNode, CustomCommandNode
 from pydriller import RepositoryMining
 import itertools
+import glob
 import csv
 
 import matplotlib.pyplot as plt
@@ -34,12 +35,18 @@ def printSourceFiles(vmodel: VModel, lookup: Lookup):
         visitedNodes.add(t)
         targetChildren = VModel.getNodeChildren(t.sources)
         print("### Source files for {}:".format(t.getName()))
+        sourceFiles = []
         for item in targetChildren:
-            if isinstance(item, LiteralNode) or item.getChildren() is None:
-                print(item.getName())
-
-
-
+            if isinstance(item, LiteralNode):# or item.getChildren() is None:
+                if '*' in item.getName():
+                    sourceFiles += glob.glob(item.getName())
+                else:
+                    sourceFiles.append(item.getName())
+            if isinstance(item, CustomCommandNode): # This could be a file command, thus we may have to evaluate it
+                command_result = item.evaluate()
+                if command_result:
+                    sourceFiles += command_result
+        print(sourceFiles)
 
 
 def doChangeAnalysis(fileNode):

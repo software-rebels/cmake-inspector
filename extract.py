@@ -274,8 +274,8 @@ def fileCommand(arguments):
 
     elif action in ('GLOB', 'GLOB_RECURSE', 'RELATIVE_PATH'):
         variableName = arguments.pop(0)
-        fileCommandNode = CustomCommandNode("FILE.({})_{}".format(action, vmodel.getNextCounter()))
-        fileCommandNode.pointTo.append(vmodel.expand(arguments))
+        fileCommandNode = CustomCommandNode("FILE_{}".format(vmodel.getNextCounter()))
+        fileCommandNode.commands.append(vmodel.expand([action] + arguments))
         refNode = RefNode("{}_{}".format(variableName, vmodel.getNextCounter()), fileCommandNode)
         lookupTable.setKey("${{{}}}".format(variableName), refNode)
         vmodel.nodes.append(refNode)
@@ -306,6 +306,7 @@ def fileCommand(arguments):
         fileCommandNode = CustomCommandNode("FILE.(GENERATE OUTPUT)_{}".format(vmodel.getNextCounter()))
         fileCommandNode.pointTo.append(vmodel.expand(arguments))
 
+    fileCommandNode.extraInfo['pwd'] = project_dir
     vmodel.nodes.append(fileCommandNode)
 
 

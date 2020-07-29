@@ -4,6 +4,8 @@ from graphviz import Digraph
 import copy
 from datalayer import Target, Reference, Concat, Literal, Select
 import re
+import glob
+import os
 
 VARIABLE_REGEX = r"\${(\S*)}"
 
@@ -230,6 +232,7 @@ class CustomCommandNode(Node):
         self.depends: List[Node] = []
         # For backward compatibility
         self.pointTo = self.commands
+        self.extraInfo = {}
 
     def getChildren(self) -> Optional[List]:
         result = []
@@ -240,6 +243,21 @@ class CustomCommandNode(Node):
         if result:
             return result
         return None
+
+    def evaluate(self):
+        if 'file' in self.getName().lower():
+            arguments = getFlattedArguments(self.commands[0])
+            if arguments[0] == 'GLOB':
+                result = []
+                arguments.pop(0)
+                for arg in arguments:
+                    wildcardPath = re.findall('"(.*)"', arg)
+                    if wildcardPath:
+                        wildcardPath = wildcardPath[0]
+                    else:
+                        wildcardPath = arg
+                    result += glob.glob(os.path.join(self.extraInfo.get('pwd'), wildcardPath))
+                return result
 
 
 class ConcatNode(Node):
@@ -370,6 +388,11 @@ def flattenAlgorithm(node: Node):
     if isinstance(node, LiteralNode):
         return [node.getValue()]
     elif isinstance(node, RefNode):
+        # If RefNode is a symbolic node, it may not have point to attribute
+        if node.getPointTo() is None:
+            if '_' in node.getName():
+                return node.getName()[:node.getName().rindex('_')]
+            return node.getName()
         return flattenAlgorithm(node.getPointTo())
     elif isinstance(node, CustomCommandNode):
         result = []

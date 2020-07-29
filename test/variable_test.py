@@ -507,11 +507,15 @@ class TestVariableDefinitions(unittest.TestCase):
 
     def test_simple_file_glob(self):
         text = """
-        file(GLOB foo /dir/*.cxx)
+        file(GLOB foo files_for_test/*.cxx)
         """
         self.runTool(text)
-        self.assertEqual(self.vmodel.findNode('FILE.(GLOB)_0'), self.lookup.getKey('${foo}').getPointTo())
-        self.assertEqual('/dir/*.cxx', self.vmodel.findNode('FILE.(GLOB)_0').getChildren()[0].getValue())
+        fooVar = self.lookup.getKey("${foo}")
+        fileCommand = fooVar.getPointTo()
+        self.assertIsInstance(fileCommand, CustomCommandNode)
+        self.assertEqual(self.vmodel.findNode('FILE_0'), fileCommand)
+        self.assertEqual("GLOB files_for_test/*.cxx", " ".join(getFlattedArguments(fileCommand.commands[0])))
+        self.assertEqual(['files_for_test/b.cxx', 'files_for_test/c.cxx', 'files_for_test/a.cxx'], fileCommand.evaluate())
 
     def test_simple_file_remove(self):
         text = """
