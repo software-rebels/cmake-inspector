@@ -85,15 +85,15 @@ class TargetNode(Node):
 
     def __init__(self, name: str, sources: Node):
         super().__init__(name)
-        self.sources = sources                  # Property of Target
-        self.interfaceSources = None            # Property of Target
-        self.compileFeatures = None             # Property of Target
-        self.interfaceCompileFeatures = None    # Property of Target
-        self.compileOptions = None              # Property of Target
-        self.interfaceCompileOptions = None     # Property of Target
-        self.includeDirectories = None          # Property of Target
-        self.interfaceIncludeDirectories = None          # Property of Target
-        self.interfaceSystemIncludeDirectories = None    # Property of Target
+        self.sources = sources  # Property of Target
+        self.interfaceSources = None  # Property of Target
+        self.compileFeatures = None  # Property of Target
+        self.interfaceCompileFeatures = None  # Property of Target
+        self.compileOptions = None  # Property of Target
+        self.interfaceCompileOptions = None  # Property of Target
+        self.includeDirectories = None  # Property of Target
+        self.interfaceIncludeDirectories = None  # Property of Target
+        self.interfaceSystemIncludeDirectories = None  # Property of Target
         self.definitions = None
         self.linkLibraries = None
 
@@ -761,8 +761,8 @@ class VModel:
             pointToDBNode = None
             definitionDBNode = None
             librariesDBNode = None
-            if node.pointTo:
-                pointToDBNode = self.exportToNeo(node.pointTo)
+            if node.sources:
+                pointToDBNode = self.exportToNeo(node.sources)
                 dbNode.pointTo.connect(pointToDBNode)
             if node.definitions:
                 definitionDBNode = self.exportToNeo(node.definitions)
@@ -771,6 +771,19 @@ class VModel:
                 librariesDBNode = self.exportToNeo(node.linkLibraries)
                 dbNode.linkLibraries.connect(librariesDBNode)
 
+            properties = {
+                'isExecutable': node.isExecutable,
+                'isAlias': node.isAlias,
+                'imported': node.imported,
+                'isObjectLibrary': node.isObjectLibrary,
+                'interfaceLibrary': node.interfaceLibrary,
+                'isCustomTarget': node.isCustomTarget,
+                'defaultBuildTarget': node.defaultBuildTarget,
+                'libraryType': node.libraryType,
+
+            }
+
+            dbNode.properties = properties
             node.dbNode = dbNode
             return dbNode
 

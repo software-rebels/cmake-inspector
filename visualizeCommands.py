@@ -14,44 +14,54 @@ config.DATABASE_URL = 'bolt://neo4j:123@localhost:7687'
 commands_freq = dict()
 project_dir = ""
 
+
 class SourceFile(StructuredNode):
     name = StringProperty()
 
+
 class Target(StructuredNode):
-    TYPES = {'LIBRARY' : 'Library', 'EXECUTABLE': 'Executable'}
+    TYPES = {'LIBRARY': 'Library', 'EXECUTABLE': 'Executable'}
     type = StringProperty(required=True, choices=TYPES)
+
 
 class Executable(StructuredNode):
     name = StringProperty(unique_index=True)
     target = StringProperty()
     files = RelationshipTo(SourceFile, 'HAS')
 
+
 class NodeList():
     pass
+
 
 class Node():
     pass
 
+
 class Lookup():
     items = [{}]
+
     def newScope(self):
         self.items.append({})
+
     def addKey(self, key, value):
         self.items[-1][key] = value
-    
+
     def getKey(self, key):
         for table in reversed(self.items):
             if key in table:
                 return table.get(key)
             return None
-    
+
     def dropScope(self):
         self.items.pop()
 
+
 lookupTable = Lookup()
 
+
 class CMakeExtractorListener(CMakeListener):
-    def enterCommand_invocation(self, ctx:CMakeParser.Command_invocationContext):
+    def enterCommand_invocation(self, ctx: CMakeParser.Command_invocationContext):
         global project_dir
         commandId = ctx.Identifier().getText()
         if commandId not in ('add_subdirectory', 'endif'):
@@ -59,7 +69,7 @@ class CMakeExtractorListener(CMakeListener):
                 commands_freq[commandId] += 1
             else:
                 commands_freq[commandId] = 1
-        
+
         if commandId == 'add_subdirectory':
             tempProjectDir = project_dir
             project_dir = os.path.join(project_dir, ctx.single_argument()[0].getText())
@@ -73,7 +83,7 @@ class CMakeExtractorListener(CMakeListener):
         #             executable.name = argument.getText()
         #             executable.save()
         #             continue
-                
+
         #         if argument.getText() in ('WIN32', 'MACOSX_BUNDLE', 'EXCLUDE_FROM_ALL'):
         #             executable.target = argument.getText()
         #             executable.save()
@@ -81,6 +91,7 @@ class CMakeExtractorListener(CMakeListener):
 
         #         sourceFile = SourceFile(name = argument.getText()).save()
         #         executable.files.connect(sourceFile)
+
 
 def parseFile(filePath):
     inputFile = FileStream(filePath)
@@ -92,6 +103,7 @@ def parseFile(filePath):
     walker = ParseTreeWalker()
     walker.walk(extractor, tree)
 
+
 def main(argv):
     global project_dir
     project_dir = argv[1]
@@ -101,9 +113,10 @@ def main(argv):
         writer.writeheader()
         for key in commands_freq:
             writer.writerow({
-                "command" : key,
-                "freq"    : commands_freq[key]
+                "command": key,
+                "freq": commands_freq[key]
             })
+
 
 if __name__ == "__main__":
     main(sys.argv)
