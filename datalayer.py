@@ -40,3 +40,4 @@ class Select(AbstractNode):
     trueNode = RelationshipTo(AbstractNode, "TRUE")
     falseNode = RelationshipTo(AbstractNode, "FALSE")
     condition = StringProperty()
+

@@ -2,7 +2,7 @@ from enum import Enum, auto
 from typing import Optional, List, Set, Dict
 from graphviz import Digraph
 import copy
-from datalayer import Target, Reference, Concat, Literal, Select
+from datalayer import Target, Reference, Concat, Literal, Select, CustomCommand
 import re
 import glob
 import os
@@ -400,7 +400,12 @@ def flattenAlgorithm(node: Node):
             result += flattenAlgorithm(child)
         return result
     elif isinstance(node, SelectNode):
-        return flattenAlgorithm(node.falseNode) + flattenAlgorithm(node.trueNode)
+        if node.falseNode and node.trueNode:
+            return flattenAlgorithm(node.falseNode) + flattenAlgorithm(node.trueNode)
+        if node.trueNode:
+            return flattenAlgorithm(node.trueNode)
+        if node.falseNode:
+            return flattenAlgorithm(node.falseNode)
     elif isinstance(node, ConcatNode):
         result = {''}
         for item in node.getChildren():
@@ -701,38 +706,25 @@ class VModel:
         newConcatNode.addNode(node)
         return newConcatNode
 
-    def export(self, writeToNeo=False):
-        dot = Digraph(comment='SDG')
-        dot.graph_attr['ordering'] = 'out'
-        clusterId = 0
-        for cluster in self.getNodesCluster():
-            newGraph = Digraph(name="cluster_" + str(clusterId))
-            [newGraph.node(node.getName(), node.getNodeName(), shape=getNodeShape(node)) for node in cluster]
-            visitedNodes = list()
-            for node in cluster:
-                if node in visitedNodes:
-                    continue
-                visitedNodes.append(node)
-                if node.getChildren() is not None:
-                    for child in node.getChildren():
-                        newGraph.edge(node.getName(), child.getName(), label=getEdgeLabel(node, child))
-            clusterId += 1
-            dot.subgraph(newGraph)
-        # Add all the nodes to the dot graph
-        # nodes = self.getNodeSet()
-        # [dot.node(node.getName(), node.getNodeName(), shape=getNodeShape(node)) for node in nodes]
-
-        # Add edges
-        # visitedNodes = list()
-        # for node in nodes:
-        #     if node in visitedNodes:
-        #         continue
-        #     visitedNodes.append(node)
-        #     if node.getChildren() is not None:
-        #         for child in node.getChildren():
-        #             dot.edge(node.getName(), child.getName(), label=getEdgeLabel(node, child))
-
-        dot.render('graph.gv', view=True)
+    def export(self, writeToNeo=False, writeDotFile=True):
+        if writeDotFile:
+            dot = Digraph(comment='SDG')
+            dot.graph_attr['ordering'] = 'out'
+            clusterId = 0
+            for cluster in self.getNodesCluster():
+                newGraph = Digraph(name="cluster_" + str(clusterId))
+                [newGraph.node(node.getName(), node.getNodeName(), shape=getNodeShape(node)) for node in cluster]
+                visitedNodes = list()
+                for node in cluster:
+                    if node in visitedNodes:
+                        continue
+                    visitedNodes.append(node)
+                    if node.getChildren() is not None:
+                        for child in node.getChildren():
+                            newGraph.edge(node.getName(), child.getName(), label=getEdgeLabel(node, child))
+                clusterId += 1
+                dot.subgraph(newGraph)
+            dot.render('graph.gv', view=True)
         # Doing DFS to create nodes in NEO4j
         if writeToNeo:
             for node in self.getNodeSet():
@@ -751,8 +743,9 @@ class VModel:
 
         if isinstance(node, RefNode):
             dbNode = Reference(name=node.getName()).save()
-            refNode = self.exportToNeo(node.pointTo)
-            dbNode.pointTo.connect(refNode)
+            if node.getPointTo():
+                refNode = self.exportToNeo(node.getPointTo())
+                dbNode.pointTo.connect(refNode)
             node.dbNode = dbNode
             return dbNode
 
@@ -802,6 +795,20 @@ class VModel:
                 dbNode.falseNode.connect(self.exportToNeo(node.falseNode))
             node.dbNode = dbNode
             return dbNode
+
+        if isinstance(node, CustomCommandNode):
+            dbNode = CustomCommand(name=node.getName()).save()
+            for localNode in node.commands:
+                if localNode is None:
+                    continue
+                dbNode.commands.connect(self.exportToNeo(localNode))
+            for localNode in node.depends:
+                if localNode is None:
+                    continue
+                dbNode.depends.connect(self.exportToNeo(localNode))
+            dbNode.extraInfo = node.extraInfo
+            return dbNode
+
 
     def checkIntegrity(self):
         nodeNames = []

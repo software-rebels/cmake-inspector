@@ -4,7 +4,7 @@ import itertools
 import glob
 import csv
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 
 def printInputVariablesAndOptions(vmodel: VModel, lookup: Lookup):

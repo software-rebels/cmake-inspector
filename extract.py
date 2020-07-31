@@ -14,7 +14,7 @@ from grammar.CMakeListener import CMakeListener
 # Our own library
 from datastructs import RefNode, TargetNode, VModel, Lookup, SelectNode, ConcatNode, \
     CustomCommandNode, TestNode, LiteralNode, flattenAlgorithm, Node, OptionNode
-from analyze import doGitAnalysis, printSourceFiles
+from analyze import printSourceFiles
 from analyze import printInputVariablesAndOptions
 
 config.DATABASE_URL = 'bolt://neo4j:123@localhost:7687'
@@ -1485,7 +1485,8 @@ def main(argv):
     project_dir = argv[1]
     parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
     # vmodel.checkIntegrity()
-    # vmodel.export(False)
+    # vmodel.export(True, False)
+    vmodel.export(False, True)
     # !!!!!!!!!!!!!! This is for test
     # targetNode = vmodel.findNode("zlib")
     # sampleFile = vmodel.findNode("contrib/masmx86/inffas32.asm")
@@ -1496,7 +1497,7 @@ def main(argv):
     # doGitAnalysis(project_dir)
     # code.interact(local=dict(globals(), **locals()))
     # printInputVariablesAndOptions(vmodel, lookupTable)
-    printSourceFiles(vmodel, lookupTable)
+    # printSourceFiles(vmodel, lookupTable)
 
 
 if __name__ == "__main__":

@@ -515,7 +515,8 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertIsInstance(fileCommand, CustomCommandNode)
         self.assertEqual(self.vmodel.findNode('FILE_0'), fileCommand)
         self.assertEqual("GLOB files_for_test/*.cxx", " ".join(getFlattedArguments(fileCommand.commands[0])))
-        self.assertEqual(['files_for_test/b.cxx', 'files_for_test/c.cxx', 'files_for_test/a.cxx'], fileCommand.evaluate())
+        self.assertEqual(['files_for_test/b.cxx', 'files_for_test/c.cxx', 'files_for_test/a.cxx'],
+                         fileCommand.evaluate())
 
     def test_simple_file_remove(self):
         text = """
@@ -1494,6 +1495,45 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
 
+    def test_variable_dependency_without_function(self):
+        text = """
+        option(foo "Is bar?" YES)
+        if(foo)
+            set(base_dir /foo)
+        else()
+            set(base_dir /bar)
+        endif()
+        
+        if(NOT source_file)
+            set(path ${base_dir}/src/*.cxx)
+        else()
+            set(path ${base_dir}/src/${source_file})
+        endif()
+        
+        FILE(GLOB lib_files
+            ${path}
+        )
+        """
+        self.runTool(text)
+        pathVar = self.lookup.getKey("${path}")
+        flattenPath = flattenAlgorithm(pathVar)
+        self.vmodel.export()
+
+    def test_a_sample_for_simple_variable_dependent(self):
+        text = """
+           option(foo "" ON)
+           if(foo)
+                set(files *.cxx)
+            else()
+                set(files *.c)
+            endif()
+            
+            FILE(GLOB lib_files
+                ${files}
+            )
+        """
+        self.runTool(text)
+        self.vmodel.export()
 
 if __name__ == '__main__':
     unittest.main()
