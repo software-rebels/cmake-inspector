@@ -78,6 +78,22 @@ class Node:
         return hash(self.name)
 
 
+class FinalTarget(Node):
+
+    def __init__(self, name):
+        super().__init__(name)
+        self.files = []
+
+    def getChildren(self) -> Optional[List]:
+        result = []
+        for item in self.files:
+            result.append(item[0])
+        return result
+
+
+
+
+
 class TargetNode(Node):
     STATIC_LIBRARY = 'STATIC'
     SHARED_LIBRARY = 'SHARED'
@@ -419,6 +435,44 @@ def flattenAlgorithm(node: Node):
                         tempSet.add("{}{}".format(str1, str2))
             result = tempSet
         return list(result)
+
+
+def flattenAlgorithmWithConditions(node: Node, conditions = []):
+    if isinstance(node, LiteralNode):
+        return [(node.getValue(), list(conditions))]
+    elif isinstance(node, RefNode):
+        # If RefNode is a symbolic node, it may not have point to attribute
+        if node.getPointTo() is None:
+            if '_' in node.getName():
+                return node.getName()[:node.getName().rindex('_')]
+            return node.getName()
+        return flattenAlgorithmWithConditions(node.getPointTo(), conditions)
+    elif isinstance(node, CustomCommandNode):
+        result = []
+        for child in node.getChildren():
+            result += flattenAlgorithmWithConditions(child, conditions)
+        return result
+    elif isinstance(node, SelectNode):
+        if node.falseNode and node.trueNode:
+            return flattenAlgorithmWithConditions(node.falseNode, conditions + [(node.args, False)]) + \
+                   flattenAlgorithmWithConditions(node.trueNode, conditions + [(node.args, True)])
+        if node.trueNode:
+            return flattenAlgorithmWithConditions(node.trueNode, conditions + [(node.args, True)])
+        if node.falseNode:
+            return flattenAlgorithmWithConditions(node.falseNode, conditions + [(node.args, False)])
+    elif isinstance(node, ConcatNode):
+        result = ['']
+        for item in node.getChildren():
+            childSet = flattenAlgorithmWithConditions(item, conditions)
+            tempSet = []
+            for str1 in result:
+                for str2 in childSet:
+                    if str1 == '':
+                        tempSet.append(str2)
+                    else:
+                        tempSet.append(["{}{}".format(str1[0], str2[0]), str1[1] + str2[1]])
+            result = tempSet
+        return result
 
 
 # Given a Node (often a ConcatNode) this algorithm will return flatted arguments
@@ -920,6 +974,10 @@ def getEdgeLabel(firstNode: Node, secondNode: Node):
     if isinstance(firstNode, OptionNode):
         if firstNode.depends == secondNode:
             return 'DEPENDS'
+    if isinstance(firstNode, FinalTarget):
+        for item in firstNode.files:
+            if item[0] == secondNode:
+                return item[1]
 
     if isinstance(firstNode, RefNode):
         return firstNode.relatedProperty

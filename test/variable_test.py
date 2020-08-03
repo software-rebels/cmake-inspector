@@ -5,7 +5,8 @@ from extract import CMakeExtractorListener
 from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
 from datastructs import VModel, Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, flattenAlgorithm, \
-    CustomCommandNode, getFlattedArguments, TargetNode, TestNode, OptionNode
+    CustomCommandNode, getFlattedArguments, TargetNode, TestNode, OptionNode, \
+    flattenAlgorithmWithConditions, FinalTarget
 
 
 class TestVariableDefinitions(unittest.TestCase):
@@ -1523,16 +1524,25 @@ class TestVariableDefinitions(unittest.TestCase):
         text = """
            option(foo "" ON)
            if(foo)
-                set(files *.cxx)
+                set(files foo.cxx)
             else()
-                set(files *.c)
+                set(files bar.cxx)
             endif()
             
-            FILE(GLOB lib_files
-                ${files}
-            )
+            add_executable(test_exec ${files})
         """
         self.runTool(text)
+        fileNodes = self.lookup.getKey("t:test_exec").sources
+        test = flattenAlgorithmWithConditions(fileNodes)
+        finalTestTarget = FinalTarget("test_exec::final")
+        for item in test:
+            literalNode = LiteralNode(item[0])
+            test_cond = ""
+            for cond in item[1]:
+                test_cond += "{}:{} ".format(cond[0].getValue(), str(cond[1]))
+            finalTestTarget.files.append((literalNode, test_cond))
+
+        self.vmodel.nodes.append(finalTestTarget)
         self.vmodel.export()
 
 if __name__ == '__main__':
