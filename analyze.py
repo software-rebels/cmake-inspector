@@ -1,4 +1,5 @@
-from datastructs import VModel, Lookup, RefNode, TargetNode, LiteralNode, CustomCommandNode
+from datastructs import VModel, Lookup, RefNode, TargetNode, LiteralNode, CustomCommandNode, \
+    flattenAlgorithmWithConditions, FinalTarget
 from pydriller import RepositoryMining
 import itertools
 import glob
@@ -19,11 +20,7 @@ def printInputVariablesAndOptions(vmodel: VModel, lookup: Lookup):
 
 
 def printSourceFiles(vmodel: VModel, lookup: Lookup):
-    targets = []
-    for scope in lookup.items:
-        for k in scope:
-            if isinstance(scope.get(k), TargetNode):
-                targets.append(scope.get(k))
+    targets = extractTargets(lookup)
 
     print("### PRINTING TARGETS:")
     for t in targets:
@@ -47,6 +44,31 @@ def printSourceFiles(vmodel: VModel, lookup: Lookup):
                 if command_result:
                     sourceFiles += command_result
         print(sourceFiles)
+
+
+def extractTargets(lookup):
+    targets = []
+    for scope in lookup.items:
+        for k in scope:
+            if isinstance(scope.get(k), TargetNode):
+                targets.append(scope.get(k))
+    return targets
+
+
+def buildRuntimeGraph(vmodel: VModel, lookup: Lookup):
+    targets = extractTargets(lookup)
+    for target in targets:
+        flattenedFiles = flattenAlgorithmWithConditions(target.sources)
+        finalTarget = FinalTarget("{}::final".format(target.getName()))
+        for item in flattenedFiles:
+            literalNode = LiteralNode(item[0])
+            test_cond = ""
+            for cond in item[1]:
+                test_cond += "{}:{} ".format(cond[0].getValue(), str(cond[1]))
+            finalTarget.files.append((literalNode, test_cond))
+
+        vmodel.nodes.append(finalTarget)
+        vmodel.export()
 
 
 def doChangeAnalysis(fileNode):

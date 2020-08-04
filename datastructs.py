@@ -218,7 +218,9 @@ class RefNode(Node):
         return result
 
     def getValue(self):
-        return self.pointTo.getName()
+        if self.getPointTo():
+            return self.pointTo.getName()
+        return self.getName()
 
 
 class OptionNode(Node):
@@ -295,6 +297,12 @@ class ConcatNode(Node):
 
     def getChildren(self):
         return self.getNodes()
+
+    def getValue(self):
+        result = ""
+        for child in self.getChildren():
+            result += str(child.getValue())
+        return result
 
 
 class LiteralNode(Node):

@@ -1,6 +1,8 @@
 import unittest
 
 from antlr4 import CommonTokenStream, ParseTreeWalker, InputStream
+
+from analyze import buildRuntimeGraph
 from extract import CMakeExtractorListener
 from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
@@ -1522,28 +1524,23 @@ class TestVariableDefinitions(unittest.TestCase):
 
     def test_a_sample_for_simple_variable_dependent(self):
         text = """
-           option(foo "" ON)
-           if(foo)
-                set(files foo.cxx)
-            else()
-                set(files bar.cxx)
-            endif()
+        option(foo "Is bar?" YES)
+        if(foo)
+            set(base_dir /foo)
+        else()
+            set(base_dir /bar)
+        endif()
+        
+        if(NOT source_file)
+            set(path ${base_dir}/src/*.cxx)
+        else()
+            set(path ${base_dir}/src/a.cxx)
+        endif()
             
-            add_executable(test_exec ${files})
+        add_executable(test_exec ${path})
         """
         self.runTool(text)
-        fileNodes = self.lookup.getKey("t:test_exec").sources
-        test = flattenAlgorithmWithConditions(fileNodes)
-        finalTestTarget = FinalTarget("test_exec::final")
-        for item in test:
-            literalNode = LiteralNode(item[0])
-            test_cond = ""
-            for cond in item[1]:
-                test_cond += "{}:{} ".format(cond[0].getValue(), str(cond[1]))
-            finalTestTarget.files.append((literalNode, test_cond))
-
-        self.vmodel.nodes.append(finalTestTarget)
-        self.vmodel.export()
+        buildRuntimeGraph(self.vmodel, self.lookup)
 
 if __name__ == '__main__':
     unittest.main()
