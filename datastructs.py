@@ -82,16 +82,45 @@ class FinalTarget(Node):
 
     def __init__(self, name):
         super().__init__(name)
-        self.files = []
+        self.files: Optional[Node] = None
+
+    def getChildren(self) -> Optional[List]:
+        return [self.files]
+
+
+class FinalConcatNode(Node):
+
+    def __init__(self, name):
+        super().__init__(name)
+        self.children = []
+
+    def getChildren(self) -> Optional[List]:
+        return self.children
+
+
+
+class FinalSelectNode(Node):
+
+    def __init__(self, name):
+        super().__init__(name)
+        self.children = []
+
+    def getNodeName(self):
+        return "SELECT"
+
+    def addChild(self, item):
+        self.children.append(item)
+
+    def getLabel(self, item):
+        for child in self.children:
+            if child[0] == item:
+                return child[1]
 
     def getChildren(self) -> Optional[List]:
         result = []
-        for item in self.files:
+        for item in self.children:
             result.append(item[0])
         return result
-
-
-
 
 
 class TargetNode(Node):
@@ -262,19 +291,21 @@ class CustomCommandNode(Node):
             return result
         return None
 
-    def evaluate(self):
+    def evaluate(self, conditions):
         if 'file' in self.getName().lower():
-            arguments = getFlattedArguments(self.commands[0])
-            if arguments[0] == 'GLOB':
+            arguments = self.commands[0].getChildren()
+            fileCommandType = arguments[0].getValue()
+            if fileCommandType.upper() == 'GLOB':
+                arguments = flattenAlgorithmWithConditions(self.commands[0].getChildren()[1], conditions)
                 result = []
-                arguments.pop(0)
                 for arg in arguments:
-                    wildcardPath = re.findall('"(.*)"', arg)
+                    wildcardPath = re.findall('"(.*)"', arg[0])
                     if wildcardPath:
                         wildcardPath = wildcardPath[0]
                     else:
-                        wildcardPath = arg
-                    result += glob.glob(os.path.join(self.extraInfo.get('pwd'), wildcardPath))
+                        wildcardPath = arg[0]
+                    for item in glob.glob(os.path.join(self.extraInfo.get('pwd'), wildcardPath)):
+                        result.append([item, arg[1]])
                 return result
 
 
@@ -445,7 +476,7 @@ def flattenAlgorithm(node: Node):
         return list(result)
 
 
-def flattenAlgorithmWithConditions(node: Node, conditions = []):
+def flattenAlgorithmWithConditions(node: Node, conditions=set()):
     if isinstance(node, LiteralNode):
         return [(node.getValue(), list(conditions))]
     elif isinstance(node, RefNode):
@@ -456,18 +487,15 @@ def flattenAlgorithmWithConditions(node: Node, conditions = []):
             return node.getName()
         return flattenAlgorithmWithConditions(node.getPointTo(), conditions)
     elif isinstance(node, CustomCommandNode):
-        result = []
-        for child in node.getChildren():
-            result += flattenAlgorithmWithConditions(child, conditions)
-        return result
+        return node.evaluate(conditions)
     elif isinstance(node, SelectNode):
         if node.falseNode and node.trueNode:
-            return flattenAlgorithmWithConditions(node.falseNode, conditions + [(node.args, False)]) + \
-                   flattenAlgorithmWithConditions(node.trueNode, conditions + [(node.args, True)])
+            return flattenAlgorithmWithConditions(node.falseNode, conditions.union({(node.args, False)})) + \
+                   flattenAlgorithmWithConditions(node.trueNode, conditions.union({(node.args, True)}))
         if node.trueNode:
-            return flattenAlgorithmWithConditions(node.trueNode, conditions + [(node.args, True)])
+            return flattenAlgorithmWithConditions(node.trueNode, conditions.union({(node.args, True)}))
         if node.falseNode:
-            return flattenAlgorithmWithConditions(node.falseNode, conditions + [(node.args, False)])
+            return flattenAlgorithmWithConditions(node.falseNode, conditions.union({(node.args, False)}))
     elif isinstance(node, ConcatNode):
         result = ['']
         for item in node.getChildren():
@@ -982,11 +1010,11 @@ def getEdgeLabel(firstNode: Node, secondNode: Node):
     if isinstance(firstNode, OptionNode):
         if firstNode.depends == secondNode:
             return 'DEPENDS'
+    if isinstance(firstNode, FinalSelectNode):
+        return firstNode.getLabel(secondNode)
     if isinstance(firstNode, FinalTarget):
-        for item in firstNode.files:
-            if item[0] == secondNode:
-                return item[1]
-
+        if firstNode.files == secondNode:
+            return "FILES"
     if isinstance(firstNode, RefNode):
         return firstNode.relatedProperty
 

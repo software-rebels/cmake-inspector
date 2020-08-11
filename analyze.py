@@ -1,8 +1,11 @@
 from datastructs import VModel, Lookup, RefNode, TargetNode, LiteralNode, CustomCommandNode, \
-    flattenAlgorithmWithConditions, FinalTarget
+    flattenAlgorithmWithConditions, FinalTarget, FinalSelectNode
 from pydriller import RepositoryMining
 import itertools
 import glob
+from collections import defaultdict
+import pprint
+import json
 import csv
 
 # import matplotlib.pyplot as plt
@@ -55,17 +58,53 @@ def extractTargets(lookup):
     return targets
 
 
+def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str):
+    targetNode = lookup.getKey("t:{}".format(target))
+    assert isinstance(targetNode, TargetNode)
+    flattenedFiles = flattenAlgorithmWithConditions(targetNode.sources)
+    result = defaultdict(set)
+    for item in flattenedFiles:
+        test_cond = set()
+        for cond in item[1]:
+            test_cond.add("{}:{}".format(cond[0].getValue(), str(cond[1])))
+        result[" && ".join(test_cond)].add(item[0])
+
+    # Post-processing
+    # 1. Find a file which appears in all the paths
+    files = set.intersection(*list(result.values()))
+    if files:
+        for key in list(result):
+            result[key] = result[key] - files
+            if not result[key]:
+                del result[key]
+        result['NO_MATTER_WHAT'].update(files)
+
+    # Print
+    # pp = pprint.PrettyPrinter(indent=4)
+    # pp.pprint(result)
+
+    def set_default(obj):
+        if isinstance(obj, set):
+            return list(obj)
+        raise TypeError
+
+    print(json.dumps(result, default=set_default, sort_keys=True, indent=4))
+    return result
+
+
 def buildRuntimeGraph(vmodel: VModel, lookup: Lookup):
     targets = extractTargets(lookup)
     for target in targets:
         flattenedFiles = flattenAlgorithmWithConditions(target.sources)
         finalTarget = FinalTarget("{}::final".format(target.getName()))
+        fileSelectNode = FinalSelectNode("{}::Select::FILES".format(target.getName()))
+        finalTarget.files = fileSelectNode
         for item in flattenedFiles:
             literalNode = LiteralNode(item[0])
-            test_cond = ""
+            test_cond = set()
             for cond in item[1]:
-                test_cond += "{}:{} ".format(cond[0].getValue(), str(cond[1]))
-            finalTarget.files.append((literalNode, test_cond))
+                test_cond.add("{}:{}".format(cond[0].getValue(), str(cond[1])))
+            fileSelectNode.addChild((literalNode, ",".join(test_cond)))
 
         vmodel.nodes.append(finalTarget)
         vmodel.export()

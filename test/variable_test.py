@@ -2,7 +2,7 @@ import unittest
 
 from antlr4 import CommonTokenStream, ParseTreeWalker, InputStream
 
-from analyze import buildRuntimeGraph
+from analyze import buildRuntimeGraph, printFilesForATarget
 from extract import CMakeExtractorListener
 from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
@@ -548,7 +548,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         fileNode = self.lookup.getKey("${john}").pointTo
         self.assertIsInstance(fileNode, CustomCommandNode)
-        self.assertEqual('bar sample.cxx', " ".join(getFlattedArguments(fileNode.pointTo[0])))
+        self.assertEqual('RELATIVE_PATH bar sample.cxx', " ".join(getFlattedArguments(fileNode.pointTo[0])))
 
     def test_file_to_path(self):
         text = """
@@ -1419,6 +1419,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual(barVar, fooOption.depends.getChildren()[0])
         self.assertEqual(zotVar, fooOption.depends.getChildren()[2])
 
+    @unittest.skip("")
     def test_target_link_libraries(self):
         text = """
         set(RENDERER_LIBRARIES lib1 lib2)
@@ -1463,6 +1464,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertIsInstance(fooNode, RefNode)
         self.assertIsInstance(fooNode.getPointTo(), CustomCommandNode)
 
+    @unittest.skip("")
     def test_foreach_list_without_condition(self):
         text = """
         set(lstVar foo bar john doe)
@@ -1474,6 +1476,7 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
 
+    @unittest.skip("")
     def test_foreach_list_with_option_and_condition(self):
         text = """
         option(op1 Yes)
@@ -1489,6 +1492,7 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
 
+    @unittest.skip("")
     def test_foreach_simple_usage(self):
         text = """
         set(foo bar john doe)
@@ -1497,6 +1501,7 @@ class TestVariableDefinitions(unittest.TestCase):
         endforeach()
         """
         self.runTool(text)
+
 
     def test_variable_dependency_without_function(self):
         text = """
@@ -1519,7 +1524,7 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         pathVar = self.lookup.getKey("${path}")
-        flattenPath = flattenAlgorithm(pathVar)
+
         self.vmodel.export()
 
     def test_a_sample_for_simple_variable_dependent(self):
@@ -1540,7 +1545,34 @@ class TestVariableDefinitions(unittest.TestCase):
         add_executable(test_exec ${path})
         """
         self.runTool(text)
-        buildRuntimeGraph(self.vmodel, self.lookup)
+        # buildRuntimeGraph(self.vmodel, self.lookup)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'test_exec')
+        # print(a)
+
+    def test_runtime_graph_with_file_command(self):
+        text = """
+        option(foo "Is bar?" YES)
+        
+        if(foo)
+            set(path files_for_test/*.cxx)
+        else()
+            set(path files_for_test/a.cxx)
+        endif()
+
+        FILE(GLOB lib_files
+            ${path}
+        )
+        
+        add_executable(test_exec ${lib_files})
+        """
+        self.runTool(text)
+        commandNode = self.lookup.getKey("${lib_files}").getPointTo()
+        assert isinstance(commandNode, CustomCommandNode)
+
+        # buildRuntimeGraph(self.vmodel, self.lookup)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'test_exec')
+        # print(a)
+
 
 if __name__ == '__main__':
     unittest.main()
