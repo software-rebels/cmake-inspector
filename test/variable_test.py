@@ -1502,7 +1502,6 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
 
-
     def test_variable_dependency_without_function(self):
         text = """
         option(foo "Is bar?" YES)
@@ -1531,23 +1530,26 @@ class TestVariableDefinitions(unittest.TestCase):
         text = """
         option(foo "Is bar?" YES)
         if(foo)
-            set(base_dir /foo)
+            set(base_dir files_for_test)
         else()
-            set(base_dir /bar)
+            set(base_dir another_folder_for_test)
         endif()
         
         if(NOT source_file)
-            set(path ${base_dir}/src/*.cxx)
+            set(path ${base_dir}/*.cxx)
         else()
-            set(path ${base_dir}/src/a.cxx)
+            set(path ${base_dir}/a.cxx)
         endif()
             
         add_executable(test_exec ${path})
         """
         self.runTool(text)
-        # buildRuntimeGraph(self.vmodel, self.lookup)
-        a = printFilesForATarget(self.vmodel, self.lookup, 'test_exec')
-        # print(a)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'test_exec', True)
+        self.assertSetEqual({"another_folder_for_test/b2.cxx",
+                             "another_folder_for_test/a.cxx"}, a['NOT source_file:True && foo:False'])
+        self.assertSetEqual({"files_for_test/a.cxx",
+                             "files_for_test/b.cxx", "files_for_test/c.cxx"}, a['NOT source_file:True && foo:True'])
+
 
     def test_runtime_graph_with_file_command(self):
         text = """
@@ -1571,7 +1573,8 @@ class TestVariableDefinitions(unittest.TestCase):
 
         # buildRuntimeGraph(self.vmodel, self.lookup)
         a = printFilesForATarget(self.vmodel, self.lookup, 'test_exec')
-        # print(a)
+        self.assertIn('files_for_test/a.cxx', a['NO_MATTER_WHAT'])
+        self.assertSetEqual({"files_for_test/c.cxx", "files_for_test/b.cxx"}, a['foo:True'])
 
 
 if __name__ == '__main__':

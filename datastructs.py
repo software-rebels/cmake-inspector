@@ -249,7 +249,7 @@ class RefNode(Node):
     def getValue(self):
         if self.getPointTo():
             return self.pointTo.getName()
-        return self.getName()
+        return self.getName()[:self.getName().rindex('_')]
 
 
 class OptionNode(Node):

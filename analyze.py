@@ -58,7 +58,7 @@ def extractTargets(lookup):
     return targets
 
 
-def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str):
+def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=False):
     targetNode = lookup.getKey("t:{}".format(target))
     assert isinstance(targetNode, TargetNode)
     flattenedFiles = flattenAlgorithmWithConditions(targetNode.sources)
@@ -67,10 +67,16 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str):
         test_cond = set()
         for cond in item[1]:
             test_cond.add("{}:{}".format(cond[0].getValue(), str(cond[1])))
-        result[" && ".join(test_cond)].add(item[0])
+        result[" && ".join(sorted(test_cond))].add(item[0])
 
     # Post-processing
-    # 1. Find a file which appears in all the paths
+    # 1. Resolve wildcard path
+    for key in list(result):
+        for item in list(result[key]):
+            if '*' in item:
+                result[key].update(set(glob.glob(item)))
+                result[key].remove(item)
+    # 2. Find a file which appears in all the paths
     files = set.intersection(*list(result.values()))
     if files:
         for key in list(result):
@@ -88,7 +94,8 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str):
             return list(obj)
         raise TypeError
 
-    print(json.dumps(result, default=set_default, sort_keys=True, indent=4))
+    if output:
+        print(json.dumps(result, default=set_default, sort_keys=True, indent=4))
     return result
 
 
