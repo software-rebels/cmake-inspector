@@ -1550,7 +1550,6 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertSetEqual({"files_for_test/a.cxx",
                              "files_for_test/b.cxx", "files_for_test/c.cxx"}, a['NOT source_file:True && foo:True'])
 
-
     def test_runtime_graph_with_file_command(self):
         text = """
         option(foo "Is bar?" YES)
@@ -1575,6 +1574,33 @@ class TestVariableDefinitions(unittest.TestCase):
         a = printFilesForATarget(self.vmodel, self.lookup, 'test_exec')
         self.assertIn('files_for_test/a.cxx', a['NO_MATTER_WHAT'])
         self.assertSetEqual({"files_for_test/c.cxx", "files_for_test/b.cxx"}, a['foo:True'])
+
+    def test_get_files_for_a_target_with_dependency_to_other_target(self):
+        text = """
+        option(foo "Is bar?" YES)
+        option(john "Or John?" NO)
+        if(foo)
+            set(path files_for_test/*.cxx)
+        else()
+            set(path files_for_test/a.cxx)
+        endif()
+        FILE(GLOB lib_files
+            ${path}
+        )
+        add_library(test_library ${lib_files})
+        add_executable(test_exec another_folder_for_test/*.cxx)
+        add_executable(test_exec_john another_folder_for_test/a.cxx)
+        
+        if(john)
+            set(test_t test_exec)
+        else()
+            set(test_t test_exec_john)
+        endif()
+        
+        target_link_libraries(${test_t} PUBLIC test_library)
+        """
+        self.runTool(text)
+        self.vmodel.export()
 
 
 if __name__ == '__main__':

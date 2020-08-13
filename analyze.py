@@ -85,16 +85,13 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
                 del result[key]
         result['NO_MATTER_WHAT'].update(files)
 
-    # Print
-    # pp = pprint.PrettyPrinter(indent=4)
-    # pp.pprint(result)
-
-    def set_default(obj):
-        if isinstance(obj, set):
-            return list(obj)
-        raise TypeError
-
     if output:
+        # json.dumps does not work on set. Using this function, we convert set to a list.
+        def set_default(obj):
+            if isinstance(obj, set):
+                return list(obj)
+            raise TypeError
+
         print(json.dumps(result, default=set_default, sort_keys=True, indent=4))
     return result
 
