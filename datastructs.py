@@ -165,6 +165,10 @@ class TargetNode(Node):
         # default or not
         self.defaultBuildTarget = False
 
+        # This dictionary will keep track of the libraries that this target may depend on under different conditions
+        # <CustomCommand (target_link_libraries command), condition: Set>
+        self.linkLibrariesConditions = dict()
+
     def getPointTo(self) -> Node:
         return self.sources
 
@@ -289,6 +293,12 @@ class CustomCommandNode(Node):
         self.pointTo = self.commands
         self.extraInfo = {}
 
+    def __hash__(self):
+        return hash(self.name)
+
+    def __eq__(self, other):
+        return self.name == other.name
+
     def getChildren(self) -> Optional[List]:
         result = []
         if self.commands:
@@ -299,7 +309,7 @@ class CustomCommandNode(Node):
             return result
         return None
 
-    def evaluate(self, conditions):
+    def evaluate(self, conditions, lookup = None):
         if 'file' in self.getName().lower():
             arguments = self.commands[0].getChildren()
             fileCommandType = arguments[0].getValue()
@@ -315,6 +325,17 @@ class CustomCommandNode(Node):
                     for item in glob.glob(os.path.join(self.extraInfo.get('pwd'), wildcardPath)):
                         result.append([item, arg[1]])
                 return result
+        elif 'target_link_libraries' in self.rawName.lower():
+            result = []
+            arguments = self.commands[0].getChildren()[1:]
+            for argument in arguments:
+                for item in flattenAlgorithmWithConditions(argument, conditions):
+                    node = VModel.getInstance().lookupTable.getKey("t:{}".format(item[0]))
+                    if isinstance(node, TargetNode):
+                        result += flattenAlgorithmWithConditions(node.sources, item[1])
+                        for library, conditions in node.linkLibrariesConditions.items():
+                            result += flattenAlgorithmWithConditions(library, conditions + item[1])
+            return result
 
 
 class ConcatNode(Node):
@@ -484,9 +505,11 @@ def flattenAlgorithm(node: Node):
         return list(result)
 
 
-def flattenAlgorithmWithConditions(node: Node, conditions=set()):
+def flattenAlgorithmWithConditions(node: Node, conditions: Set = set()):
     if isinstance(node, LiteralNode):
-        return [(node.getValue(), list(conditions))]
+        return [(node.getValue(), conditions)]
+    elif isinstance(node, TargetNode):
+        return [(node.rawName, conditions)]
     elif isinstance(node, RefNode):
         # If RefNode is a symbolic node, it may not have point to attribute
         if node.getPointTo() is None:
@@ -514,7 +537,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions=set()):
                     if str1 == '':
                         tempSet.append(str2)
                     else:
-                        tempSet.append(["{}{}".format(str1[0], str2[0]), str1[1] + str2[1]])
+                        tempSet.append(["{}{}".format(str1[0], str2[0]), str1[1].union(str2[1])])
             result = tempSet
         return result
 

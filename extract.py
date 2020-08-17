@@ -13,7 +13,7 @@ from grammar.CMakeParser import CMakeParser
 from grammar.CMakeListener import CMakeListener
 # Our own library
 from datastructs import RefNode, TargetNode, VModel, Lookup, SelectNode, ConcatNode, \
-    CustomCommandNode, TestNode, LiteralNode, flattenAlgorithm, Node, OptionNode
+    CustomCommandNode, TestNode, LiteralNode, flattenAlgorithm, Node, OptionNode, flattenAlgorithmWithConditions
 from analyze import printSourceFiles
 from analyze import printInputVariablesAndOptions
 
@@ -41,7 +41,7 @@ def util_create_and_add_refNode_for_variable(varName: str, nextNode: Node,
                                              parentScope=False, relatedProperty=None) -> RefNode:
     variable_name = "${{{}}}".format(varName)
     # Each variable has its own RefNode
-    variableNode = RefNode("{}_{}".format(variable_name, vmodel.getNextCounter()), nextNode)
+    variableNode = RefNode("{}".format(variable_name), nextNode)
     if relatedProperty:
         variableNode.relatedProperty = relatedProperty
 
@@ -64,8 +64,8 @@ def util_handleConditions(nextNode, newNodeName, prevNode=None):
     if vmodel.getCurrentSystemState():
         systemState, stateProperty = vmodel.getCurrentSystemState()
     if systemState == 'if' or systemState == 'else' or systemState == 'elseif':
-        selectNodeName = "SELECT_{}_{}_{}".format(newNodeName,
-                                                  util_getStringFromList(stateProperty), vmodel.getNextCounter())
+        selectNodeName = "SELECT_{}_{}".format(newNodeName,
+                                               util_getStringFromList(stateProperty))
         newSelectNode = SelectNode(selectNodeName, stateProperty)
         newSelectNode.args = vmodel.expand(stateProperty)
 
@@ -198,8 +198,8 @@ def listCommand(arguments):
         systemState, stateProperty = vmodel.getCurrentSystemState()
 
     if systemState == 'if' or systemState == 'else' or systemState == 'elseif':
-        selectNodeName = "SELECT_{}_{}_{}".format(newName,
-                                                  util_getStringFromList(stateProperty), vmodel.getNextCounter())
+        selectNodeName = "SELECT_{}_{}".format(newName,
+                                               util_getStringFromList(stateProperty))
         newSelectNode = SelectNode(selectNodeName, stateProperty)
 
         if systemState == 'if' or systemState == 'elseif':
@@ -260,23 +260,23 @@ def fileCommand(arguments):
         fileName = arguments.pop(0)
         fileNode = vmodel.expand([fileName])
         contents = vmodel.expand(arguments)
-        fileCommandNode = CustomCommandNode("FILE.({} {})_{}".format(action, fileName, vmodel.getNextCounter()))
+        fileCommandNode = CustomCommandNode("FILE.({} {})".format(action, fileName))
         fileCommandNode.pointTo.append(fileNode)
         fileCommandNode.pointTo.append(contents)
 
     elif action in ('READ', 'STRINGS', 'MD5', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512', 'TIMESTAMP'):
         variableName = arguments.pop(1)
-        fileCommandNode = CustomCommandNode("FILE.({})_{}".format(action, vmodel.getNextCounter()))
+        fileCommandNode = CustomCommandNode("FILE.({})".format(action))
         fileCommandNode.pointTo.append(vmodel.expand(arguments))
-        refNode = RefNode("{}_{}".format(variableName, vmodel.getNextCounter()), fileCommandNode)
+        refNode = RefNode("{}".format(variableName), fileCommandNode)
         lookupTable.setKey("${{{}}}".format(variableName), refNode)
         vmodel.nodes.append(refNode)
 
     elif action in ('GLOB', 'GLOB_RECURSE', 'RELATIVE_PATH'):
         variableName = arguments.pop(0)
-        fileCommandNode = CustomCommandNode("FILE_{}".format(vmodel.getNextCounter()))
+        fileCommandNode = CustomCommandNode("FILE")
         fileCommandNode.commands.append(vmodel.expand([action] + arguments))
-        refNode = RefNode("{}_{}".format(variableName, vmodel.getNextCounter()), fileCommandNode)
+        refNode = RefNode("{}".format(variableName), fileCommandNode)
         lookupTable.setKey("${{{}}}".format(variableName), refNode)
         vmodel.nodes.append(refNode)
 
@@ -458,7 +458,7 @@ class CMakeExtractorListener(CMakeListener):
         vmodel.setInsideIf()
         vmodel.pushCurrentLookupTable()
         arguments = [argument.getText() for argument in ctx.ifStatement().argument().children if
-                                             not isinstance(argument, TerminalNode)]
+                     not isinstance(argument, TerminalNode)]
         processedArgs = []
 
         reservedWords = [
@@ -469,7 +469,7 @@ class CMakeExtractorListener(CMakeListener):
         ]
         vmodel.ifConditions.append(" ".join(arguments))
         for arg in [argument for argument in ctx.ifStatement().argument().children if
-                                             not isinstance(argument, TerminalNode)]:
+                    not isinstance(argument, TerminalNode)]:
             if arg.getChild(0).symbol.type == CMakeParser.Quoted_argument or \
                     arg.getText().upper() in reservedWords or \
                     arg.getText().isnumeric():
@@ -1375,9 +1375,9 @@ class CMakeExtractorListener(CMakeListener):
                     assert isinstance(extendedProperties, ConcatNode)
                     if getattr(targetNode, targetProperty) is None:
                         setattr(targetNode, targetProperty, ConcatNode("{}_{}_{}"
-                                                                          .format(targetNode.getName(),
-                                                                                  targetProperty,
-                                                                                  vmodel.getNextCounter())))
+                                                                       .format(targetNode.getName(),
+                                                                               targetProperty,
+                                                                               vmodel.getNextCounter())))
                     if shouldPrepended:
                         extendedProperties.listOfNodes = extendedProperties.listOfNodes + \
                                                          getattr(targetNode, targetProperty).listOfNodes
@@ -1418,12 +1418,22 @@ class CMakeExtractorListener(CMakeListener):
             targetNode.setDefinition(util_handleConditions(nextNode, nextNode, targetNode.getDefinition()))
 
         elif commandId == 'target_link_libraries':
-            customCommand = CustomCommandNode('target_link_libraries_{}'.format(vmodel.getNextCounter()))
+            customCommand = CustomCommandNode('target_link_libraries')
             customCommand.commands.append(vmodel.expand(arguments))
+            # Next variable should have the target nodes itself or the name of targets
+            targetList = flattenAlgorithmWithConditions(customCommand.commands[0].getChildren()[0])
+            for target in targetList:
+                targetNode = target[0]
+                if not isinstance(targetNode, TargetNode):
+                    targetNode = lookupTable.getKey("t:{}".format(targetNode))
+                # Now we should have a TargetNode
+                assert isinstance(targetNode, TargetNode)
+                assert isinstance(target[1], set)
+                targetNode.linkLibrariesConditions[customCommand] = target[1]
+
             vmodel.nodes.append(
                 util_handleConditions(customCommand, customCommand.name, None)
             )
-
 
         # project( < PROJECT - NAME > [ < language - name > ...])
         elif commandId == 'project':
