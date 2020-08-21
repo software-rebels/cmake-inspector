@@ -14,7 +14,7 @@ from grammar.CMakeListener import CMakeListener
 # Our own library
 from datastructs import RefNode, TargetNode, VModel, Lookup, SelectNode, ConcatNode, \
     CustomCommandNode, TestNode, LiteralNode, flattenAlgorithm, Node, OptionNode, flattenAlgorithmWithConditions
-from analyze import printSourceFiles
+from analyze import printSourceFiles, printFilesForATarget, checkForCyclesAndPrint
 from analyze import printInputVariablesAndOptions
 
 config.DATABASE_URL = 'bolt://neo4j:123@localhost:7687'
@@ -281,29 +281,29 @@ def fileCommand(arguments):
         vmodel.nodes.append(refNode)
 
     elif action in ('REMOVE', 'REMOVE_RECURSE', 'MAKE_DIRECTORY'):
-        fileCommandNode = CustomCommandNode("FILE.({})_{}".format(action, vmodel.getNextCounter()))
+        fileCommandNode = CustomCommandNode("FILE.({})".format(action))
         fileCommandNode.pointTo.append(vmodel.expand(arguments))
 
     elif action in ('TO_CMAKE_PATH', 'TO_NATIVE_PATH'):
         pathText = arguments.pop(0)
         variableName = arguments.pop(0)
-        fileCommandNode = CustomCommandNode("FILE.({})_{}".format(action, vmodel.getNextCounter()))
+        fileCommandNode = CustomCommandNode("FILE.({})".format(action))
         fileCommandNode.pointTo.append(vmodel.expand([pathText]))
-        refNode = RefNode("{}_{}".format(variableName, vmodel.getNextCounter()), fileCommandNode)
+        refNode = RefNode("{}".format(variableName), fileCommandNode)
         lookupTable.setKey("${{{}}}".format(variableName), refNode)
         vmodel.nodes.append(refNode)
 
     elif action in ('DOWNLOAD', 'UPLOAD', 'COPY', 'INSTALL'):
         # TODO: There is a "log" option for download and upload
         #  which takes a variable. Currently we ignore that specific option
-        fileCommandNode = CustomCommandNode("FILE.({})_{}".format(action, vmodel.getNextCounter()))
+        fileCommandNode = CustomCommandNode("FILE.({})".format(action))
         fileCommandNode.pointTo.append(vmodel.expand(arguments))
 
     elif action == 'GENERATE':
         # In cmake documentation (https://cmake.org/cmake/help/v3.1/command/file.html) there is only one possible
         # word after GENERATE which is OUTPUT. So I assume that the full action name is GENERATE OUTPUT
         arguments.pop(0)
-        fileCommandNode = CustomCommandNode("FILE.(GENERATE OUTPUT)_{}".format(vmodel.getNextCounter()))
+        fileCommandNode = CustomCommandNode("FILE.(GENERATE OUTPUT)")
         fileCommandNode.pointTo.append(vmodel.expand(arguments))
 
     fileCommandNode.extraInfo['pwd'] = project_dir
@@ -391,6 +391,16 @@ def addTarget(arguments, isExecutable=True):
     targetNode.isExecutable = isExecutable
     targetNode.isObjectLibrary = isObjectLibrary
     targetNode.interfaceLibrary = interfaceLibrary
+
+    # TODO: We have to decide whether keep the experiment to change it
+    # EXPERIMENT: We flatten the target name and add all the possible values to the graph as a potential target
+    flattedTargetName = flattenAlgorithmWithConditions(vmodel.expand([targetName]))
+    if flattedTargetName:
+        for item in flattedTargetName:
+            # We already set a key with the name targetNode
+            if item[0] != targetName:
+                lookupTable.setKey("t:{}".format(item[0]), targetNode)
+
 
     if 'IMPORTED' in arguments:
         targetNode.imported = True
@@ -614,7 +624,7 @@ class CMakeExtractorListener(CMakeListener):
         # include( < file | module > [OPTIONAL][RESULT_VARIABLE < VAR >]
         #          [NO_POLICY_SCOPE])
         elif commandId == 'include':
-            commandNode = CustomCommandNode("include_{}".format(vmodel.getNextCounter()))
+            commandNode = CustomCommandNode("include")
             if 'RESULT_VARIABLE' in arguments:
                 varIndex = arguments.index('RESULT_VARIABLE')
                 arguments.pop(varIndex)  # This is RESULT_VAR
@@ -633,13 +643,12 @@ class CMakeExtractorListener(CMakeListener):
             # We execute the command if we can find the CMake file and there is no condition to execute it
             if os.path.exists(os.path.join(project_dir, args.getValue())):
                 parseFile(os.path.join(project_dir, args.getValue()))
+                for item in vmodel.nodes:
+                    if item not in prevNodeStack:
+                        commandNode.commands.append(item)
             else:
                 print("No! : {}".format(arguments))
                 vmodel.nodes.append(util_handleConditions(commandNode, commandNode.getName()))
-
-            for item in vmodel.nodes:
-                if item not in prevNodeStack:
-                    commandNode.commands.append(item)
 
         elif commandId == 'find_file':
             variableName = arguments.pop(0)
@@ -685,7 +694,7 @@ class CMakeExtractorListener(CMakeListener):
         elif commandId == 'add_custom_command':
             OPTIONS = ['OUTPUT', 'COMMAND', 'MAIN_DEPENDENCY', 'DEPENDS', 'IMPLICIT_DEPENDS',
                        'WORKING_DIRECTORY', 'COMMENT', 'VERBATIM', 'APPEND']
-            customCommand = CustomCommandNode("custom_command_{}".format(vmodel.getNextCounter()))
+            customCommand = CustomCommandNode("custom_command")
             depends = []
             commandSig = arguments.pop(0)
             if commandSig == 'TARGET':
@@ -915,7 +924,7 @@ class CMakeExtractorListener(CMakeListener):
         # TODO: we have different implementation for these commands and set_directory_properties
         elif commandId in ('set_property', 'set_source_files_properties',
                            'set_target_properties', 'set_tests_properties'):
-            commandNode = CustomCommandNode("{}_{}".format(commandId, vmodel.getNextCounter()))
+            commandNode = CustomCommandNode("{}".format(commandId))
             commandNode.commands.append(vmodel.expand(arguments))
             vmodel.nodes.append(commandNode)
 
@@ -962,7 +971,7 @@ class CMakeExtractorListener(CMakeListener):
 
         # TODO: We didn't check for if condition. We should write a function that handles all functions like this
         elif commandId == 'configure_file':
-            configureFile = CustomCommandNode('configure_file_{}'.format(vmodel.getNextCounter()))
+            configureFile = CustomCommandNode('configure_file')
             nextNode = vmodel.expand(arguments)
             configureFile.pointTo.append(nextNode)
             vmodel.nodes.append(configureFile)
@@ -970,7 +979,7 @@ class CMakeExtractorListener(CMakeListener):
         # TODO: Same as previous command, on top of that, we define new variables here, so there are problems
         #       with conditions
         elif commandId == 'execute_process':
-            executeProcess = CustomCommandNode('execute_process_{}'.format(vmodel.getNextCounter()))
+            executeProcess = CustomCommandNode('execute_process')
             if 'RESULT_VARIABLE' in arguments:
                 resultVariable = arguments[arguments.index('RESULT_VARIABLE') + 1]
                 refNode = RefNode('{}_{}'.format(resultVariable, vmodel.getNextCounter()), executeProcess)
@@ -1283,7 +1292,7 @@ class CMakeExtractorListener(CMakeListener):
 
         # break()
         elif commandId == 'break':
-            breakCommand = CustomCommandNode("break_{}".format(vmodel.getNextCounter()))
+            breakCommand = CustomCommandNode("break")
             vmodel.nodes.append(util_handleConditions(breakCommand, breakCommand.getName()))
 
         # return()
@@ -1499,7 +1508,7 @@ def main(argv):
     parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
     # vmodel.checkIntegrity()
     # vmodel.export(True, False)
-    vmodel.export(False, True)
+    # vmodel.export(False, True)
     # !!!!!!!!!!!!!! This is for test
     # targetNode = vmodel.findNode("zlib")
     # sampleFile = vmodel.findNode("contrib/masmx86/inffas32.asm")
@@ -1511,7 +1520,12 @@ def main(argv):
     # code.interact(local=dict(globals(), **locals()))
     # printInputVariablesAndOptions(vmodel, lookupTable)
     # printSourceFiles(vmodel, lookupTable)
-
+    stackList = []
+    visited = []
+    # a = checkForCyclesAndPrint(vmodel, lookupTable, lookupTable.getKey("t:etl"), visited, stackList)
+    # print(a)
+    a = printFilesForATarget(vmodel, lookupTable, 'etl', True)
+    print(a)
 
 if __name__ == "__main__":
     main(sys.argv)

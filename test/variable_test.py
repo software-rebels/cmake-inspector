@@ -463,9 +463,9 @@ class TestVariableDefinitions(unittest.TestCase):
         file(WRITE ${var1} "Hey John Doe!")
         """
         self.runTool(text)
-        self.assertIn(self.lookup.getKey("${var1}"), self.vmodel.findNode('FILE.(WRITE ${var1})_1').getChildren())
+        self.assertIn(self.lookup.getKey("${var1}"), self.vmodel.findNode('FILE.(WRITE ${var1})').getChildren())
         self.assertIn(self.vmodel.findNode('"Hey John Doe!"'),
-                      self.vmodel.findNode('FILE.(WRITE ${var1})_1').getChildren())
+                      self.vmodel.findNode('FILE.(WRITE ${var1})').getChildren())
 
     def test_file_write_with_variable_in_content_part(self):
         text = """
@@ -474,7 +474,7 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         self.assertIn(self.lookup.getKey("${var2}"),
-                      self.vmodel.findNode('FILE.(APPEND baz.txt)_2').getChildren()[1].getChildren())
+                      self.vmodel.findNode('FILE.(APPEND baz.txt)').getChildren()[1].getChildren())
         self.assertEqual("bar", self.lookup.getKey("${var2}").getValue())
 
     def test_file_read_from_file_into_variable(self):
@@ -482,7 +482,7 @@ class TestVariableDefinitions(unittest.TestCase):
         file(READ foo.txt bar offset 12 limit 20)
         """
         self.runTool(text)
-        self.assertEqual(self.vmodel.findNode('FILE.(READ)_0'),
+        self.assertEqual(self.vmodel.findNode('FILE.(READ)'),
                          self.lookup.getKey('${bar}').getPointTo())
 
     def test_file_read_from_filename_in_variable(self):
@@ -491,7 +491,7 @@ class TestVariableDefinitions(unittest.TestCase):
         file(READ ${john} bar offset 12 limit 20)
         """
         self.runTool(text)
-        fileNode = self.vmodel.findNode('FILE.(READ)_1')
+        fileNode = self.vmodel.findNode('FILE.(READ)')
         self.assertEqual(fileNode,
                          self.lookup.getKey('${bar}').getPointTo())
         self.assertIn(self.lookup.getKey("${john}"),
@@ -503,10 +503,10 @@ class TestVariableDefinitions(unittest.TestCase):
         file(STRINGS ${john} bar offset 12 limit 20)
         """
         self.runTool(text)
-        self.assertEqual(self.vmodel.findNode('FILE.(STRINGS)_1'),
+        self.assertEqual(self.vmodel.findNode('FILE.(STRINGS)'),
                          self.lookup.getKey('${bar}').getPointTo())
         self.assertIn(self.lookup.getKey("${john}"),
-                      self.vmodel.findNode('FILE.(STRINGS)_1').pointTo[0].getChildren())
+                      self.vmodel.findNode('FILE.(STRINGS)').pointTo[0].getChildren())
 
     def test_simple_file_glob(self):
         text = """
@@ -516,10 +516,10 @@ class TestVariableDefinitions(unittest.TestCase):
         fooVar = self.lookup.getKey("${foo}")
         fileCommand = fooVar.getPointTo()
         self.assertIsInstance(fileCommand, CustomCommandNode)
-        self.assertEqual(self.vmodel.findNode('FILE_0'), fileCommand)
+        self.assertEqual(self.vmodel.findNode('FILE'), fileCommand)
         self.assertEqual("GLOB files_for_test/*.cxx", " ".join(getFlattedArguments(fileCommand.commands[0])))
         self.assertEqual(['files_for_test/b.cxx', 'files_for_test/c.cxx', 'files_for_test/a.cxx'],
-                         fileCommand.evaluate())
+                         [item[0] for item in fileCommand.evaluate(set())])
 
     def test_simple_file_remove(self):
         text = """
@@ -527,9 +527,9 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         self.assertEqual('foo.cxx',
-                         self.vmodel.findNode('FILE.(REMOVE)_0').getChildren()[0].getChildren()[0].getValue())
+                         self.vmodel.findNode('FILE.(REMOVE)').getChildren()[0].getChildren()[0].getValue())
         self.assertEqual('bar.cxx',
-                         self.vmodel.findNode('FILE.(REMOVE)_0').getChildren()[0].getChildren()[1].getValue())
+                         self.vmodel.findNode('FILE.(REMOVE)').getChildren()[0].getChildren()[1].getValue())
 
     def test_imported_and_alias_add_executable(self):
         text = """
@@ -578,7 +578,7 @@ class TestVariableDefinitions(unittest.TestCase):
         file(GENERATE OUTPUT outfile.txt INPUT infile.txt CONDITION ${foo})
         """
         self.runTool(text)
-        fileNode = self.vmodel.findNode('FILE.(GENERATE OUTPUT)_1')
+        fileNode = self.vmodel.findNode('FILE.(GENERATE OUTPUT)')
         self.assertEqual("outfile.txt INPUT infile.txt CONDITION bar",
                          " ".join(getFlattedArguments(fileNode.pointTo[0])))
 
@@ -587,7 +587,7 @@ class TestVariableDefinitions(unittest.TestCase):
         file(COPY a.cxx b.cxx DESTINATION /home FILE_PERMISSIONS 644)
         """
         self.runTool(text)
-        fileNode = self.vmodel.findNode('FILE.(COPY)_0')
+        fileNode = self.vmodel.findNode('FILE.(COPY)')
         self.assertEqual('a.cxx b.cxx DESTINATION /home FILE_PERMISSIONS 644',
                          " ".join(getFlattedArguments(fileNode.pointTo[0])))
 
@@ -696,7 +696,7 @@ class TestVariableDefinitions(unittest.TestCase):
         )
         """
         self.runTool(text)
-        functionNode = self.vmodel.findNode("configure_file_2")
+        functionNode = self.vmodel.findNode("configure_file")
         self.assertEqual("bar/output.rb.in doe/output.rb ESCAPE_QUOTES",
                          " ".join(getFlattedArguments(functionNode.pointTo[0])))
 
@@ -716,7 +716,7 @@ class TestVariableDefinitions(unittest.TestCase):
         outputVar = self.lookup.getKey('${out_var}')
         errorVar = self.lookup.getKey('${error_var}')
         resultVar = self.lookup.getKey('${result_var}')
-        executeNode = self.vmodel.findNode('execute_process_1')
+        executeNode = self.vmodel.findNode('execute_process')
         self.assertEqual(executeNode, outputVar.pointTo)
         self.assertEqual(executeNode, errorVar.pointTo)
         self.assertEqual(executeNode, resultVar.pointTo)
@@ -902,7 +902,7 @@ class TestVariableDefinitions(unittest.TestCase):
                            COMMAND cmd1)
         """
         self.runTool(text)
-        lib = self.vmodel.findNode('foo')
+        lib = self.lookup.getKey("t:foo")
         self.assertIsInstance(lib.linkLibraries.getChildren()[0], CustomCommandNode)
 
     def test_add_custom_command_for_target_post_build(self):
@@ -912,7 +912,7 @@ class TestVariableDefinitions(unittest.TestCase):
                            COMMAND cmd1)
         """
         self.runTool(text)
-        command = self.vmodel.findNode('custom_command_1')
+        command = self.vmodel.findNode('custom_command')
         lib = self.vmodel.findNode('foo')
         self.assertEqual(lib, command.depends[0])
 
@@ -1227,7 +1227,7 @@ class TestVariableDefinitions(unittest.TestCase):
         set_property(DIRECTORY ${foo} PROPERTY LABELS val1 val2)
         """
         self.runTool(text)
-        setProperty = self.vmodel.findNode('set_property_1')
+        setProperty = self.vmodel.findNode('set_property')
         self.assertEqual('DIRECTORY /bar PROPERTY LABELS val1 val2',
                          " ".join(getFlattedArguments(setProperty.commands[0])))
 
@@ -1339,7 +1339,7 @@ class TestVariableDefinitions(unittest.TestCase):
         johnVar = self.lookup.getKey("${john}")
         commandNode = johnVar.getPointTo()
         self.assertIsInstance(commandNode, CustomCommandNode)
-        self.assertEqual("bar", commandNode.commands[0].getPointTo().getValue())
+        self.assertEqual("bar", commandNode.depends[0].getPointTo().getValue())
 
     def test_simple_while_with_break_loop(self):
         text = """
@@ -1357,7 +1357,7 @@ class TestVariableDefinitions(unittest.TestCase):
         customCommand = self.lookup.getKey('${b}').pointTo
         self.assertIn(self.lookup.getVariableHistory('${a}')[1], customCommand.pointTo)
         self.assertIn(self.lookup.getVariableHistory('${b}')[0], customCommand.pointTo)
-        self.assertEqual(self.vmodel.findNode('break_4'), customCommand.pointTo[1])
+        self.assertEqual(self.vmodel.findNode('break'), customCommand.pointTo[1])
 
     def test_target_include_directory_without_condition(self):
         text = """
@@ -1524,7 +1524,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         pathVar = self.lookup.getKey("${path}")
 
-        self.vmodel.export()
+        # self.vmodel.export()
 
     def test_a_sample_for_simple_variable_dependent(self):
         text = """
@@ -1638,6 +1638,17 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertSetEqual({"files_for_test/c.cxx",
                              "files_for_test/b.cxx",
                              "files_for_test/a.cxx"}, a["foo:True && john:False"])
+
+    def test_cycle_detection_system_works(self):
+        text = """
+        add_executable(foo another_folder_for_test/*.cxx)
+        add_executable(bar another_folder_for_test/a.cxx)
+        set(targeta oo)
+        target_link_libraries(f${targeta} PUBLIC bar)
+        target_link_libraries(bar PUBLIC foo)
+        """
+        self.runTool(text)
+        self.assertRaises(Exception, printFilesForATarget, self.vmodel, self.lookup, 'foo')
 
 
 if __name__ == '__main__':

@@ -1,5 +1,5 @@
 from datastructs import VModel, Lookup, RefNode, TargetNode, LiteralNode, CustomCommandNode, \
-    flattenAlgorithmWithConditions, FinalTarget, FinalSelectNode
+    flattenAlgorithmWithConditions, FinalTarget, FinalSelectNode, Node
 from pydriller import RepositoryMining
 import itertools
 import glob
@@ -7,6 +7,7 @@ from collections import defaultdict
 import pprint
 import json
 import csv
+
 
 # import matplotlib.pyplot as plt
 
@@ -37,12 +38,12 @@ def printSourceFiles(vmodel: VModel, lookup: Lookup):
         print("### Source files for {}:".format(t.getName()))
         sourceFiles = []
         for item in targetChildren:
-            if isinstance(item, LiteralNode):# or item.getChildren() is None:
+            if isinstance(item, LiteralNode):  # or item.getChildren() is None:
                 if '*' in item.getName():
                     sourceFiles += glob.glob(item.getName())
                 else:
                     sourceFiles.append(item.getName())
-            if isinstance(item, CustomCommandNode): # This could be a file command, thus we may have to evaluate it
+            if isinstance(item, CustomCommandNode):  # This could be a file command, thus we may have to evaluate it
                 command_result = item.evaluate()
                 if command_result:
                     sourceFiles += command_result
@@ -58,7 +59,28 @@ def extractTargets(lookup):
     return targets
 
 
+def checkForCyclesAndPrint(vmodel: VModel, lookup: Lookup, node: Node, visited=[], recStack=[]) -> bool:
+    visited.append(node)
+    recStack.append(node)
+
+    children = node.getChildren()
+    if isinstance(node, TargetNode):
+        for item in node.linkLibrariesConditions.keys():
+            children.append(item)
+
+    for child in children:
+        if child not in visited:
+            if checkForCyclesAndPrint(vmodel, lookup, child, visited, recStack):
+                return True
+            elif child in recStack:
+                return True
+
+    recStack.remove(node)
+    return False
+
+
 def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=False):
+    print("##### Start printing files for target " + target)
     targetNode = lookup.getKey("t:{}".format(target))
     assert isinstance(targetNode, TargetNode)
     flattenedFiles = flattenAlgorithmWithConditions(targetNode.sources)
@@ -150,7 +172,7 @@ def doGitAnalysis(repoPath):
     for index, commit in enumerate(RepositoryMining(
             # We are interested in commits after bc7e017112bb8e37a3103879148be718a48f5023 in zlib project
             repoPath, from_commit="a2d71e8e66530c325bfce936f3805ccff5831b62").traverse_commits()):
-            # repoPath, from_commit="7707894d4857e2524ed9c48d972aa321dee850f8").traverse_commits()):
+        # repoPath, from_commit="7707894d4857e2524ed9c48d972aa321dee850f8").traverse_commits()):
         if index > 100:
             break
         changedTargetsForEachCommit[commit.hash] = set()

@@ -243,7 +243,7 @@ class RefNode(Node):
     def getChildren(self):
         if self.pointTo:
             return [self.pointTo]
-        return None
+        return []
 
     def getTerminalNodes(self):
         result = []
@@ -278,7 +278,7 @@ class OptionNode(Node):
     def getChildren(self):
         if self.depends:
             return [self.depends]
-        return None
+        return []
 
     def getValue(self):
         return self.getName()
@@ -310,6 +310,7 @@ class CustomCommandNode(Node):
         return None
 
     def evaluate(self, conditions, lookup = None):
+        print("##### Start evaluating custom command " + self.rawName)
         if 'file' in self.getName().lower():
             arguments = self.commands[0].getChildren()
             fileCommandType = arguments[0].getValue()
@@ -329,13 +330,14 @@ class CustomCommandNode(Node):
             result = []
             arguments = self.commands[0].getChildren()[1:]
             for argument in arguments:
-                for item in flattenAlgorithmWithConditions(argument, conditions):
+                for item in flattenAlgorithmWithConditions(argument, conditions, True):
                     node = VModel.getInstance().lookupTable.getKey("t:{}".format(item[0]))
                     if isinstance(node, TargetNode):
                         result += flattenAlgorithmWithConditions(node.sources, item[1])
                         for library, conditions in node.linkLibrariesConditions.items():
-                            result += flattenAlgorithmWithConditions(library, conditions + item[1])
+                            result += flattenAlgorithmWithConditions(library, conditions.union(item[1]))
             return result
+
 
 
 class ConcatNode(Node):
@@ -505,33 +507,48 @@ def flattenAlgorithm(node: Node):
         return list(result)
 
 
-def flattenAlgorithmWithConditions(node: Node, conditions: Set = set()):
+def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=False, recStack=None):
+    if conditions is None:
+        conditions = set()
+    if recStack is None:
+        recStack = list()
+
+    if node in recStack:
+        raise Exception('We have a cycle here!!')
+
+    recStack.append(node)
+
+    if debug:
+        print("++++++ Flatten node with name: " + node.getName())
+
+    flattedResult = None
     if isinstance(node, LiteralNode):
-        return [(node.getValue(), conditions)]
+        flattedResult = [(node.getValue(), conditions)]
     elif isinstance(node, TargetNode):
-        return [(node.rawName, conditions)]
+        flattedResult = [(node.rawName, conditions)]
     elif isinstance(node, RefNode):
         # If RefNode is a symbolic node, it may not have point to attribute
         if node.getPointTo() is None:
-            if '_' in node.getName():
-                return node.getName()[:node.getName().rindex('_')]
-            return node.getName()
-        return flattenAlgorithmWithConditions(node.getPointTo(), conditions)
+            flattedResult = [(node.rawName, conditions)]
+        else:
+            flattedResult = flattenAlgorithmWithConditions(node.getPointTo(), conditions, debug, recStack)
     elif isinstance(node, CustomCommandNode):
-        return node.evaluate(conditions)
+        flattedResult = node.evaluate(conditions)
     elif isinstance(node, SelectNode):
         if node.falseNode and node.trueNode:
-            return flattenAlgorithmWithConditions(node.falseNode, conditions.union({(node.args, False)})) + \
-                   flattenAlgorithmWithConditions(node.trueNode, conditions.union({(node.args, True)}))
-        if node.trueNode:
-            return flattenAlgorithmWithConditions(node.trueNode, conditions.union({(node.args, True)}))
-        if node.falseNode:
-            return flattenAlgorithmWithConditions(node.falseNode, conditions.union({(node.args, False)}))
+            flattedResult = flattenAlgorithmWithConditions(node.falseNode, conditions.union({(node.args, False)}), debug, recStack) + \
+                   flattenAlgorithmWithConditions(node.trueNode, conditions.union({(node.args, True)}), debug, recStack)
+        elif node.trueNode:
+            flattedResult = flattenAlgorithmWithConditions(node.trueNode, conditions.union({(node.args, True)}), debug, recStack)
+        elif node.falseNode:
+            flattedResult = flattenAlgorithmWithConditions(node.falseNode, conditions.union({(node.args, False)}), debug, recStack)
     elif isinstance(node, ConcatNode):
         result = ['']
         for item in node.getChildren():
-            childSet = flattenAlgorithmWithConditions(item, conditions)
+            childSet = flattenAlgorithmWithConditions(item, conditions, debug, recStack)
             tempSet = []
+            if childSet is None:
+                continue
             for str1 in result:
                 for str2 in childSet:
                     if str1 == '':
@@ -539,7 +556,10 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = set()):
                     else:
                         tempSet.append(["{}{}".format(str1[0], str2[0]), str1[1].union(str2[1])])
             result = tempSet
-        return result
+        flattedResult = result
+
+    recStack.remove(node)
+    return flattedResult
 
 
 # Given a Node (often a ConcatNode) this algorithm will return flatted arguments
@@ -556,6 +576,7 @@ class VModel:
     _instance = None
 
     def __init__(self):
+        Node.created_commands = dict()
         self.nodes: Optional[List[Node]] = []
         self.cmakeVersion = None
         self.ifLevel = 0
