@@ -530,7 +530,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
     # We return result from memoize variable if available:
     if node in VModel.getInstance().flattenMemoize:
         print(":) Using memoiz")
-        flattedResult = VModel.getInstance().flattenMemoize[node]
+        flattedResult = copy.copy(VModel.getInstance().flattenMemoize[node])
     elif isinstance(node, LiteralNode):
         flattedResult = [(node.getValue(), conditions)]
     elif isinstance(node, TargetNode):

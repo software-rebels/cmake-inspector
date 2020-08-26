@@ -91,8 +91,12 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
     for item in flattenedFiles:
         test_cond = set()
         for cond in item[1]:
+            # TODO: For some reason
+            if cond[0] is None:
+                continue
             test_cond.add("{}:{}".format(cond[0].getValue(), str(cond[1])))
-        result[" && ".join(sorted(test_cond))].add(item[0])
+        if test_cond:
+            result[" && ".join(sorted(test_cond))].add(item[0])
 
     # Post-processing
     # 1. Resolve wildcard path
