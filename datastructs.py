@@ -85,6 +85,11 @@ class Node:
     def __hash__(self):
         return hash(self.name)
 
+    def __eq__(self, other):
+        if other is None:
+            False
+        return self.name == other.name
+
 
 class FinalTarget(Node):
 
@@ -104,7 +109,6 @@ class FinalConcatNode(Node):
 
     def getChildren(self) -> Optional[List]:
         return self.children
-
 
 
 class FinalSelectNode(Node):
@@ -293,12 +297,6 @@ class CustomCommandNode(Node):
         self.pointTo = self.commands
         self.extraInfo = {}
 
-    def __hash__(self):
-        return hash(self.name)
-
-    def __eq__(self, other):
-        return self.name == other.name
-
     def getChildren(self) -> Optional[List]:
         result = []
         if self.commands:
@@ -309,13 +307,17 @@ class CustomCommandNode(Node):
             return result
         return None
 
-    def evaluate(self, conditions, lookup = None):
+    def evaluate(self, conditions, recStack, lookup = None):
         print("##### Start evaluating custom command " + self.rawName)
+        if conditions is None:
+            conditions = set()
+
         if 'file' in self.getName().lower():
             arguments = self.commands[0].getChildren()
             fileCommandType = arguments[0].getValue()
             if fileCommandType.upper() == 'GLOB':
-                arguments = flattenAlgorithmWithConditions(self.commands[0].getChildren()[1], conditions)
+                arguments = flattenAlgorithmWithConditions(self.commands[0].getChildren()[1],
+                                                           conditions, recStack=recStack)
                 result = []
                 for arg in arguments:
                     wildcardPath = re.findall('"(.*)"', arg[0])
@@ -330,20 +332,21 @@ class CustomCommandNode(Node):
             result = []
             arguments = self.commands[0].getChildren()[1:]
             for argument in arguments:
-                for item in flattenAlgorithmWithConditions(argument, conditions, True):
+                for item in flattenAlgorithmWithConditions(argument, conditions, recStack=recStack):
                     node = VModel.getInstance().lookupTable.getKey("t:{}".format(item[0]))
                     if isinstance(node, TargetNode):
-                        result += flattenAlgorithmWithConditions(node.sources, item[1])
+                        result += flattenAlgorithmWithConditions(node.sources, item[1], recStack=recStack)
                         for library, conditions in node.linkLibrariesConditions.items():
-                            result += flattenAlgorithmWithConditions(library, conditions.union(item[1]))
+                            result += flattenAlgorithmWithConditions(library, conditions.union(item[1]),
+                                                                     recStack=recStack)
             return result
-
 
 
 class ConcatNode(Node):
     def __init__(self, name: str):
         super().__init__(name)
         self.listOfNodes = list()
+        self.concatString = False
 
     def getNodeName(self):
         return "CONCAT"
@@ -507,12 +510,14 @@ def flattenAlgorithm(node: Node):
         return list(result)
 
 
-def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=False, recStack=None):
+def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=True, recStack=None):
     if conditions is None:
         conditions = set()
     if recStack is None:
         recStack = list()
 
+    # We keep nodes in current recursion stack in a set. If current node has been already added
+    # to this list, it means we are expanding a node from upper levels which is a cycle.
     if node in recStack:
         raise Exception('We have a cycle here!!')
 
@@ -522,7 +527,11 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Fal
         print("++++++ Flatten node with name: " + node.getName())
 
     flattedResult = None
-    if isinstance(node, LiteralNode):
+    # We return result from memoize variable if available:
+    if node in VModel.getInstance().flattenMemoize:
+        print(":) Using memoiz")
+        flattedResult = VModel.getInstance().flattenMemoize[node]
+    elif isinstance(node, LiteralNode):
         flattedResult = [(node.getValue(), conditions)]
     elif isinstance(node, TargetNode):
         flattedResult = [(node.rawName, conditions)]
@@ -531,34 +540,51 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Fal
         if node.getPointTo() is None:
             flattedResult = [(node.rawName, conditions)]
         else:
-            flattedResult = flattenAlgorithmWithConditions(node.getPointTo(), conditions, debug, recStack)
+            flattedResult = flattenAlgorithmWithConditions(node.getPointTo(), None, debug, recStack)
     elif isinstance(node, CustomCommandNode):
-        flattedResult = node.evaluate(conditions)
+        flattedResult = node.evaluate(None, recStack)
     elif isinstance(node, SelectNode):
         if node.falseNode and node.trueNode:
-            flattedResult = flattenAlgorithmWithConditions(node.falseNode, conditions.union({(node.args, False)}), debug, recStack) + \
-                   flattenAlgorithmWithConditions(node.trueNode, conditions.union({(node.args, True)}), debug, recStack)
+            flattedResult = flattenAlgorithmWithConditions(node.falseNode, {(node.args, False)}, debug, recStack) + \
+                   flattenAlgorithmWithConditions(node.trueNode, {(node.args, True)}, debug, recStack)
         elif node.trueNode:
-            flattedResult = flattenAlgorithmWithConditions(node.trueNode, conditions.union({(node.args, True)}), debug, recStack)
+            flattedResult = flattenAlgorithmWithConditions(node.trueNode, {(node.args, True)}, debug, recStack)
         elif node.falseNode:
-            flattedResult = flattenAlgorithmWithConditions(node.falseNode, conditions.union({(node.args, False)}), debug, recStack)
+            flattedResult = flattenAlgorithmWithConditions(node.falseNode, {(node.args, False)}, debug, recStack)
     elif isinstance(node, ConcatNode):
         result = ['']
         for item in node.getChildren():
-            childSet = flattenAlgorithmWithConditions(item, conditions, debug, recStack)
+            childSet = flattenAlgorithmWithConditions(item, None, debug, recStack)
             tempSet = []
             if childSet is None:
                 continue
-            for str1 in result:
-                for str2 in childSet:
-                    if str1 == '':
-                        tempSet.append(str2)
-                    else:
-                        tempSet.append(["{}{}".format(str1[0], str2[0]), str1[1].union(str2[1])])
-            result = tempSet
+
+            # There are two types of concat node. One which concat the literal string
+            # and other one which make a list of values
+            if node.concatString:
+                for str1 in result:
+                    for str2 in childSet:
+                        if str1 == '':
+                            tempSet.append(str2)
+                        else:
+                            tempSet.append(["{}{}".format(str1[0], str2[0]), str1[1].union(str2[1])])
+                result = tempSet
+            else:
+                if result[0] == '':
+                    result = childSet
+                else:
+                    result += childSet
         flattedResult = result
 
+    if node not in VModel.getInstance().flattenMemoize:
+        VModel.getInstance().flattenMemoize[node] = copy.copy(flattedResult)
+        print(":( Writing to memoiz")
+
     recStack.remove(node)
+
+    if flattedResult:
+        for item in flattedResult:
+            item[1].update(conditions)
     return flattedResult
 
 
@@ -577,6 +603,7 @@ class VModel:
 
     def __init__(self):
         Node.created_commands = dict()
+        self.flattenMemoize = {}
         self.nodes: Optional[List[Node]] = []
         self.cmakeVersion = None
         self.ifLevel = 0
@@ -822,8 +849,9 @@ class VModel:
             if len(result) == 1 and not forceConcatNode:
                 return result[0]
             else:
-                concatNode = ConcatNode("{}_{}".format(",".join(expression), self.getNextCounter()))
+                concatNode = ConcatNode("{}".format(",".join(expression)))
                 concatNode.listOfNodes += result
+                concatNode.concatString = True
                 return concatNode
             # mayExistNode = self.lookupTable.getKey(expression[0]) or self.findNode(expression[0])
             # if mayExistNode:

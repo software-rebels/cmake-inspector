@@ -154,7 +154,7 @@ def listCommand(arguments):
         command = CustomCommandNode(commandName)
         command.pointTo.append(listVariable)
 
-        variable = RefNode("{}_{}".format(outVariable, vmodel.getNextCounter()), command)
+        variable = RefNode(outVariable, command)
 
         newNode = command
         newVModel = variable
@@ -168,7 +168,7 @@ def listCommand(arguments):
         command = CustomCommandNode(commandName)
         command.pointTo.append(listVariable)
 
-        variable = RefNode("{}_{}".format(outVariable, vmodel.getNextCounter()), command)
+        variable = RefNode(outVariable, command)
 
         newNode = command
         newVModel = variable
@@ -176,8 +176,8 @@ def listCommand(arguments):
 
     if action == 'APPEND':
         # We create a concatNode contains the arguments and a new RefNode for the variable
-        concatNode = ConcatNode("LIST_" + listName + ",".join(arguments) + vmodel.getNextCounter())
-        listVModel = RefNode("{}_{}".format(listName, vmodel.getNextCounter()), concatNode)
+        concatNode = ConcatNode("LIST_" + listName + ",".join(arguments))
+        listVModel = RefNode(listName, concatNode)
 
         argumentSet = vmodel.flatten(arguments)
         for item in argumentSet:
@@ -578,7 +578,7 @@ class CMakeExtractorListener(CMakeListener):
 
         # remove_definitions(-DFOO -DBAR ...)
         elif commandId == 'remove_definitions':
-            fileNode = CustomCommandNode('remove_definitions_{}'.format(vmodel.getNextCounter()))
+            fileNode = CustomCommandNode('remove_definitions')
             fileNode.commands.append(vmodel.expand(arguments))
             vmodel.nodes.append(util_handleConditions(fileNode, fileNode.name))
 
@@ -947,7 +947,7 @@ class CMakeExtractorListener(CMakeListener):
             scopeMap[propertyName] = {'INHERITED': _inherited, 'BRIEF_DOCS': brief_doc, 'FULL_DOCS': full_doc}
 
         elif commandId == 'export':
-            commandNode = CustomCommandNode("EXPORT_{}".format(vmodel.getNextCounter()))
+            commandNode = CustomCommandNode("EXPORT")
             commandNode.commands.append(vmodel.expand(arguments))
             vmodel.nodes.append(commandNode)
 
@@ -1524,6 +1524,8 @@ def main(argv):
     visited = []
     # a = checkForCyclesAndPrint(vmodel, lookupTable, lookupTable.getKey("t:etl"), visited, stackList)
     # print(a)
+    # testNode = vmodel.findNode('${CLIENT_LIBRARIES}_662')
+    # flattenAlgorithmWithConditions(testNode)
     a = printFilesForATarget(vmodel, lookupTable, 'etl', True)
     print(a)
 

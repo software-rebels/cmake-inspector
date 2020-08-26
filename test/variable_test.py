@@ -519,7 +519,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual(self.vmodel.findNode('FILE'), fileCommand)
         self.assertEqual("GLOB files_for_test/*.cxx", " ".join(getFlattedArguments(fileCommand.commands[0])))
         self.assertEqual(['files_for_test/b.cxx', 'files_for_test/c.cxx', 'files_for_test/a.cxx'],
-                         [item[0] for item in fileCommand.evaluate(set())])
+                         [item[0] for item in fileCommand.evaluate(set(), recStack=[])])
 
     def test_simple_file_remove(self):
         text = """
@@ -1055,7 +1055,7 @@ class TestVariableDefinitions(unittest.TestCase):
         export(TARGETS foo john NAMESPACE np FILE exported.cmake)
         """
         self.runTool(text)
-        exportNode = self.vmodel.findNode('EXPORT_1')
+        exportNode = self.vmodel.findNode('EXPORT')
         self.assertIsInstance(exportNode, CustomCommandNode)
         self.assertEqual(self.lookup.getKey("t:foo"), exportNode.commands[0].getChildren()[1])
         self.assertEqual(self.lookup.getKey("t:john"), exportNode.commands[0].getChildren()[2])
@@ -1240,7 +1240,7 @@ class TestVariableDefinitions(unittest.TestCase):
         endif(AMD)
         """
         self.runTool(text)
-        commandNode = self.vmodel.findNode('remove_definitions_2')
+        commandNode = self.vmodel.findNode('remove_definitions')
         self.assertIsInstance(commandNode, CustomCommandNode)
         self.assertEqual('-Djohn', commandNode.commands[0].getValue())
 
@@ -1649,6 +1649,33 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         self.assertRaises(Exception, printFilesForATarget, self.vmodel, self.lookup, 'foo')
+
+    def test_flatten_file_for_a_target_from_a_list(self):
+        text = """
+        add_library(foo another_folder_for_test/*.cxx)
+        add_library(bar files_for_test/a.cxx)
+        LIST(APPEND CLIENT_LIBRARIES foo bar)
+        add_executable(john files_for_test/b.cxx)
+        target_link_libraries(john ${CLIENT_LIBRARIES})
+        """
+        self.runTool(text)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'john', False)
+        self.assertSetEqual({"files_for_test/a.cxx", "another_folder_for_test/a.cxx",
+                             "files_for_test/b.cxx", "another_folder_for_test/b2.cxx"}, a['NO_MATTER_WHAT'])
+
+    def test_flatten_file_for_a_target_from_a_list_with_literal_concat(self):
+        text = """
+        add_library(foo another_folder_for_test/*.cxx)
+        add_library(bar files_for_test/a.cxx)
+        LIST(APPEND CLIENT_LIBRARIES foo bar)
+        add_executable(john files_for_test/b.cxx)
+        set(varA jo)
+        target_link_libraries(${varA}hn ${CLIENT_LIBRARIES})
+        """
+        self.runTool(text)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'john', False)
+        self.assertSetEqual({"files_for_test/a.cxx", "another_folder_for_test/a.cxx",
+                             "files_for_test/b.cxx", "another_folder_for_test/b2.cxx"}, a['NO_MATTER_WHAT'])
 
 
 if __name__ == '__main__':
