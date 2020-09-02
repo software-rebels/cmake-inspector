@@ -1429,6 +1429,7 @@ class CMakeExtractorListener(CMakeListener):
         elif commandId == 'target_link_libraries':
             customCommand = CustomCommandNode('target_link_libraries')
             customCommand.commands.append(vmodel.expand(arguments))
+            finalNode = util_handleConditions(customCommand, customCommand.name, None)
             # Next variable should have the target nodes itself or the name of targets
             targetList = flattenAlgorithmWithConditions(customCommand.commands[0].getChildren()[0])
             for target in targetList:
@@ -1438,10 +1439,10 @@ class CMakeExtractorListener(CMakeListener):
                 # Now we should have a TargetNode
                 assert isinstance(targetNode, TargetNode)
                 assert isinstance(target[1], set)
-                targetNode.linkLibrariesConditions[customCommand] = target[1]
+                targetNode.linkLibrariesConditions[finalNode] = target[1]
 
             vmodel.nodes.append(
-                util_handleConditions(customCommand, customCommand.name, None)
+                finalNode
             )
 
         # project( < PROJECT - NAME > [ < language - name > ...])

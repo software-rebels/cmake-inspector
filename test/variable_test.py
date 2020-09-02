@@ -1677,6 +1677,42 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertSetEqual({"files_for_test/a.cxx", "another_folder_for_test/a.cxx",
                              "files_for_test/b.cxx", "another_folder_for_test/b2.cxx"}, a['NO_MATTER_WHAT'])
 
+    def test_flatten_file_with_else_if_condition(self):
+        text = """
+        option(foo "Is bar?" YES)
+        option(john "Is jon?" YES)
+        if(foo)
+            set(libraries files_for_test/a.cxx files_for_test/b.cxx)
+        elseif(NOT john)
+            set(libraries files_for_test/c.cxx)
+        else()
+            set(libraries another_folder_for_test/*.cxx)
+        endif()
+        add_executable(exec ${libraries})
+        """
+        self.runTool(text)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec', True)
+
+    def test_flatten_target_with_link_libraries_and_else_if(self):
+        text = """
+        option(foo "Is bar?" YES)
+        option(john "Is jon?" YES)
+        add_executable(exec files_for_test/a.cxx files_for_test/b.cxx)
+        add_library(lib1 files_for_test/c.cxx)
+        add_library(lib2 another_folder_for_test/a.cxx)
+        add_library(lib3 another_folder_for_test/*.cxx)
+        if(foo)
+            target_link_libraries(exec lib1)
+        elseif(NOT john)
+            target_link_libraries(exec lib2)
+        else()
+            target_link_libraries(exec lib3)
+        endif()
+        """
+        self.runTool(text)
+        # self.vmodel.export()
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec', True)
+
 
 if __name__ == '__main__':
     unittest.main()

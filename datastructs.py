@@ -87,7 +87,7 @@ class Node:
 
     def __eq__(self, other):
         if other is None:
-            False
+            return False
         return self.name == other.name
 
 
