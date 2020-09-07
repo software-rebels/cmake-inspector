@@ -61,6 +61,10 @@ def util_handleConditions(nextNode, newNodeName, prevNode=None):
     # If the variable were already defined before the if, the false edge points to that
     systemState = None
     stateProperty = None
+
+    # The for statement will traverse all nested if nodes and create corresponding select node for each of them
+    # However, we only interested in states in outer levels. So, we skip the ones in a same level
+    # For example, in an if -> if | else scenario, when we are processing the else, we skip in inner most if
     currentIfLevel = 1000
     for systemState, stateProperty, level in reversed(vmodel.systemState):
         if currentIfLevel == level:
