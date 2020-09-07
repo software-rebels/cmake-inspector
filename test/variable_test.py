@@ -1691,12 +1691,18 @@ class TestVariableDefinitions(unittest.TestCase):
         add_executable(exec ${libraries})
         """
         self.runTool(text)
-        a = printFilesForATarget(self.vmodel, self.lookup, 'exec', True)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
+        self.assertSetEqual({"another_folder_for_test/b2.cxx", "another_folder_for_test/a.cxx"},
+                            a["(( NOT foo ) AND NOT john ) OR foo:False"])
+        self.assertSetEqual({"files_for_test/a.cxx", "files_for_test/b.cxx"},
+                            a["(( NOT foo ) AND NOT john ) OR foo:True && (( NOT foo ) AND NOT john ):False && foo:True"])
+        self.assertSetEqual({"files_for_test/c.cxx"},
+                            a["(( NOT foo ) AND NOT john ) OR foo:True && (( NOT foo ) AND NOT john ):True"])
 
     def test_flatten_target_with_link_libraries_and_else_if(self):
         text = """
         option(foo "Is bar?" YES)
-        option(john "Is jon?" YES)
+        option(john "Is john?" YES)
         add_executable(exec files_for_test/a.cxx files_for_test/b.cxx)
         add_library(lib1 files_for_test/c.cxx)
         add_library(lib2 another_folder_for_test/a.cxx)
@@ -1710,9 +1716,27 @@ class TestVariableDefinitions(unittest.TestCase):
         endif()
         """
         self.runTool(text)
-        # self.vmodel.export()
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec', True)
+        self.assertSetEqual({"files_for_test/b.cxx", "files_for_test/a.cxx"}, a[""])
+        self.assertSetEqual({"another_folder_for_test/b2.cxx","another_folder_for_test/a.cxx"},
+                            a["(( NOT foo ) AND NOT john ) OR foo:False"])
+        self.assertSetEqual({"another_folder_for_test/a.cxx"}, a["(( NOT foo ) AND NOT john ):True"])
+        self.assertSetEqual({"files_for_test/c.cxx"}, a["foo:True"])
 
+    def test_flatten_target_with_nested_if_statements(self):
+        text = """
+        option(foo "Is bar?" YES)
+        option(john "Is john?" YES)
+        add_executable(exec files_for_test/a.cxx files_for_test/b.cxx)
+        add_library(lib another_folder_for_test/*.cxx)
+        if(foo)
+            if(john)
+                target_link_libraries(exec lib)
+            endif()
+        endif()
+        """
+        self.runTool(text)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec', True)
 
 if __name__ == '__main__':
     unittest.main()

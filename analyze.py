@@ -97,6 +97,8 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
             test_cond.add("{}:{}".format(cond[0].getValue(), str(cond[1])))
         if test_cond:
             result[" && ".join(sorted(test_cond))].add(item[0])
+        elif item[0]:
+            result[""].add(item[0])
 
     # Post-processing
     # 1. Resolve wildcard path

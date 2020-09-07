@@ -5,3 +5,4 @@ __pycache__/
 .DS_Store
 graph.gv
 graph.gv.pdf
+*.log

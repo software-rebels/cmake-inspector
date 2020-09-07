@@ -61,27 +61,27 @@ def util_handleConditions(nextNode, newNodeName, prevNode=None):
     # If the variable were already defined before the if, the false edge points to that
     systemState = None
     stateProperty = None
-    if vmodel.getCurrentSystemState():
-        systemState, stateProperty = vmodel.getCurrentSystemState()
-    if systemState == 'if' or systemState == 'else' or systemState == 'elseif':
-        selectNodeName = "SELECT_{}_{}".format(newNodeName,
-                                               util_getStringFromList(stateProperty))
-        newSelectNode = SelectNode(selectNodeName, stateProperty)
-        newSelectNode.args = vmodel.expand(stateProperty)
+    for systemState, stateProperty in reversed(vmodel.systemState):
+        if systemState == 'if' or systemState == 'else' or systemState == 'elseif':
+            selectNodeName = "SELECT_{}_{}".format(newNodeName,
+                                                   util_getStringFromList(stateProperty))
+            newSelectNode = SelectNode(selectNodeName, stateProperty)
+            newSelectNode.args = vmodel.expand(stateProperty)
 
-        if systemState == 'if' or systemState == 'elseif':
-            newSelectNode.setTrueNode(nextNode)
-        elif systemState == 'else':
-            newSelectNode.setFalseNode(nextNode)
-        # Inside if statement, we set true node to the variable defined outside if which pushed
-        # to this stack before entering the if statement
-        if prevNode or vmodel.getLastPushedLookupTable().getKey(newNodeName):
             if systemState == 'if' or systemState == 'elseif':
-                newSelectNode.setFalseNode(prevNode or vmodel.getLastPushedLookupTable().getKey(newNodeName))
+                newSelectNode.setTrueNode(nextNode)
             elif systemState == 'else':
-                newSelectNode.setTrueNode(prevNode or vmodel.getLastPushedLookupTable().getKey(newNodeName))
+                newSelectNode.setFalseNode(nextNode)
+            # Inside if statement, we set true node to the variable defined outside if which pushed
+            # to this stack before entering the if statement
+            if prevNode or vmodel.getLastPushedLookupTable().getKey(newNodeName):
+                if systemState == 'if' or systemState == 'elseif':
+                    newSelectNode.setFalseNode(prevNode or vmodel.getLastPushedLookupTable().getKey(newNodeName))
+                elif systemState == 'else':
+                    newSelectNode.setTrueNode(prevNode or vmodel.getLastPushedLookupTable().getKey(newNodeName))
+            nextNode = newSelectNode
+            newNodeName = nextNode.name
 
-        return newSelectNode
     return nextNode
 
 

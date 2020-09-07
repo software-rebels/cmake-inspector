@@ -6,6 +6,9 @@ from datalayer import Target, Reference, Concat, Literal, Select, CustomCommand
 import re
 import glob
 import os
+import logging
+
+logging.basicConfig(filename='cmakeInspector.log', level=logging.DEBUG)
 
 VARIABLE_REGEX = r"\${(\S*)}"
 
@@ -364,10 +367,13 @@ class ConcatNode(Node):
         return self.getNodes()
 
     def getValue(self):
-        result = ""
+        result = []
         for child in self.getChildren():
-            result += str(child.getValue())
-        return result
+            result.append(str(child.getValue()))
+        if self.concatString:
+            return "".join(result)
+        else:
+            return " ".join(result)
 
 
 class LiteralNode(Node):
@@ -522,14 +528,11 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
         raise Exception('We have a cycle here!!')
 
     recStack.append(node)
-
-    if debug:
-        print("++++++ Flatten node with name: " + node.getName())
+    logging.debug("++++++ Flatten node with name: " + node.getName())
 
     flattedResult = None
     # We return result from memoize variable if available:
     if node in VModel.getInstance().flattenMemoize:
-        print(":) Using memoiz")
         flattedResult = copy.copy(VModel.getInstance().flattenMemoize[node])
     elif isinstance(node, LiteralNode):
         flattedResult = [(node.getValue(), conditions)]
@@ -578,7 +581,6 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
 
     if node not in VModel.getInstance().flattenMemoize:
         VModel.getInstance().flattenMemoize[node] = copy.copy(flattedResult)
-        print(":( Writing to memoiz")
 
     recStack.remove(node)
 
