@@ -636,9 +636,11 @@ class VModel:
         self.DIRECTORY_PROPERTIES.setKey('VARIABLES', self.lookupTable.items[-1])
         # A temp variable to keep changes between nodes
         self.nodeStack = []
+        # A new property to support nested if statements
+        self.ifLevel = 0
 
     def pushSystemState(self, state, properties):
-        self.systemState.append((state, properties))
+        self.systemState.append((state, properties, self.ifLevel))
 
     def getCurrentSystemState(self):
         if self.systemState:

@@ -61,7 +61,11 @@ def util_handleConditions(nextNode, newNodeName, prevNode=None):
     # If the variable were already defined before the if, the false edge points to that
     systemState = None
     stateProperty = None
-    for systemState, stateProperty in reversed(vmodel.systemState):
+    currentIfLevel = 1000
+    for systemState, stateProperty, level in reversed(vmodel.systemState):
+        if currentIfLevel == level:
+            continue
+        currentIfLevel = min(currentIfLevel, level)
         if systemState == 'if' or systemState == 'else' or systemState == 'elseif':
             selectNodeName = "SELECT_{}_{}".format(newNodeName,
                                                    util_getStringFromList(stateProperty))
@@ -195,7 +199,7 @@ def listCommand(arguments):
     systemState = None
     stateProperty = None
     if vmodel.getCurrentSystemState():
-        systemState, stateProperty = vmodel.getCurrentSystemState()
+        systemState, stateProperty, level = vmodel.getCurrentSystemState()
 
     if systemState == 'if' or systemState == 'else' or systemState == 'elseif':
         selectNodeName = "SELECT_{}_{}".format(newName,
@@ -234,7 +238,7 @@ def whileCommand(arguments):
 # While command node
 def endwhileCommand():
     lastPushedLookup = vmodel.getLastPushedLookupTable()
-    state, command = vmodel.popSystemState()
+    state, command, level = vmodel.popSystemState()
     prevNodeStack = vmodel.nodeStack.pop()
     for item in vmodel.nodes:
         if item not in prevNodeStack:
@@ -412,7 +416,7 @@ def addTarget(arguments, isExecutable=True):
     systemState = None
     stateProperty = None
     if vmodel.getCurrentSystemState():
-        systemState, stateProperty = vmodel.getCurrentSystemState()
+        systemState, stateProperty, level = vmodel.getCurrentSystemState()
 
     if systemState == 'if' or systemState == 'else' or systemState == 'elseif':
         selectNodeName = "SELECT_{}_{}_{}".format(targetName,
@@ -467,6 +471,7 @@ class CMakeExtractorListener(CMakeListener):
     def enterIfCommand(self, ctx: CMakeParser.IfCommandContext):
         vmodel.setInsideIf()
         vmodel.pushCurrentLookupTable()
+        vmodel.ifLevel += 1
         arguments = [argument.getText() for argument in ctx.ifStatement().argument().children if
                      not isinstance(argument, TerminalNode)]
         processedArgs = []
@@ -495,7 +500,7 @@ class CMakeExtractorListener(CMakeListener):
     def enterElseIfStatement(self, ctx: CMakeParser.ElseIfStatementContext):
         vmodel.popLookupTable()
         vmodel.pushCurrentLookupTable()
-        state, condition = vmodel.getCurrentSystemState()
+        state, condition, level = vmodel.getCurrentSystemState()
 
         reservedWords = [
             'NOT', 'AND', 'OR', 'COMMAND', 'POLICY', 'TARGET', 'EXISTS', 'IS_NEWER_THAN', 'IS_DIRECTORY',
@@ -522,7 +527,7 @@ class CMakeExtractorListener(CMakeListener):
         # We create a new condition list which in a <CONDITION_1 or CONDITION_2 or ...> format
         elseCondition = []
         while True:
-            state, condition = vmodel.getCurrentSystemState()
+            state, condition, level = vmodel.getCurrentSystemState()
             elseCondition += condition
             if state != 'if':
                 vmodel.popSystemState()
@@ -538,10 +543,11 @@ class CMakeExtractorListener(CMakeListener):
         vmodel.setOutsideIf()
         vmodel.ifConditions.pop()
         vmodel.popLookupTable()
+        vmodel.ifLevel -= 1
         # In case of an if statement without else command, the state of the if itself and multiple else ifs
         # still exists. We should keep popping until we reach to the if
         while True:
-            state, condition = vmodel.popSystemState()
+            state, condition, level = vmodel.popSystemState()
             if state == 'if':
                 break
 
@@ -634,7 +640,7 @@ class CMakeExtractorListener(CMakeListener):
             systemState = None
             stateProperty = None
             if vmodel.getCurrentSystemState():
-                systemState, stateProperty = vmodel.getCurrentSystemState()
+                systemState, stateProperty, level = vmodel.getCurrentSystemState()
 
             args = vmodel.expand(arguments)
             commandNode.depends.append(args)
@@ -1311,7 +1317,7 @@ class CMakeExtractorListener(CMakeListener):
 
         elif commandId == 'endforeach':
             lastPushedLookup = vmodel.getLastPushedLookupTable()
-            state, command = vmodel.popSystemState()
+            state, command, level = vmodel.popSystemState()
             forEachVariableName = command.commands[0].getChildren()[0].getValue()
             prevNodeStack = vmodel.nodeStack.pop()
             for item in vmodel.nodes:
