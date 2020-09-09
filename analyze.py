@@ -1,3 +1,6 @@
+import logging
+import pickle
+
 from datastructs import VModel, Lookup, RefNode, TargetNode, LiteralNode, CustomCommandNode, \
     flattenAlgorithmWithConditions, FinalTarget, FinalSelectNode, Node
 from pydriller import RepositoryMining
@@ -80,7 +83,7 @@ def checkForCyclesAndPrint(vmodel: VModel, lookup: Lookup, node: Node, visited=[
 
 
 def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=False):
-    print("##### Start printing files for target " + target)
+    logging.info("##### Start printing files for target " + target)
     targetNode = lookup.getKey("t:{}".format(target))
     assert isinstance(targetNode, TargetNode)
     flattenedFiles = flattenAlgorithmWithConditions(targetNode.sources)
@@ -124,6 +127,9 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
             raise TypeError
 
         print(json.dumps(result, default=set_default, sort_keys=True, indent=4))
+
+    with open('result.pkl', 'wb') as f:
+        pickle.dump(result, f, pickle.HIGHEST_PROTOCOL)
     return result
 
 

@@ -1743,6 +1743,83 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertSetEqual({"another_folder_for_test/b2.cxx", "another_folder_for_test/a.cxx"},
                             a["foo:True && john:True"])
 
+    def test_flatten_target_with_variable_inside_nested_if_statements(self):
+        text = """
+        option(foo "Is bar?" YES)
+        option(john "Is john?" YES)
+        set(libraries files_for_test/a.cxx)
+        if(foo)
+            set(libraries files_for_test/c.cxx)
+            if(john)
+                set(libraries files_for_test/a.cxx files_for_test/b.cxx)
+            else()
+                set(libraries another_folder_for_test/*.cxx)
+            endif()
+        endif()
+        add_executable(exec ${libraries})
+        """
+        self.runTool(text)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
+        self.assertSetEqual({"files_for_test/a.cxx"}, a["foo:False"])
+        self.assertSetEqual({"another_folder_for_test/a.cxx",
+                             "another_folder_for_test/b2.cxx"}, a["foo:True && john:False"])
+        self.assertSetEqual({"files_for_test/b.cxx",
+                             "files_for_test/a.cxx"}, a["foo:True && john:True"])
+
+    def test_simple_if_assignment_outside_if(self):
+        text = """
+        option(foo "Is bar?" YES)
+        set(libraries files_for_test/a.cxx)
+        if(foo)
+            set(libraries files_for_test/b.cxx)
+        endif()
+        add_executable(exec ${libraries})
+        """
+        self.runTool(text)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
+        self.assertSetEqual({"files_for_test/a.cxx"}, a["foo:False"])
+        self.assertSetEqual({"files_for_test/b.cxx"}, a["foo:True"])
+
+    def test_nested_if_statement_append_list(self):
+        text = """
+        option(BUILD_SERVER "des1" YES)
+        option(FEATURE_IRC_SERVER "des2" YES)
+        set(SERVER_SRC files_for_test/a.cxx)
+        if(BUILD_SERVER)
+            if(FEATURE_IRC_SERVER)
+                list(APPEND SERVER_SRC files_for_test/b.cxx)
+            endif(FEATURE_IRC_SERVER)
+        endif(BUILD_SERVER)
+        add_executable(exec ${SERVER_SRC})
+        """
+        self.runTool(text)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
+        self.assertSetEqual({"files_for_test/b.cxx"}, a["BUILD_SERVER:True && FEATURE_IRC_SERVER:True"])
+        self.assertSetEqual({"files_for_test/a.cxx"}, a["NO_MATTER_WHAT"])
+
+    def test_nested_if_statement_with_esle_append_list(self):
+        text = """
+        option(BUILD_SERVER "des1" YES)
+        option(FEATURE_IRC_SERVER "des2" YES)
+        set(SERVER_SRC files_for_test/a.cxx)
+        if(BUILD_SERVER)
+            if(FEATURE_IRC_SERVER)
+                list(APPEND SERVER_SRC files_for_test/b.cxx)
+            else()
+                list(APPEND SERVER_SRC files_for_test/c.cxx)
+            endif(FEATURE_IRC_SERVER)
+        else()
+            list(APPEND SERVER_SRC another_folder_for_test/a.cxx)
+        endif(BUILD_SERVER)
+        add_executable(exec ${SERVER_SRC})
+        """
+        self.runTool(text)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
+        self.assertSetEqual({"files_for_test/a.cxx"}, a["NO_MATTER_WHAT"])
+        self.assertSetEqual({"files_for_test/b.cxx"}, a["BUILD_SERVER:True && FEATURE_IRC_SERVER:True"])
+        self.assertSetEqual({"files_for_test/c.cxx"}, a["BUILD_SERVER:True && FEATURE_IRC_SERVER:False"])
+        self.assertSetEqual({"another_folder_for_test/a.cxx"}, a["BUILD_SERVER:False"])
+
 
 if __name__ == '__main__':
     unittest.main()

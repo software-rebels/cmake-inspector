@@ -88,7 +88,7 @@ def util_handleConditions(nextNode, newNodeName, prevNode=None):
                 elif systemState == 'else':
                     newSelectNode.setTrueNode(prevNode or vmodel.getLastPushedLookupTable().getKey(newNodeName))
             nextNode = newSelectNode
-            newNodeName = nextNode.name
+            # newNodeName = nextNode.name
 
     return nextNode
 
@@ -113,7 +113,8 @@ def listCommand(arguments):
     # List command supports many actions, like APPEND, INSERT, ...
     action = arguments.pop(0)
     action = action.upper()
-    listName = "${{{}}}".format(arguments.pop(0))
+    rawListName = arguments.pop(0)
+    listName = "${{{}}}".format(rawListName)
     listVariable = lookupTable.getKey(listName)
 
     if action == 'LENGTH':
@@ -185,7 +186,7 @@ def listCommand(arguments):
     if action == 'APPEND':
         # We create a concatNode contains the arguments and a new RefNode for the variable
         concatNode = ConcatNode("LIST_" + listName + ",".join(arguments))
-        listVModel = RefNode(listName, concatNode)
+        # listVModel = RefNode(listName, concatNode)
 
         argumentSet = vmodel.flatten(arguments)
         for item in argumentSet:
@@ -196,9 +197,12 @@ def listCommand(arguments):
         if prevListVar:
             concatNode.addToBeginning(prevListVar)
 
-        newNode = concatNode
-        newVModel = listVModel
-        newName = listName
+        listVModel = util_create_and_add_refNode_for_variable(rawListName, concatNode)
+
+        # newNode = concatNode
+        # newVModel = listVModel
+        # newName = listName
+        return
 
     systemState = None
     stateProperty = None
