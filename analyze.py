@@ -119,17 +119,19 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
                 del result[key]
         result['NO_MATTER_WHAT'].update(files)
 
-    if output:
-        # json.dumps does not work on set. Using this function, we convert set to a list.
-        def set_default(obj):
-            if isinstance(obj, set):
-                return list(obj)
-            raise TypeError
+    # json.dumps does not work on set. Using this function, we convert set to a list.
+    def set_default(obj):
+        if isinstance(obj, set):
+            return list(obj)
+        raise TypeError
 
+    if output:
         print(json.dumps(result, default=set_default, sort_keys=True, indent=4))
 
     with open('result.pkl', 'wb') as f:
         pickle.dump(result, f, pickle.HIGHEST_PROTOCOL)
+    with open('result.json', 'w') as f:
+        json.dump(result, f, default=set_default, sort_keys=True, indent=4)
     return result
 
 

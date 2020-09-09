@@ -184,9 +184,8 @@ def listCommand(arguments):
         newName = outVariable
 
     if action == 'APPEND':
-        # We create a concatNode contains the arguments and a new RefNode for the variable
+        # We create a concatNode contains the arguments
         concatNode = ConcatNode("LIST_" + listName + ",".join(arguments))
-        # listVModel = RefNode(listName, concatNode)
 
         argumentSet = vmodel.flatten(arguments)
         for item in argumentSet:
@@ -197,11 +196,8 @@ def listCommand(arguments):
         if prevListVar:
             concatNode.addToBeginning(prevListVar)
 
-        listVModel = util_create_and_add_refNode_for_variable(rawListName, concatNode)
-
-        # newNode = concatNode
-        # newVModel = listVModel
-        # newName = listName
+        # A new RefNode will point to this new concatNode
+        util_create_and_add_refNode_for_variable(rawListName, concatNode)
         return
 
     systemState = None

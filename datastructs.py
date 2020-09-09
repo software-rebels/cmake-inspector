@@ -516,7 +516,7 @@ def flattenAlgorithm(node: Node):
         return list(result)
 
 
-def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=True, recStack=None, useCache=False):
+def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=True, recStack=None, useCache=True):
     if conditions is None:
         conditions = set()
     if recStack is None:
@@ -533,7 +533,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
     flattedResult = None
     # We return result from memoize variable if available:
     if node in VModel.getInstance().flattenMemoize and useCache:
-        flattedResult = copy.copy(VModel.getInstance().flattenMemoize[node])
+        flattedResult = copy.deepcopy(VModel.getInstance().flattenMemoize[node])
     elif isinstance(node, LiteralNode):
         flattedResult = [(node.getValue(), conditions)]
     elif isinstance(node, TargetNode):
@@ -580,7 +580,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
         flattedResult = result
 
     if node not in VModel.getInstance().flattenMemoize:
-        VModel.getInstance().flattenMemoize[node] = copy.copy(flattedResult)
+        VModel.getInstance().flattenMemoize[node] = copy.deepcopy(flattedResult)
 
     recStack.remove(node)
 

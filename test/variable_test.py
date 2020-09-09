@@ -1544,7 +1544,7 @@ class TestVariableDefinitions(unittest.TestCase):
         add_executable(test_exec ${path})
         """
         self.runTool(text)
-        a = printFilesForATarget(self.vmodel, self.lookup, 'test_exec', True)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'test_exec', False)
         self.assertSetEqual({"another_folder_for_test/b2.cxx",
                              "another_folder_for_test/a.cxx"}, a['NOT   source_file:True && foo:False'])
         self.assertSetEqual({"files_for_test/a.cxx",
@@ -1716,7 +1716,7 @@ class TestVariableDefinitions(unittest.TestCase):
         endif()
         """
         self.runTool(text)
-        a = printFilesForATarget(self.vmodel, self.lookup, 'exec', True)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
         self.assertSetEqual({"files_for_test/b.cxx", "files_for_test/a.cxx"}, a[""])
         self.assertSetEqual({"another_folder_for_test/b2.cxx","another_folder_for_test/a.cxx"},
                             a["(( NOT foo ) AND NOT john ) OR foo:False"])
