@@ -8,7 +8,7 @@ import glob
 import os
 import logging
 
-logging.basicConfig(filename='cmakeInspector__.log', level=logging.DEBUG)
+logging.basicConfig(filename='cmakeInspector.log', level=logging.DEBUG)
 
 VARIABLE_REGEX = r"\${(\S*)}"
 
@@ -534,7 +534,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
     # We return result from memoize variable if available:
     if node in VModel.getInstance().flattenMemoize:
         logging.debug("CACHE HIT for " + node.getName())
-        flattedResult = copy.deepcopy(VModel.getInstance().flattenMemoize[node])
+        flattedResult = [(x, set(y)) for x, y in VModel.getInstance().flattenMemoize[node]]
     elif isinstance(node, LiteralNode):
         flattedResult = [(node.getValue(), conditions)]
     elif isinstance(node, TargetNode):
@@ -585,8 +585,9 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                     result += childSet
         flattedResult = result
 
-    if node not in VModel.getInstance().flattenMemoize:
-        VModel.getInstance().flattenMemoize[node] = copy.deepcopy(flattedResult)
+    if node not in VModel.getInstance().flattenMemoize and flattedResult:
+        copied_result = [(x, set(y)) for x, y in flattedResult]
+        VModel.getInstance().flattenMemoize[node] = copied_result
 
     recStack.remove(node)
 
