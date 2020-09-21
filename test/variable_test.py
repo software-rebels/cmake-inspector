@@ -1,4 +1,6 @@
+import json
 import unittest
+from collections import defaultdict
 
 from antlr4 import CommonTokenStream, ParseTreeWalker, InputStream
 
@@ -1819,6 +1821,37 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertSetEqual({"files_for_test/b.cxx"}, a["BUILD_SERVER:True && FEATURE_IRC_SERVER:True"])
         self.assertSetEqual({"files_for_test/c.cxx"}, a["BUILD_SERVER:True && FEATURE_IRC_SERVER:False"])
         self.assertSetEqual({"another_folder_for_test/a.cxx"}, a["BUILD_SERVER:False"])
+
+    def test_size_of_concat_node_not_explode(self):
+        text = """
+        option(opt1 "des1" YES)
+        set(foo john doe bar)
+        if(opt1)
+            list(append foo mehran)
+        endif() 
+        """
+        self.runTool(text)
+        var = self.lookup.getKey('${foo}')
+        a = flattenAlgorithmWithConditions(var)
+        result = defaultdict(set)
+        for item in a:
+            test_cond = set()
+            for cond in item[1]:
+                # TODO: For some reason
+                if cond[0] is None:
+                    continue
+                test_cond.add("{}:{}".format(cond[0].getValue(), str(cond[1])))
+            if test_cond:
+                result[" && ".join(sorted(test_cond))].add(item[0])
+            elif item[0]:
+                result[""].add(item[0])
+
+        def set_default(obj):
+            if isinstance(obj, set):
+                return list(obj)
+            raise TypeError
+
+        print(json.dumps(result, default=set_default, sort_keys=True, indent=4))
 
 
 if __name__ == '__main__':

@@ -8,7 +8,7 @@ import glob
 import os
 import logging
 
-logging.basicConfig(filename='cmakeInspector.log', level=logging.DEBUG)
+logging.basicConfig(filename='cmakeInspector__.log', level=logging.DEBUG)
 
 VARIABLE_REGEX = r"\${(\S*)}"
 
@@ -516,7 +516,7 @@ def flattenAlgorithm(node: Node):
         return list(result)
 
 
-def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=True, recStack=None, useCache=True):
+def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=True, recStack=None):
     if conditions is None:
         conditions = set()
     if recStack is None:
@@ -532,7 +532,8 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
 
     flattedResult = None
     # We return result from memoize variable if available:
-    if node in VModel.getInstance().flattenMemoize and useCache:
+    if node in VModel.getInstance().flattenMemoize:
+        logging.debug("CACHE HIT for " + node.getName())
         flattedResult = copy.deepcopy(VModel.getInstance().flattenMemoize[node])
     elif isinstance(node, LiteralNode):
         flattedResult = [(node.getValue(), conditions)]
@@ -556,11 +557,16 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
             flattedResult = flattenAlgorithmWithConditions(node.falseNode, {(node.args, False)}, debug, recStack)
     elif isinstance(node, ConcatNode):
         result = ['']
-        for item in node.getChildren():
+        numberOfChildren = len(node.getChildren())
+        for idx, item in enumerate(node.getChildren()):
             childSet = flattenAlgorithmWithConditions(item, None, debug, recStack)
             tempSet = []
             if childSet is None:
                 continue
+
+            logging.debug('ConcatNode {}: Appending child {} {} of {} with {} childset'.format(
+                node.getName(), item.getName(), idx+1, numberOfChildren, len(childSet)
+            ))
 
             # There are two types of concat node. One which concat the literal string
             # and other one which make a list of values
