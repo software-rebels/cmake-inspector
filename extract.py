@@ -1441,7 +1441,7 @@ class CMakeExtractorListener(CMakeListener):
             customCommand.commands.append(vmodel.expand(arguments))
             finalNode = util_handleConditions(customCommand, customCommand.name, None)
             # Next variable should have the target nodes itself or the name of targets
-            targetList = flattenAlgorithmWithConditions(customCommand.commands[0].getChildren()[0])
+            targetList = flattenAlgorithmWithConditions(customCommand.commands[0].getChildren()[0], useCache=False)
             for target in targetList:
                 targetNode = target[0]
                 if not isinstance(targetNode, TargetNode):

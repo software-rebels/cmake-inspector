@@ -552,22 +552,26 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
         if node.getPointTo() is None:
             flattedResult = [(node.rawName, conditions)]
         else:
-            flattedResult = flattenAlgorithmWithConditions(node.getPointTo(), None, debug, recStack)
+            flattedResult = flattenAlgorithmWithConditions(node.getPointTo(), None, debug, recStack, useCache=useCache)
     elif isinstance(node, CustomCommandNode):
         flattedResult = node.evaluate(None, recStack)
     elif isinstance(node, SelectNode):
         if node.falseNode and node.trueNode:
-            flattedResult = flattenAlgorithmWithConditions(node.falseNode, {(node.args, False)}, debug, recStack) + \
-                   flattenAlgorithmWithConditions(node.trueNode, {(node.args, True)}, debug, recStack)
+            flattedResult = flattenAlgorithmWithConditions(node.falseNode, {(node.args, False)}, debug, recStack,
+                                                           useCache=useCache) + \
+                   flattenAlgorithmWithConditions(node.trueNode, {(node.args, True)}, debug, recStack,
+                                                  useCache=useCache)
         elif node.trueNode:
-            flattedResult = flattenAlgorithmWithConditions(node.trueNode, {(node.args, True)}, debug, recStack)
+            flattedResult = flattenAlgorithmWithConditions(node.trueNode, {(node.args, True)}, debug, recStack,
+                                                           useCache=useCache)
         elif node.falseNode:
-            flattedResult = flattenAlgorithmWithConditions(node.falseNode, {(node.args, False)}, debug, recStack)
+            flattedResult = flattenAlgorithmWithConditions(node.falseNode, {(node.args, False)}, debug, recStack,
+                                                           useCache=useCache)
     elif isinstance(node, ConcatNode):
         result = ['']
         numberOfChildren = len(node.getChildren())
         for idx, item in enumerate(node.getChildren()):
-            childSet = flattenAlgorithmWithConditions(item, None, debug, recStack)
+            childSet = flattenAlgorithmWithConditions(item, None, debug, recStack, useCache=useCache)
             tempSet = []
             if childSet is None:
                 continue
