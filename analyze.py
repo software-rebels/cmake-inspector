@@ -2,7 +2,7 @@ import logging
 import pickle
 
 from datastructs import VModel, Lookup, RefNode, TargetNode, LiteralNode, CustomCommandNode, \
-    flattenAlgorithmWithConditions, FinalTarget, FinalSelectNode, Node
+    flattenAlgorithmWithConditions, FinalTarget, FinalSelectNode, Node, recursivelyResolveReference
 from pydriller import RepositoryMining
 import itertools
 import glob
@@ -90,8 +90,16 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
     for library, conditions in targetNode.linkLibrariesConditions.items():
         flattenedFiles += flattenAlgorithmWithConditions(library, conditions)
 
-    result = defaultdict(set)
+    # Now we should expand the cached results
+    finalFlattenList = []
     for item in flattenedFiles:
+        if isinstance(item[0], Node):
+            finalFlattenList += recursivelyResolveReference(item[0], item[1])
+        else:
+            finalFlattenList.append(item)
+
+    result = defaultdict(set)
+    for item in finalFlattenList:
         test_cond = set()
         for cond in item[1]:
             # TODO: For some reason

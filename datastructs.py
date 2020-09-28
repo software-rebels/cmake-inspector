@@ -335,7 +335,14 @@ class CustomCommandNode(Node):
             result = []
             arguments = self.commands[0].getChildren()[1:]
             for argument in arguments:
-                for item in flattenAlgorithmWithConditions(argument, conditions, recStack=recStack):
+                flattenedFiles = flattenAlgorithmWithConditions(argument, conditions, recStack=recStack)
+                finalFlattenList = []
+                for item in flattenedFiles:
+                    if isinstance(item[0], Node):
+                        finalFlattenList += recursivelyResolveReference(item[0], item[1])
+                    else:
+                        finalFlattenList.append(item)
+                for item in finalFlattenList:
                     node = VModel.getInstance().lookupTable.getKey("t:{}".format(item[0]))
                     if isinstance(node, TargetNode):
                         result += flattenAlgorithmWithConditions(node.sources, item[1], recStack=recStack)
@@ -516,7 +523,7 @@ def flattenAlgorithm(node: Node):
         return list(result)
 
 
-def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=True, recStack=None):
+def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=True, recStack=None, useCache=True):
     if conditions is None:
         conditions = set()
     if recStack is None:
@@ -532,9 +539,10 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
 
     flattedResult = None
     # We return result from memoize variable if available:
-    if node in VModel.getInstance().flattenMemoize:
+    if useCache and node in VModel.getInstance().flattenMemoize:
         logging.debug("CACHE HIT for " + node.getName())
-        flattedResult = [(x, set(y)) for x, y in VModel.getInstance().flattenMemoize[node]]
+        # flattedResult = [(x, set(y)) for x, y in VModel.getInstance().flattenMemoize[node]]
+        flattedResult = [(node, conditions)]
     elif isinstance(node, LiteralNode):
         flattedResult = [(node.getValue(), conditions)]
     elif isinstance(node, TargetNode):
@@ -572,8 +580,16 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
             # and other one which make a list of values
             if node.concatString:
                 for str1 in result:
-                    for str2 in childSet:
+                    # Now we should expand the cached results
+                    finalFlattenList = []
+                    for subItem in childSet:
+                        if isinstance(subItem[0], Node):
+                            finalFlattenList += recursivelyResolveReference(subItem[0], subItem[1])
+                        else:
+                            finalFlattenList.append(subItem)
+                    for str2 in finalFlattenList:
                         if str1 == '':
+
                             tempSet.append(str2)
                         else:
                             tempSet.append(["{}{}".format(str1[0], str2[0]), str1[1].union(str2[1])])
@@ -596,6 +612,17 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
             item[1].update(conditions)
     return flattedResult
 
+
+def recursivelyResolveReference(item, conditionToAppend):
+    result = []
+    for x, y in VModel.getInstance().flattenMemoize[item]:
+        if isinstance(x, Node):
+            tempResult = recursivelyResolveReference(x, set(y).union(conditionToAppend))
+            result += tempResult
+        else:
+            result.append((x, set(y).union(conditionToAppend)))
+
+    return result
 
 # Given a Node (often a ConcatNode) this algorithm will return flatted arguments
 def getFlattedArguments(argNode: Node):

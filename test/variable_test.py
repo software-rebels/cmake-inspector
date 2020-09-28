@@ -10,7 +10,7 @@ from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
 from datastructs import VModel, Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, flattenAlgorithm, \
     CustomCommandNode, getFlattedArguments, TargetNode, TestNode, OptionNode, \
-    flattenAlgorithmWithConditions, FinalTarget
+    flattenAlgorithmWithConditions, FinalTarget, Node
 
 
 class TestVariableDefinitions(unittest.TestCase):
@@ -1833,13 +1833,23 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         var = self.lookup.getKey('${foo}')
         a = flattenAlgorithmWithConditions(var)
-        result = defaultdict(set)
+        finalFlattenList = []
+        # Now we should expand the cached results
         for item in a:
+            if isinstance(item[0], Node):
+                finalFlattenList += [(x, set(y).union(item[1]))
+                                     for x, y in VModel.getInstance().flattenMemoize[item[0]]]
+            else:
+                finalFlattenList.append(item)
+
+        result = defaultdict(set)
+        for item in finalFlattenList:
             test_cond = set()
             for cond in item[1]:
                 # TODO: For some reason
                 if cond[0] is None:
                     continue
+
                 test_cond.add("{}:{}".format(cond[0].getValue(), str(cond[1])))
             if test_cond:
                 result[" && ".join(sorted(test_cond))].add(item[0])
