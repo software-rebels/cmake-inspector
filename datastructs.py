@@ -310,7 +310,7 @@ class CustomCommandNode(Node):
             return result
         return None
 
-    def evaluate(self, conditions, recStack, lookup = None):
+    def evaluate(self, conditions, recStack, lookup=None):
         print("##### Start evaluating custom command " + self.rawName)
         if conditions is None:
             conditions = set()
@@ -339,6 +339,8 @@ class CustomCommandNode(Node):
                 finalFlattenList = []
                 for item in flattenedFiles:
                     if isinstance(item[0], Node):
+                        logging.debug('target_link_libraries: calling recursivelyResolveReference to' \
+                                      'resolve node with name: {}'.format(item[0].getName()))
                         finalFlattenList += recursivelyResolveReference(item[0], item[1])
                     else:
                         finalFlattenList.append(item)
@@ -559,8 +561,8 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
         if node.falseNode and node.trueNode:
             flattedResult = flattenAlgorithmWithConditions(node.falseNode, {(node.args, False)}, debug, recStack,
                                                            useCache=useCache) + \
-                   flattenAlgorithmWithConditions(node.trueNode, {(node.args, True)}, debug, recStack,
-                                                  useCache=useCache)
+                            flattenAlgorithmWithConditions(node.trueNode, {(node.args, True)}, debug, recStack,
+                                                           useCache=useCache)
         elif node.trueNode:
             flattedResult = flattenAlgorithmWithConditions(node.trueNode, {(node.args, True)}, debug, recStack,
                                                            useCache=useCache)
@@ -577,7 +579,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                 continue
 
             logging.debug('ConcatNode {}: Appending child {} {} of {} with {} childset'.format(
-                node.getName(), item.getName(), idx+1, numberOfChildren, len(childSet)
+                node.getName(), item.getName(), idx + 1, numberOfChildren, len(childSet)
             ))
 
             # There are two types of concat node. One which concat the literal string
@@ -605,19 +607,20 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                     result += childSet
         flattedResult = result
 
-    if node not in VModel.getInstance().flattenMemoize and flattedResult:
+    if useCache and node not in VModel.getInstance().flattenMemoize and flattedResult:
         copied_result = [(x, set(y)) for x, y in flattedResult]
         VModel.getInstance().flattenMemoize[node] = copied_result
 
     recStack.remove(node)
 
-    if flattedResult:
+    if conditions and flattedResult:
         for item in flattedResult:
             item[1].update(conditions)
     return flattedResult
 
 
 def recursivelyResolveReference(item, conditionToAppend):
+    logging.debug('Recursively resolve node with name: {}'.format(item.getName()))
     result = []
     for x, y in VModel.getInstance().flattenMemoize[item]:
         if isinstance(x, Node):
@@ -627,6 +630,7 @@ def recursivelyResolveReference(item, conditionToAppend):
             result.append((x, set(y).union(conditionToAppend)))
 
     return result
+
 
 # Given a Node (often a ConcatNode) this algorithm will return flatted arguments
 def getFlattedArguments(argNode: Node):
@@ -1020,7 +1024,6 @@ class VModel:
                 dbNode.depends.connect(self.exportToNeo(localNode))
             dbNode.extraInfo = node.extraInfo
             return dbNode
-
 
     def checkIntegrity(self):
         nodeNames = []
