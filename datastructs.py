@@ -543,8 +543,8 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
     # We return result from memoize variable if available:
     if useCache and node in VModel.getInstance().flattenMemoize:
         logging.debug("CACHE HIT for " + node.getName())
-        # flattedResult = [(x, set(y)) for x, y in VModel.getInstance().flattenMemoize[node]]
-        flattedResult = [(node, conditions)]
+        flattedResult = [(x, set(y)) for x, y in VModel.getInstance().flattenMemoize[node]]
+        # flattedResult = [(node, conditions)]
     elif isinstance(node, LiteralNode):
         flattedResult = [(node.getValue(), conditions)]
     elif isinstance(node, TargetNode):
@@ -616,6 +616,14 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
     if conditions and flattedResult:
         for item in flattedResult:
             item[1].update(conditions)
+
+    # Try to remove items with condition both false and true
+    if flattedResult:
+        for row in list(flattedResult):
+            for condition in row[1]:
+                if (condition[0], not condition[1]) in row[1]:
+                    flattedResult.remove(row)
+                    break
     return flattedResult
 
 
