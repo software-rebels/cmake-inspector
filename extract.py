@@ -143,16 +143,13 @@ def listCommand(arguments):
         newName = listName
 
     if action == 'REMOVE_AT' or action == 'REMOVE_ITEM' or action == 'INSERT':
-        commandName = 'LIST.{}({})'.format(action, " ".join(arguments))
-        if commandName:
-            commandName = commandName + "_" + vmodel.getNextCounter()
+        commandName = 'LIST.{}'.format(action)
         command = CustomCommandNode(commandName)
         command.pointTo.append(listVariable)
-        variable = RefNode("{}_{}".format(listName, vmodel.getNextCounter()), command)
 
-        newNode = command
-        newVModel = variable
-        newName = listName
+        command.commands.append(vmodel.expand(arguments))
+        util_create_and_add_refNode_for_variable(rawListName, command)
+        return
 
     if action == 'FIND':
         valueToLook = arguments.pop(0)

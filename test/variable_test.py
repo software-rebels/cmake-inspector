@@ -1863,6 +1863,14 @@ class TestVariableDefinitions(unittest.TestCase):
 
         print(json.dumps(result, default=set_default, sort_keys=True, indent=4))
 
+    def test_list_remove_variable(self):
+        text = """
+        set(foo a b c)
+        list(REMOVE_ITEM foo b)
+        """
+        self.runTool(text)
+        self.vmodel.export()
+
 
 if __name__ == '__main__':
     unittest.main()
