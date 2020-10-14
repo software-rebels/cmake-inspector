@@ -90,7 +90,7 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
     for library, conditions in targetNode.linkLibrariesConditions.items():
         flattenedFiles += flattenAlgorithmWithConditions(library, conditions)
 
-    # Now we should expand the cached results
+    # Now we should expand the cached results (DEPRECATED)
     finalFlattenList = []
     for item in flattenedFiles:
         if isinstance(item[0], Node):

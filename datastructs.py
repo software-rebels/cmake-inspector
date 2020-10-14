@@ -525,6 +525,10 @@ def flattenAlgorithm(node: Node):
         return list(result)
 
 
+# TODO: Rewrite this recursive function to an iterative version
+# TODO: Do the pruning before evaluating the graph and do the query (List.remove, unreachable nodes)
+# TODO: Try to convert the graph to Prolog (rule based programming languages) rules and write queries on this new rules
+
 def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=True, recStack=None, useCache=True):
     if conditions is None:
         conditions = set()
@@ -1140,6 +1144,11 @@ def getEdgeLabel(firstNode: Node, secondNode: Node):
             return "FALSE"
         elif firstNode.args == secondNode:
             return "CONDITION"
+    if isinstance(firstNode, CustomCommandNode):
+        if firstNode.commands and firstNode.commands[0] == secondNode:
+            return "COMMANDS"
+        elif firstNode.depends and firstNode.depends[0] == secondNode:
+            return "DEPENDS"
     if isinstance(firstNode, OptionNode):
         if firstNode.depends == secondNode:
             return 'DEPENDS'

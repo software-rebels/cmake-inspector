@@ -237,7 +237,7 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         self.assertIsInstance(self.lookup.getKey("${out_var}").pointTo, CustomCommandNode)
-        self.assertEqual(self.lookup.getKey("${var}"), self.lookup.getKey("${out_var}").pointTo.pointTo[0])
+        self.assertEqual(self.lookup.getKey("${var}"), self.lookup.getKey("${out_var}").pointTo.depends[0])
 
     def test_list_sort_on_if_statements(self):
         text = """
@@ -253,7 +253,7 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         self.assertIsInstance(self.lookup.getKey("${var}").pointTo, CustomCommandNode)
-        self.assertEqual(self.lookup.getVariableHistory("${var}")[3], self.lookup.getKey("${var}").pointTo.pointTo[0])
+        self.assertEqual(self.lookup.getVariableHistory("${var}")[3], self.lookup.getKey("${var}").pointTo.depends[0])
 
     def test_list_remove_on_if_statements(self):
         text = """
@@ -269,7 +269,7 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         self.assertIsInstance(self.lookup.getKey("${var}").pointTo, CustomCommandNode)
-        self.assertEqual(self.lookup.getVariableHistory("${var}")[3], self.lookup.getKey("${var}").pointTo.pointTo[0])
+        self.assertEqual(self.lookup.getVariableHistory("${var}")[3], self.lookup.getKey("${var}").pointTo.depends[0])
 
     def test_list_find_on_if_statements(self):
         text = """
@@ -286,7 +286,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         self.assertIsInstance(self.lookup.getKey("${out_var}").pointTo, CustomCommandNode)
         self.assertEqual(self.lookup.getVariableHistory("${var}")[3],
-                         self.lookup.getKey("${out_var}").pointTo.pointTo[0])
+                         self.lookup.getKey("${out_var}").pointTo.depends[0])
 
     def test_list_multiple_commands_on_if_statements(self):
         text = """
@@ -305,13 +305,13 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         self.assertEqual(self.lookup.getVariableHistory("${var}")[3],
-                         self.lookup.getKey("${out_var}").pointTo.pointTo[0])
+                         self.lookup.getKey("${out_var}").pointTo.depends[0])
 
         self.assertEqual(self.lookup.getVariableHistory("${var}")[3],
-                         self.lookup.getKey("${out_var2}").pointTo.pointTo[0])
+                         self.lookup.getKey("${out_var2}").pointTo.depends[0])
 
         self.assertEqual(self.lookup.getVariableHistory("${var}")[4],
-                         self.lookup.getKey("${out_var3}").pointTo.pointTo[0])
+                         self.lookup.getKey("${out_var3}").pointTo.depends[0])
 
     def test_list_action_inside_if(self):
         text = """
@@ -333,13 +333,13 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertIsInstance(self.lookup.getKey("${out_var}").pointTo.falseNode, CustomCommandNode)
 
         self.assertEqual(self.lookup.getVariableHistory("${var}")[3],
-                         self.lookup.getKey("${out_var}").pointTo.falseNode.pointTo[0])
+                         self.lookup.getKey("${out_var}").pointTo.falseNode.depends[0])
 
         self.assertEqual(self.lookup.getVariableHistory("${var}")[1],
                          self.lookup.getVariableHistory("${var}")[3].pointTo.falseNode)
 
         self.assertEqual(self.lookup.getVariableHistory("${var}")[2],
-                         self.lookup.getVariableHistory("${var}")[3].pointTo.trueNode.pointTo[0])
+                         self.lookup.getVariableHistory("${var}")[3].pointTo.trueNode.depends[0])
 
     def test_list_action_2_inside_if(self):
         text = """
@@ -360,13 +360,13 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertIsInstance(self.lookup.getKey("${out_var}").pointTo.falseNode, CustomCommandNode)
 
         self.assertEqual(self.lookup.getVariableHistory("${var}")[4],
-                         self.lookup.getKey("${out_var}").pointTo.falseNode.pointTo[0])
+                         self.lookup.getKey("${out_var}").pointTo.falseNode.depends[0])
 
         self.assertEqual(self.lookup.getVariableHistory("${var}")[1],
                          self.lookup.getVariableHistory("${var}")[3].pointTo.falseNode)
 
         self.assertEqual(self.lookup.getVariableHistory("${var}")[2],
-                         self.lookup.getVariableHistory("${var}")[3].pointTo.trueNode.pointTo[0])
+                         self.lookup.getVariableHistory("${var}")[3].pointTo.trueNode.depends[0])
 
     def test_simple_while_loop(self):
         text = """
@@ -1778,7 +1778,7 @@ class TestVariableDefinitions(unittest.TestCase):
         add_executable(exec ${libraries})
         """
         self.runTool(text)
-        a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec', True)
         self.assertSetEqual({"files_for_test/a.cxx"}, a["foo:False"])
         self.assertSetEqual({"files_for_test/b.cxx"}, a["foo:True"])
 
@@ -1795,7 +1795,7 @@ class TestVariableDefinitions(unittest.TestCase):
         add_executable(exec ${SERVER_SRC})
         """
         self.runTool(text)
-        a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec', True)
         self.assertSetEqual({"files_for_test/b.cxx"}, a["BUILD_SERVER:True && FEATURE_IRC_SERVER:True"])
         self.assertSetEqual({"files_for_test/a.cxx"}, a["NO_MATTER_WHAT"])
 
@@ -1824,10 +1824,15 @@ class TestVariableDefinitions(unittest.TestCase):
 
     def test_size_of_concat_node_not_explode(self):
         text = """
-        option(opt1 "des1" YES)
+        option(opt1 "des" YES)
+        option(opt2 "des" YES)
         set(foo john doe bar)
         if(opt1)
-            list(append foo mehran)
+            list(append foo a)
+        elseif(opt2)
+            list(append foo b)
+        else()
+            list(append foo c)
         endif() 
         """
         self.runTool(text)
@@ -1869,8 +1874,44 @@ class TestVariableDefinitions(unittest.TestCase):
         list(REMOVE_ITEM foo b)
         """
         self.runTool(text)
-        self.vmodel.export()
+        # self.vmodel.export()
 
+    def test_variable_growth(self):
+        text = """
+        option(opt1 "des" YES)
+        option(opt2 "des" YES)
+        
+        set(var_a foo bar john doe)
+        if(opt1)
+            list(APPEND var_a files_for_test/a.cxx)
+        elseif(opt2)
+            list(APPEND var_a files_for_test/*.cxx)
+        else()
+            list(APPEND var_a files_for_test/c.cxx)
+        endif()
+        
+        if(opt2)
+            list(append var_a mehran)
+        elseif(not opt1 and opt2)
+            list(append var_a meidani)
+        else()
+            list(append var_a farshad)
+        endif()
+        
+        
+        add_executable(exec ${var_a})
+        """
+        self.runTool(text)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
+        # print(a)
+
+    def test_sample_1(self):
+        text = """
+        set(mehran meidani farsad kazemi)
+        set(var foo bar john doe ${mehran}/hi)
+        list(FIND var foo out_var)
+        """
+        self.runTool(text)
 
 if __name__ == '__main__':
     unittest.main()

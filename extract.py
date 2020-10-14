@@ -25,10 +25,12 @@ vmodel = VModel.getInstance()
 lookupTable = Lookup.getInstance()
 
 
+# Convert list of strings to a string separated by space.
 def util_getStringFromList(lst: List):
     return " ".join(lst)
 
 
+# Given a list of strings, the function will return the next item after a given string name
 def util_extract_variable_name(argName: str, arguments: List) -> Optional[str]:
     if argName in arguments:
         argIndex = arguments.index(argName)
@@ -118,69 +120,49 @@ def listCommand(arguments):
     listVariable = lookupTable.getKey(listName)
 
     if action == 'LENGTH':
-        outVariable = "${{{}}}".format(arguments.pop(0))
+        outVariable = arguments.pop(0)
         commandName = 'LIST.LENGTH'
-        if commandName:
-            commandName = commandName + "_" + vmodel.getNextCounter()
         command = CustomCommandNode(commandName)
-        command.pointTo.append(listVariable)
-        variable = RefNode("{}_{}".format(outVariable, vmodel.getNextCounter()), command)
+        command.depends.append(listVariable)
 
-        newNode = command
-        newVModel = variable
-        newName = outVariable
+        util_create_and_add_refNode_for_variable(outVariable, command)
 
-    if action == 'SORT' or action == 'REVERSE' or action == 'REMOVE_DUPLICATES':
+    elif action == 'SORT' or action == 'REVERSE' or action == 'REMOVE_DUPLICATES':
         commandName = 'LIST.' + action
-        if commandName:
-            commandName = commandName + "_" + vmodel.getNextCounter()
         command = CustomCommandNode(commandName)
-        command.pointTo.append(listVariable)
-        variable = RefNode("{}_{}".format(listName, vmodel.getNextCounter()), command)
+        command.depends.append(listVariable)
 
-        newNode = command
-        newVModel = variable
-        newName = listName
+        util_create_and_add_refNode_for_variable(rawListName, command)
 
-    if action == 'REMOVE_AT' or action == 'REMOVE_ITEM' or action == 'INSERT':
+    elif action == 'REMOVE_AT' or action == 'REMOVE_ITEM' or action == 'INSERT':
         commandName = 'LIST.{}'.format(action)
         command = CustomCommandNode(commandName)
-        command.pointTo.append(listVariable)
+        command.depends.append(listVariable)
 
         command.commands.append(vmodel.expand(arguments))
         util_create_and_add_refNode_for_variable(rawListName, command)
-        return
 
-    if action == 'FIND':
+    elif action == 'FIND':
         valueToLook = arguments.pop(0)
-        outVariable = "${{{}}}".format(arguments.pop(0))
-        commandName = 'LIST.FIND({})'.format(valueToLook)
-        if commandName:
-            commandName = commandName + "_" + vmodel.getNextCounter()
+        outVariable = arguments.pop(0)
+        commandName = 'LIST.FIND'.format(valueToLook)
         command = CustomCommandNode(commandName)
-        command.pointTo.append(listVariable)
 
-        variable = RefNode(outVariable, command)
+        command.commands.append(vmodel.expand([valueToLook]))
+        command.depends.append(listVariable)
 
-        newNode = command
-        newVModel = variable
-        newName = outVariable
+        util_create_and_add_refNode_for_variable(outVariable, command)
 
-    if action == 'GET':
-        outVariable = "${{{}}}".format(arguments.pop())
-        commandName = 'LIST.GET({})'.format(" ".join(arguments))
-        if commandName:
-            commandName = commandName + "_" + vmodel.getNextCounter()
+    elif action == 'GET':
+        outVariable = arguments.pop()
+        commandName = 'LIST.GET'
         command = CustomCommandNode(commandName)
-        command.pointTo.append(listVariable)
+        command.depends.append(listVariable)
+        command.commands.append(vmodel.expand(arguments))
 
-        variable = RefNode(outVariable, command)
+        util_create_and_add_refNode_for_variable(outVariable, command)
 
-        newNode = command
-        newVModel = variable
-        newName = outVariable
-
-    if action == 'APPEND':
+    elif action == 'APPEND':
         # We create a concatNode contains the arguments
         concatNode = ConcatNode("LIST_" + listName + ",".join(arguments))
 
@@ -195,34 +177,6 @@ def listCommand(arguments):
 
         # A new RefNode will point to this new concatNode
         util_create_and_add_refNode_for_variable(rawListName, concatNode)
-        return
-
-    systemState = None
-    stateProperty = None
-    if vmodel.getCurrentSystemState():
-        systemState, stateProperty, level = vmodel.getCurrentSystemState()
-
-    if systemState == 'if' or systemState == 'else' or systemState == 'elseif':
-        selectNodeName = "SELECT_{}_{}".format(newName,
-                                               util_getStringFromList(stateProperty))
-        newSelectNode = SelectNode(selectNodeName, stateProperty)
-
-        if systemState == 'if' or systemState == 'elseif':
-            newSelectNode.setTrueNode(newNode)
-        elif systemState == 'else':
-            newSelectNode.setFalseNode(newNode)
-        # Inside if statement, we set true node to the variable defined outside if which pushed
-        # to this stack before entering the if statement
-        if vmodel.getLastPushedLookupTable().getKey(newName):
-            if systemState == 'if' or systemState == 'elseif':
-                newSelectNode.setFalseNode(vmodel.getLastPushedLookupTable().getKey(newName))
-            elif systemState == 'else':
-                newSelectNode.setTrueNode(vmodel.getLastPushedLookupTable().getKey(newName))
-
-        newVModel.pointTo = newSelectNode
-
-    lookupTable.setKey(newName, newVModel)
-    vmodel.nodes.append(newVModel)
 
 
 def whileCommand(arguments):
@@ -484,6 +438,8 @@ class CMakeExtractorListener(CMakeListener):
             'ON', 'OFF', 'YES', 'NO', 'TRUE', 'FALSE'
         ]
         vmodel.ifConditions.append(" ".join(arguments))
+        # As described in https://cmake.org/cmake/help/v3.1/command/if.html, to address a variable in a if statement
+        # we don't need to use ${} syntax. Here, we manually add those to have a consistent algorithm
         for arg in [argument for argument in ctx.ifStatement().argument().children if
                     not isinstance(argument, TerminalNode)]:
             if arg.getChild(0).symbol.type == CMakeParser.Quoted_argument or \
@@ -503,6 +459,7 @@ class CMakeExtractorListener(CMakeListener):
         vmodel.pushCurrentLookupTable()
         state, condition, level = vmodel.getCurrentSystemState()
 
+        # TODO: Duplicate code here like if statement; should make a method for it
         reservedWords = [
             'NOT', 'AND', 'OR', 'COMMAND', 'POLICY', 'TARGET', 'EXISTS', 'IS_NEWER_THAN', 'IS_DIRECTORY',
             'IS_SYMLINK', 'IS_ABSOLUTE', 'MATCHES', 'LESS', 'GREATER', 'EQUAL', 'STRLESS', 'STRGREATER',
@@ -521,7 +478,7 @@ class CMakeExtractorListener(CMakeListener):
         # We create a new condition list. Add previous condition (which drives from and if or prev else if)
         # and NOT it and AND it with our condition. This new list will later be parsed to evaluate the query.
         # We keep previous condition for else statement
-        condition = ['((', 'NOT'] + condition + [')', 'AND'] + elseIfCondition + [')']
+        condition = ['(( NOT'] + condition + [') AND'] + elseIfCondition + [')']
         vmodel.pushSystemState('elseif', condition)
 
     def enterElseStatement(self, ctx: CMakeParser.ElseStatementContext):
