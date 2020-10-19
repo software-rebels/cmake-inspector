@@ -1,8 +1,0 @@
-{
-    "BUILD_SERVER:True && FEATURE_IRC_SERVER:True": [
-        "files_for_test/b.cxx"
-    ],
-    "NO_MATTER_WHAT": [
-        "files_for_test/a.cxx"
-    ]
-}
