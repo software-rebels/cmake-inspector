@@ -448,7 +448,7 @@ class CMakeExtractorListener(CMakeListener):
                 processedArgs.append(arg.getText())
                 # TODO: A temporary fix to create space between arguments. Otherwise, NOT will be followed by the arg
                 #       without any space
-                processedArgs.append(" ")
+                # processedArgs.append(" ")
             else:
                 processedArgs.append("${{{}}}".format(arg.getText()))
 

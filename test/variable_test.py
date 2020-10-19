@@ -203,7 +203,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual("john", self.lookup.getKey("${var}").getPointTo().trueNode.getValue())
         self.assertEqual(self.lookup.getVariableHistory("${var}")[1],
                          self.lookup.getKey("${var}").getPointTo().falseNode)
-        self.assertEqual('(( NOT 0   ) AND 1 )', self.lookup.getKey("${var}").getPointTo().condition)
+        self.assertEqual('(( NOT 0 ) AND 1 )', self.lookup.getKey("${var}").getPointTo().condition)
 
     def test_variable_in_if_else_if_and_else_statements(self):
         text = """
@@ -221,7 +221,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual("doe", self.lookup.getKey("${var}").getPointTo().falseNode.getValue())
         self.assertEqual(self.lookup.getVariableHistory("${var}")[2],
                          self.lookup.getKey("${var}").getPointTo().trueNode)
-        self.assertEqual('(( NOT 0   ) AND 1 ) OR 0  ', self.lookup.getKey("${var}").getPointTo().condition)
+        self.assertEqual('(( NOT 0 ) AND 1 ) OR 0', self.lookup.getKey("${var}").getPointTo().condition)
 
     def test_list_length_on_if_statements(self):
         text = """
@@ -1548,9 +1548,9 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'test_exec', False)
         self.assertSetEqual({"another_folder_for_test/b2.cxx",
-                             "another_folder_for_test/a.cxx"}, a['NOT   source_file:True && foo:False'])
+                             "another_folder_for_test/a.cxx"}, a['NOT source_file:True && foo:False'])
         self.assertSetEqual({"files_for_test/a.cxx",
-                             "files_for_test/b.cxx", "files_for_test/c.cxx"}, a['NOT   source_file:True && foo:True'])
+                             "files_for_test/b.cxx", "files_for_test/c.cxx"}, a['NOT source_file:True && foo:True'])
 
     def test_runtime_graph_with_file_command(self):
         text = """
