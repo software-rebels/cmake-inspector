@@ -1874,7 +1874,7 @@ class TestVariableDefinitions(unittest.TestCase):
         list(REMOVE_ITEM foo b)
         """
         self.runTool(text)
-        # self.vmodel.export()
+        self.vmodel.export()
 
     def test_variable_growth(self):
         text = """
@@ -1912,6 +1912,56 @@ class TestVariableDefinitions(unittest.TestCase):
         list(FIND var foo out_var)
         """
         self.runTool(text)
+
+
+    def test_conditional_list_remove_variable(self):
+        text = """
+        option(opt1 "des1" YES)
+        set(foo john doe bar)
+        if(opt1)
+            list(REMOVE_ITEM foo john boo)
+        endif() 
+        """
+        self.runTool(text)
+        var = self.lookup.getKey('${foo}')
+        a = flattenAlgorithmWithConditions(var)
+        self.vmodel.export()
+
+    def test_complex_conditional_list_remove_variable(self):
+        text = """
+        option(opt1 "des" YES)
+        option(opt2 "des" YES)
+
+        set(var_a foo bar john doe)
+        if(opt1)
+            list(REMOVE_ITEM var_a bar Farshad)
+        elseif(opt2)
+            list(REMOVE_ITEM var_a john Mehran)
+        endif()
+        """
+        self.runTool(text)
+        self.vmodel.export()
+
+
+    def test_remove_at_conditional_list_remove_variable(self):
+        text = """
+        set(var_a foo bar john doe)
+        set(item 2)
+        list(REMOVE_AT var_a ${item})
+        """
+        self.runTool(text)
+        self.vmodel.export()
+
+
+    def test_insert_list_remove_variable(self):
+        # TODO: need implementation
+        text = """
+        set(var_a foo bar john doe)
+        set(item foo)
+        list(INSERT var_a ${item})
+        """
+        self.runTool(text)
+        self.vmodel.export()
 
 if __name__ == '__main__':
     unittest.main()

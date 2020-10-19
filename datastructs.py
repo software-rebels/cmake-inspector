@@ -353,6 +353,26 @@ class CustomCommandNode(Node):
                                                                      recStack=recStack)
             return result
 
+        if 'remove_item' in self.getName().lower():
+            print("hello!")
+            arguments = flattenAlgorithmWithConditions(self.commands[0].getChildren(),conditions, recStack=recStack)
+            result = flattenAlgorithmWithConditions(self.depends[0],conditions, recStack=recStack)
+            for argument in arguments:
+                for item in result:
+                    if item[0] == argument.getValue():
+                        result=[i for i in result if i != item]
+            print('result',result)
+            return result;
+
+        if 'remove_at' in self.getName().lower():
+            arguments = self.commands[0].getChildren()
+            result = flattenAlgorithmWithConditions(self.depends[0],conditions, recStack=recStack)
+            for argument in arguments:
+                del result[argument.getValue()]
+            return result;
+
+
+
 
 class ConcatNode(Node):
     def __init__(self, name: str):
