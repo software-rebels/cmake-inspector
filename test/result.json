@@ -1,8 +1,0 @@
-{
-    "foo:False": [
-        "files_for_test/a.cxx"
-    ],
-    "foo:True": [
-        "files_for_test/b.cxx"
-    ]
-}
