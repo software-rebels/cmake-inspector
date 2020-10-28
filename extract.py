@@ -8,6 +8,7 @@ from antlr4 import FileStream, CommonTokenStream, ParseTreeWalker
 from antlr4.tree.Tree import TerminalNode
 from neomodel import config
 # Grammar generates by Antlr
+from condition_data_structure import Rule, LogicalExpression, AndExpression, LocalVariable, NotExpression
 from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
 from grammar.CMakeListener import CMakeListener
@@ -417,18 +418,43 @@ def processCommand(commandId, args):
 
 
 class CMakeExtractorListener(CMakeListener):
+    rule: Rule = None
+    logicalExpressionStack: List[LogicalExpression] = []
+
     def __init__(self):
         global vmodel
         global lookupTable
         vmodel = VModel.getInstance()
         lookupTable = Lookup.getInstance()
 
+    def exitLogicalExpressionAnd(self, ctx:CMakeParser.LogicalExpressionAndContext):
+        # Popping order matters
+        rightLogicalExpression = self.logicalExpressionStack.pop()
+        leftLogicalExpression = self.logicalExpressionStack.pop()
+        andLogic = AndExpression(leftLogicalExpression, rightLogicalExpression)
+        self.logicalExpressionStack.append(andLogic)
+
+    def exitLogicalExpressionNot(self, ctx:CMakeParser.LogicalExpressionNotContext):
+        logicalExpression = self.logicalExpressionStack.pop()
+        notLogic = NotExpression(logicalExpression)
+        self.logicalExpressionStack.append(notLogic)
+
+    def exitLogicalEntity(self, ctx:CMakeParser.LogicalEntityContext):
+        localVariable = LocalVariable(ctx.getText())
+        self.logicalExpressionStack.append(localVariable)
+
+    def exitIfStatement(self, ctx:CMakeParser.IfStatementContext):
+        self.rule.setCondition(self.logicalExpressionStack.pop())
+        print(vmodel.getCurrentSystemState())
+
     def enterIfCommand(self, ctx: CMakeParser.IfCommandContext):
+        # Make sure that the logical expression stack is empty every time we enter an if statement
+        assert len(self.logicalExpressionStack) == 0
+        self.rule = Rule()
         vmodel.setInsideIf()
         vmodel.pushCurrentLookupTable()
         vmodel.ifLevel += 1
-        arguments = [argument.getText() for argument in ctx.ifStatement().argument().children if
-                     not isinstance(argument, TerminalNode)]
+        arguments = [argument.getText() for argument in ctx.ifStatement().logical_expr().children]
         processedArgs = []
 
         reservedWords = [
@@ -440,9 +466,9 @@ class CMakeExtractorListener(CMakeListener):
         vmodel.ifConditions.append(" ".join(arguments))
         # As described in https://cmake.org/cmake/help/v3.1/command/if.html, to address a variable in a if statement
         # we don't need to use ${} syntax. Here, we manually add those to have a consistent algorithm
-        for arg in [argument for argument in ctx.ifStatement().argument().children if
-                    not isinstance(argument, TerminalNode)]:
-            if arg.getChild(0).symbol.type == CMakeParser.Quoted_argument or \
+        for arg in [argument for argument in ctx.ifStatement().logical_expr().children]:
+            if isinstance(arg, TerminalNode) or \
+                    arg.getChild(0).getChild(0).symbol.type == CMakeParser.Quoted_argument or \
                     arg.getText().upper() in reservedWords or \
                     arg.getText().isnumeric():
                 processedArgs.append(arg.getText())
@@ -452,7 +478,13 @@ class CMakeExtractorListener(CMakeListener):
             else:
                 processedArgs.append("${{{}}}".format(arg.getText()))
 
-        vmodel.pushSystemState('if', processedArgs)
+        self.rule.setType('if')
+        self.rule.setArgs(processedArgs)
+        self.rule.setLevel(vmodel.ifLevel)
+        vmodel.pushSystemState(self.rule)
+
+    def exitLogical_expr(self, ctx:CMakeParser.Logical_exprContext):
+        print(ctx.getText())
 
     def enterElseIfStatement(self, ctx: CMakeParser.ElseIfStatementContext):
         vmodel.popLookupTable()

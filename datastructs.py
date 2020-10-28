@@ -2,6 +2,8 @@ from enum import Enum, auto
 from typing import Optional, List, Set, Dict
 from graphviz import Digraph
 import copy
+
+from condition_data_structure import Rule
 from datalayer import Target, Reference, Concat, Literal, Select, CustomCommand
 import re
 import glob
@@ -693,8 +695,8 @@ class VModel:
         # A new property to support nested if statements
         self.ifLevel = 0
 
-    def pushSystemState(self, state, properties):
-        self.systemState.append((state, properties, self.ifLevel))
+    def pushSystemState(self, rule: Rule):
+        self.systemState.append(rule)
 
     def getCurrentSystemState(self):
         if self.systemState:

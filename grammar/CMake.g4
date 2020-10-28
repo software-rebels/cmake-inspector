@@ -17,7 +17,7 @@ ifCommand
 	;
 
 ifStatement
-	: 'if' argument
+	: 'if' LPAREN logical_expr RPAREN
 	;
 
 elseIfStatement
@@ -31,6 +31,15 @@ elseStatement
 endIfStatement
 	: 'endif' argument
 	;
+
+logical_expr
+ : NOT logical_expr                                         # LogicalExpressionNot
+ | logical_expr AND logical_expr                            # LogicalExpressionAnd
+ | logical_expr OR logical_expr                             # LogicalExpressionOr
+ | single_argument comp_operator single_argument            # ComparisonExpression
+ | LPAREN logical_expr RPAREN                               # LogicalExpressionInParen
+ | single_argument                                          # LogicalEntity
+ ;
 
 optionCommand
     : 'option' argument
@@ -51,6 +60,20 @@ single_argument
 compound_argument
 	: '(' (single_argument|compound_argument)* ')'
 	;
+
+comp_operator : GT | LT | EQ | EQR;
+
+NOT : 'NOT';
+AND : 'AND';
+OR : 'OR';
+
+GT : 'GREATER' ;
+LT : 'LESS' ;
+EQ : 'EQUAL' ;
+EQR: 'MATCHES';
+
+LPAREN : '(' ;
+RPAREN : ')' ;
 
 Identifier
 	: [A-Za-z_][A-Za-z0-9_]*
