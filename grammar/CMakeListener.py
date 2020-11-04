@@ -107,6 +107,15 @@ class CMakeListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by CMakeParser#ConstantValue.
+    def enterConstantValue(self, ctx:CMakeParser.ConstantValueContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#ConstantValue.
+    def exitConstantValue(self, ctx:CMakeParser.ConstantValueContext):
+        pass
+
+
     # Enter a parse tree produced by CMakeParser#LogicalExpressionNot.
     def enterLogicalExpressionNot(self, ctx:CMakeParser.LogicalExpressionNotContext):
         pass
@@ -149,6 +158,15 @@ class CMakeListener(ParseTreeListener):
 
     # Exit a parse tree produced by CMakeParser#argument.
     def exitArgument(self, ctx:CMakeParser.ArgumentContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#constant_value.
+    def enterConstant_value(self, ctx:CMakeParser.Constant_valueContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#constant_value.
+    def exitConstant_value(self, ctx:CMakeParser.Constant_valueContext):
         pass
 
 

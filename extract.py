@@ -8,7 +8,7 @@ from antlr4 import FileStream, CommonTokenStream, ParseTreeWalker
 from antlr4.tree.Tree import TerminalNode
 from neomodel import config
 # Grammar generates by Antlr
-from condition_data_structure import Rule, LogicalExpression, AndExpression, LocalVariable, NotExpression
+from condition_data_structure import Rule, LogicalExpression, AndExpression, LocalVariable, NotExpression, OrExpression
 from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
 from grammar.CMakeListener import CMakeListener
@@ -69,7 +69,10 @@ def util_handleConditions(nextNode, newNodeName, prevNode=None):
     # However, we only interested in states in outer levels. So, we skip the ones in a same level
     # For example, in an if -> if | else scenario, when we are processing the else, we skip in inner most if
     currentIfLevel = 1000
-    for systemState, stateProperty, level in reversed(vmodel.systemState):
+    for systemStateObject in reversed(vmodel.systemState):
+        level = systemStateObject.level
+        systemState = systemStateObject.type
+        stateProperty = systemStateObject.args
         if currentIfLevel == level:
             continue
         currentIfLevel = min(currentIfLevel, level)
@@ -439,18 +442,41 @@ class CMakeExtractorListener(CMakeListener):
         notLogic = NotExpression(logicalExpression)
         self.logicalExpressionStack.append(notLogic)
 
+    def exitLogicalExpressionOr(self, ctx:CMakeParser.LogicalExpressionOrContext):
+        rightLogicalExpression = self.logicalExpressionStack.pop()
+        leftLogicalExpression = self.logicalExpressionStack.pop()
+        orLogic = OrExpression(leftLogicalExpression, rightLogicalExpression)
+        self.logicalExpressionStack.append(orLogic)
+
     def exitLogicalEntity(self, ctx:CMakeParser.LogicalEntityContext):
         localVariable = LocalVariable(ctx.getText())
         self.logicalExpressionStack.append(localVariable)
 
     def exitIfStatement(self, ctx:CMakeParser.IfStatementContext):
         self.rule.setCondition(self.logicalExpressionStack.pop())
-        print(vmodel.getCurrentSystemState())
+        assert len(self.logicalExpressionStack) == 0
+
+    def exitElseIfStatement(self, ctx:CMakeParser.ElseIfStatementContext):
+        rightLogic = self.logicalExpressionStack.pop()
+        # For the else if, to be evaluated as true, all the previous conditions should be evaluated as false
+        orLogic = OrExpression(, None)
+        for systemStateObject in reversed(vmodel.systemState):
+            orLogic.rightExpression = systemStateObject.getCondition()
+            if systemStateObject.type is 'if':
+                break
+            orLogic = OrExpression(orLogic, None)
+
+        # Make sure that we correctly set the right hand side of the latest or logic
+        assert  isinstance(orLogic.rightExpression, LogicalExpression)
+        andLogic = AndExpression(self.rule.getCondition(), rightLogic)
+        assert len(self.logicalExpressionStack) == 0
+        self.rule.setCondition(andLogic)
 
     def enterIfCommand(self, ctx: CMakeParser.IfCommandContext):
         # Make sure that the logical expression stack is empty every time we enter an if statement
         assert len(self.logicalExpressionStack) == 0
         self.rule = Rule()
+
         vmodel.setInsideIf()
         vmodel.pushCurrentLookupTable()
         vmodel.ifLevel += 1
@@ -487,9 +513,13 @@ class CMakeExtractorListener(CMakeListener):
         print(ctx.getText())
 
     def enterElseIfStatement(self, ctx: CMakeParser.ElseIfStatementContext):
+        # Make sure that the logical expression stack is empty every time we enter an else if statement
+        assert len(self.logicalExpressionStack) == 0
+        self.rule = Rule()
+
         vmodel.popLookupTable()
         vmodel.pushCurrentLookupTable()
-        state, condition, level = vmodel.getCurrentSystemState()
+        systemStateObject = vmodel.getCurrentSystemState()
 
         # TODO: Duplicate code here like if statement; should make a method for it
         reservedWords = [
@@ -510,14 +540,27 @@ class CMakeExtractorListener(CMakeListener):
         # We create a new condition list. Add previous condition (which drives from and if or prev else if)
         # and NOT it and AND it with our condition. This new list will later be parsed to evaluate the query.
         # We keep previous condition for else statement
+        condition = systemStateObject.getArgs()
         condition = ['(( NOT'] + condition + [') AND'] + elseIfCondition + [')']
-        vmodel.pushSystemState('elseif', condition)
+
+        self.rule.setType('elseif')
+        self.rule.setArgs(condition)
+        self.rule.setLevel(vmodel.ifLevel)
+        vmodel.pushSystemState(self.rule)
 
     def enterElseStatement(self, ctx: CMakeParser.ElseStatementContext):
+        # Make sure that the logical expression stack is empty every time we enter an else statement
+        assert len(self.logicalExpressionStack) == 0
+        self.rule = Rule()
+
         # We create a new condition list which in a <CONDITION_1 or CONDITION_2 or ...> format
         elseCondition = []
         while True:
-            state, condition, level = vmodel.getCurrentSystemState()
+            systemStateObject = vmodel.getCurrentSystemState()
+
+            condition = systemStateObject.getArgs()
+            state = systemStateObject.getType()
+
             elseCondition += condition
             if state != 'if':
                 vmodel.popSystemState()
@@ -529,6 +572,12 @@ class CMakeExtractorListener(CMakeListener):
         vmodel.pushCurrentLookupTable()
         vmodel.pushSystemState('else', elseCondition)
 
+        self.rule.setType('elseif')
+        self.rule.setArgs(condition)
+        self.rule.setLevel(vmodel.ifLevel)
+        self.rule.setCondition(notLogic)
+        vmodel.pushSystemState(self.rule)
+
     def exitIfCommand(self, ctx: CMakeParser.IfCommandContext):
         vmodel.setOutsideIf()
         vmodel.ifConditions.pop()
@@ -537,7 +586,8 @@ class CMakeExtractorListener(CMakeListener):
         # In case of an if statement without else command, the state of the if itself and multiple else ifs
         # still exists. We should keep popping until we reach to the if
         while True:
-            state, condition, level = vmodel.popSystemState()
+            systemStateObject = vmodel.popSystemState()
+            state = systemStateObject.type
             if state == 'if':
                 break
 

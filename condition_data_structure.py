@@ -7,6 +7,9 @@ class LogicalExpression:
     def getType(self):
         return self.logicType
 
+    def evaluate(self):
+        pass
+
 
 class OrExpression(LogicalExpression):
     leftExpression: LogicalExpression = None
@@ -22,6 +25,9 @@ class OrExpression(LogicalExpression):
 
     def getRight(self):
         return self.rightExpression
+
+    def evaluate(self):
+        return self.leftExpression.evaluate() or self.rightExpression.evaluate()
 
 
 class AndExpression(LogicalExpression):
@@ -39,6 +45,9 @@ class AndExpression(LogicalExpression):
     def getRight(self):
         return self.rightExpression
 
+    def evaluate(self):
+        return self.leftExpression.evaluate() and self.rightExpression.evaluate()
+
 
 class NotExpression(LogicalExpression):
     rightExpression: LogicalExpression = None
@@ -50,6 +59,9 @@ class NotExpression(LogicalExpression):
     def getRight(self):
         return self.rightExpression
 
+    def evaluate(self):
+        return not self.rightExpression.evaluate()
+
 
 class LocalVariable(LogicalExpression):
     variableName: str = None
@@ -57,6 +69,10 @@ class LocalVariable(LogicalExpression):
     def __init__(self, variableName):
         super(LocalVariable, self).__init__('var')
         self.variableName = variableName
+
+    def evaluate(self):
+        # TODO: Given the fact, we should evaluate this last piece in the evaluate tree
+        pass
 
 
 class Rule:
@@ -68,12 +84,21 @@ class Rule:
     def setCondition(self, condition: LogicalExpression):
         self.condition = condition
 
+    def getCondition(self):
+        return self.condition
+
     def setType(self, type: str):
         self.type = type
+
+    def getType(self):
+        return self.type
 
     def setLevel(self, level: int):
         self.level = level
 
     def setArgs(self, args: list):
         self.args = args
+
+    def getArgs(self):
+        return self.args
 

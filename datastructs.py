@@ -527,7 +527,7 @@ def flattenAlgorithm(node: Node):
         return list(result)
 
 
-# TODO: Rewrite this recursive function to an iterative version
+# TODO: Rewrite this recursive function to an iterative version (FAILED)
 # TODO: Do the pruning before evaluating the graph and do the query (List.remove, unreachable nodes)
 # TODO: Try to convert the graph to Prolog (rule based programming languages) rules and write queries on this new rules
 
@@ -564,6 +564,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
     elif isinstance(node, CustomCommandNode):
         flattedResult = node.evaluate(None, recStack)
     elif isinstance(node, SelectNode):
+        # TODO: Check if conditions satisfiable before expanding the tree (Using the new data structure)
         if node.falseNode and node.trueNode:
             flattedResult = flattenAlgorithmWithConditions(node.falseNode, {(node.args, False)}, debug, recStack,
                                                            useCache=useCache) + \
@@ -673,7 +674,7 @@ class VModel:
         self.recordCommands = False
         self.COUNTER = infinite_sequence()
         self.tmpLookupTableStack = []
-        self.systemState = []
+        self.systemState: List[Rule] = []
         self.functions = {}
         self.currentFunctionCommand = None
         # Defined properties
@@ -698,7 +699,7 @@ class VModel:
     def pushSystemState(self, rule: Rule):
         self.systemState.append(rule)
 
-    def getCurrentSystemState(self):
+    def getCurrentSystemState(self) -> Optional[Rule]:
         if self.systemState:
             return self.systemState[-1]
         else:

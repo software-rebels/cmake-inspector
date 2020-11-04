@@ -21,7 +21,7 @@ ifStatement
 	;
 
 elseIfStatement
-	: 'elseif' argument 
+	: 'elseif' LPAREN logical_expr RPAREN
 	;
 
 elseStatement
@@ -38,6 +38,7 @@ logical_expr
  | logical_expr OR logical_expr                             # LogicalExpressionOr
  | single_argument comp_operator single_argument            # ComparisonExpression
  | LPAREN logical_expr RPAREN                               # LogicalExpressionInParen
+ | constant_value                                           # ConstantValue
  | single_argument                                          # LogicalEntity
  ;
 
@@ -52,6 +53,8 @@ command_invocation
 argument
 	: '(' (single_argument|compound_argument)* ')'
 	;
+
+constant_value: CONSTANTS | DECIMAL;
 
 single_argument
 	: Identifier | Unquoted_argument | Bracket_argument | Quoted_argument
@@ -75,9 +78,13 @@ EQR: 'MATCHES';
 LPAREN : '(' ;
 RPAREN : ')' ;
 
+CONSTANTS: 'ON' | 'YES' | 'TRUE' | 'Y' | 'OFF' | 'NO' | 'FALSE' | 'N';
+
 Identifier
 	: [A-Za-z_][A-Za-z0-9_]*
 	;
+
+DECIMAL : '-'?[0-9]+('.'[0-9]+)? ;
 
 Unquoted_argument
 	: (~[ \t\r\n()#"\\] | Escape_sequence)+

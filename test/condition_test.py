@@ -36,10 +36,11 @@ class TestConditions(unittest.TestCase):
         text = """
         set(var_a 1)
         set(var_b false)
-        if(var_a AND var_b)
+        
+        set(foo mehran)
+        
+        if(var_a OR var_b)
             set(foo bar)
-        else()
-            set(foo zi)
         endif()
         
         if(NOT var_a)
@@ -47,7 +48,7 @@ class TestConditions(unittest.TestCase):
         endif()
         """
         self.runTool(text)
-        self.vmodel.export()
+        # self.vmodel.export()
         var = self.lookup.getKey('${foo}')
         a = flattenAlgorithmWithConditions(var)
         print(a)
