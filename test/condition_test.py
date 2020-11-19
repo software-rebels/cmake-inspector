@@ -41,6 +41,10 @@ class TestConditions(unittest.TestCase):
         
         if(var_a OR var_b)
             set(foo bar)
+        elseif(a) --> NOT(var_a or var_b) and a
+            <>
+        elseif(b) --> NOT(NOT(var_a or var_b) and a) and b
+            <>
         endif()
         
         if(NOT var_a)

@@ -75,6 +75,19 @@ class LocalVariable(LogicalExpression):
         pass
 
 
+class ConstantExpression(LogicalExpression):
+    value: str = None
+
+    def __init__(self, value):
+        super(ConstantExpression, self).__init__('constant')
+        self.value = value
+
+    def evaluate(self):
+        if self.value.lower() in ('false', 'no'):
+            return False
+        return True
+
+
 class Rule:
     type: str = None
     level: int = None
