@@ -1,8 +1,8 @@
 from antlr4 import FileStream, CommonTokenStream, ParseTreeWalker
 from antlr4.tree.Tree import TerminalNode
-from CMakeLexer import CMakeLexer
-from CMakeParser import CMakeParser
-from CMakeListener import CMakeListener
+from grammar.CMakeLexer import CMakeLexer
+from grammar.CMakeParser import CMakeParser
+from grammar.CMakeListener import CMakeListener
 
 from neomodel import StructuredNode, StringProperty, RelationshipTo, RelationshipFrom, config
 import sys
@@ -64,7 +64,7 @@ class CMakeExtractorListener(CMakeListener):
     def enterCommand_invocation(self, ctx: CMakeParser.Command_invocationContext):
         global project_dir
         commandId = ctx.Identifier().getText()
-        if commandId not in ('add_subdirectory', 'endif'):
+        if commandId not in ('add_subdirectory', 'endif', 'include'):
             if commandId in commands_freq:
                 commands_freq[commandId] += 1
             else:
@@ -75,6 +75,10 @@ class CMakeExtractorListener(CMakeListener):
             project_dir = os.path.join(project_dir, ctx.single_argument()[0].getText())
             parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
             project_dir = tempProjectDir
+
+        if commandId == 'include':
+            if os.path.exists(os.path.join(project_dir, ctx.argument().single_argument()[0].getText())):
+                parseFile(os.path.join(project_dir, ctx.argument().single_argument()[0].getText()))
         # if ctx.Identifier().getText() == "add_executable":
         #     executable = Executable()
         #     invocationArguments = (child for child in ctx.getChildren() if not isinstance(child, TerminalNode))
