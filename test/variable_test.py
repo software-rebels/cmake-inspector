@@ -1874,6 +1874,14 @@ class TestVariableDefinitions(unittest.TestCase):
         list(REMOVE_ITEM foo b)
         """
         self.runTool(text)
+        varHistory = self.lookup.getVariableHistory("${foo}")
+        self.assertEqual(2, len(varHistory))
+        self.assertIsInstance(varHistory[0].getPointTo(), ConcatNode)
+        self.assertIsInstance(varHistory[1].getPointTo(), CustomCommandNode)
+        self.assertEqual(2, len(self.lookup.getKey("${foo}").getPointTo().getChildren()))
+        self.assertEqual(varHistory[0], self.lookup.getKey("${foo}").getPointTo().getChildren()[1])
+        self.assertEqual("a,b,c", self.lookup.getKey("${foo}").getPointTo().getChildren()[1].getValue())
+
         # self.vmodel.export()
 
     def test_variable_growth(self):
@@ -1912,6 +1920,84 @@ class TestVariableDefinitions(unittest.TestCase):
         list(FIND var foo out_var)
         """
         self.runTool(text)
+
+
+    def test_conditional_list_remove_variable(self):
+        text = """
+        option(opt1 "des1" YES)
+        if(opt1)
+            set(name Farshad)
+        else()
+            set(name Mehran)
+        endif() 
+        set(foo john Farshad bar)
+        if(opt1)
+            list(REMOVE_ITEM foo john ${name})
+        endif() 
+        """
+        self.runTool(text)
+        var = self.lookup.getKey('${foo}')
+        a = flattenAlgorithmWithConditions(var)
+        finalFlattenList = []
+        # Now we should expand the cached results
+        for item in a:
+            if isinstance(item[0], Node):
+                finalFlattenList += [(x, set(y).union(item[1]))
+                                     for x, y in VModel.getInstance().flattenMemoize[item[0]]]
+            else:
+                finalFlattenList.append(item)
+
+        result = defaultdict(set)
+        for item in finalFlattenList:
+            test_cond = set()
+            for cond in item[1]:
+                # TODO: For some reason
+                if cond[0] is None:
+                    continue
+
+                test_cond.add("{}:{}".format(cond[0].getValue(), str(cond[1])))
+            if test_cond:
+                result[" && ".join(sorted(test_cond))].add(item[0])
+            elif item[0]:
+                result[""].add(item[0])
+
+        def set_default(obj):
+            if isinstance(obj, set):
+                return list(obj)
+            raise TypeError
+
+        print(json.dumps(result, default=set_default, sort_keys=True, indent=4))
+
+        self.assertEqual(result['opt1:False'], {"Farshad","john","bar"})
+        self.assertEqual(result['opt1:True'], {"bar"})
+
+
+    def test_remove_at_conditional_list_remove_variable(self):
+        text = """
+        set(var_a foo bar john doe)
+        set(item 2 5 6)
+        list(REMOVE_AT var_a ${item})
+        """
+        self.runTool(text)
+        # var = self.lookup.getKey('${var_a}')
+        # a = flattenAlgorithmWithConditions(var)
+        varHistory = self.lookup.getVariableHistory("${var_a}")
+        self.assertEqual(2, len(varHistory))
+        self.assertIsInstance(varHistory[0].getPointTo(), ConcatNode)
+        self.assertIsInstance(varHistory[1].getPointTo(), CustomCommandNode)
+        self.assertEqual(2, len(self.lookup.getKey("${var_a}").getPointTo().getChildren()))
+        self.assertEqual(varHistory[0], self.lookup.getKey("${var_a}").getPointTo().getChildren()[1])
+        self.assertEqual("foo,bar,john,doe", self.lookup.getKey("${var_a}").getPointTo().getChildren()[1].getValue())
+
+    def test_insert_list_remove_variable(self):
+        # TODO: need implementation
+        text = """
+        set(var_a foo bar john doe)
+        set(item foo)
+        list(INSERT var_a ${item})
+        """
+        self.runTool(text)
+        # self.vmodel.export()
 
 if __name__ == '__main__':
     unittest.main()
