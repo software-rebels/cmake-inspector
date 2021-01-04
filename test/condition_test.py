@@ -42,3 +42,20 @@ class TestConditions(unittest.TestCase):
         self.runTool(text)
         self.vmodel.export()
         # condition = self.vmodel.ru
+
+    def test_if_else_if_statement_logic_expression(self):
+        text = """
+        set(foo on)
+        set(bar off)
+        if(foo OR bar)
+            set(john doe)
+        elseif(NOT bar)
+            set(john bar_doe)
+        elseif(NOT foo)
+            set(john foo_doe)
+        else()
+            set(john else_doe)
+        endif()
+        """
+        self.runTool(text)
+        self.vmodel.export()

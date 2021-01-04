@@ -400,6 +400,8 @@ class LiteralNode(Node):
 
 
 class SelectNode(Node):
+    rule: Rule = None
+
     def __init__(self, name, condition):
         super().__init__(name)
         self.trueNode: Optional[Node] = None
@@ -914,17 +916,9 @@ class VModel:
                 concatNode.listOfNodes += result
                 concatNode.concatString = True
                 return concatNode
-            # mayExistNode = self.lookupTable.getKey(expression[0]) or self.findNode(expression[0])
-            # if mayExistNode:
-            #     return mayExistNode
-            # return LiteralNode(expression[0], expression[0])
-
-        # If we already created a Concat Node of the same arguments, then we can return that
-        # mayExistNode = self.findNode(",".join(expression))
-        # if mayExistNode:
-        #     return mayExistNode
 
         concatNode = ConcatNode(",".join(expression))
+        self.addNode(concatNode)
         for expr in expression:
             concatNode.addNode(self.expand([expr]))
         return concatNode

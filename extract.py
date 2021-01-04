@@ -1,7 +1,6 @@
 # Bultin Libraries
 import sys
 import os
-import code
 from typing import List, Optional
 # Third-party
 from antlr4 import FileStream, CommonTokenStream, ParseTreeWalker
@@ -82,6 +81,7 @@ def util_handleConditions(nextNode, newNodeName, prevNode=None):
                                                    util_getStringFromList(stateProperty))
             newSelectNode = SelectNode(selectNodeName, stateProperty)
             newSelectNode.args = vmodel.expand(stateProperty)
+            newSelectNode.rule = systemStateObject
 
             if systemState == 'if' or systemState == 'elseif':
                 newSelectNode.setTrueNode(nextNode)
@@ -438,6 +438,10 @@ class CMakeExtractorListener(CMakeListener):
         andLogic = AndExpression(leftLogicalExpression, rightLogicalExpression)
         self.logicalExpressionStack.append(andLogic)
 
+    def exitConstantValue(self, ctx:CMakeParser.ConstantValueContext):
+        constant = ConstantExpression(ctx.getText())
+        self.logicalExpressionStack.append(constant)
+
     def exitLogicalExpressionNot(self, ctx:CMakeParser.LogicalExpressionNotContext):
         logicalExpression = self.logicalExpressionStack.pop()
         notLogic = NotExpression(logicalExpression)
@@ -458,23 +462,33 @@ class CMakeExtractorListener(CMakeListener):
         assert len(self.logicalExpressionStack) == 0
 
     def exitElseIfStatement(self, ctx:CMakeParser.ElseIfStatementContext):
+        # Logical expression for the elseif itself
         rightLogic = self.logicalExpressionStack.pop()
-        # For the else if, to be evaluated as true, all the previous conditions should be evaluated as false
-        # ~A and ~B = ~(A or B) = ~(False or A or B) = ~((False or A) or B)
-        # We use the third equation
-        orLogic = OrExpression(ConstantExpression('false'), None)
-        for systemStateObject in reversed(vmodel.systemState):
-            orLogic.rightExpression = systemStateObject.getCondition()
-            if systemStateObject.type == 'if':
-                break
-            orLogic = OrExpression(orLogic, None)
 
-        # Make sure that we correctly set the right hand side of the latest or logic
-        assert isinstance(orLogic.rightExpression, LogicalExpression)
-        notExpression = NotExpression(orLogic)
-        andLogic = AndExpression(notExpression, rightLogic)
+        # For the else if, to be evaluated as true, all the previous conditions should be evaluated as false
+        # Using bellow algorithm, we need to check the latest condition only.
+        logic = self.getNegativeOfPrevLogics()
+
+        andLogic = AndExpression(logic, rightLogic)
         assert len(self.logicalExpressionStack) == 0
         self.rule.setCondition(andLogic)
+        vmodel.pushSystemState(self.rule)
+
+    def getNegativeOfPrevLogics(self):
+        # Previous expression could be an if or elseif. So, there are two cases that we have to handle:
+        # 1. If: We should "not" the condition and "and" it with the elseif condition
+        # 2. elseif: We already calculated not of the previous ones in the leftSide, so we only need to not the
+        # rightSide and and it with the current one.
+        prevState = vmodel.systemState[-1]
+        logic: LogicalExpression
+        if prevState.getType() == 'if':
+            logic = NotExpression(prevState.getCondition())
+        elif prevState.getType() == 'elseif':
+            logic = AndExpression(prevState.getCondition().getLeft(),
+                                  NotExpression(prevState.getCondition().getRight()))
+        else:
+            raise RuntimeError("Previous state of elseif could be if or elseif, but got {}".format(prevState.getType()))
+        return logic
 
     def enterIfCommand(self, ctx: CMakeParser.IfCommandContext):
         # Make sure that the logical expression stack is empty every time we enter an if statement
@@ -499,63 +513,33 @@ class CMakeExtractorListener(CMakeListener):
 
         vmodel.popLookupTable()
         vmodel.pushCurrentLookupTable()
-        systemStateObject = vmodel.getCurrentSystemState()
-
-        # TODO: Duplicate code here like if statement; should make a method for it
-        reservedWords = [
-            'NOT', 'AND', 'OR', 'COMMAND', 'POLICY', 'TARGET', 'EXISTS', 'IS_NEWER_THAN', 'IS_DIRECTORY',
-            'IS_SYMLINK', 'IS_ABSOLUTE', 'MATCHES', 'LESS', 'GREATER', 'EQUAL', 'STRLESS', 'STRGREATER',
-            'STREQUAL', 'VERSION_LESS', 'VERSION_EQUAL', 'VERSION_GREATER', 'DEFINED',
-            'ON', 'OFF', 'YES', 'NO', 'TRUE', 'FALSE'
-        ]
-        elseIfCondition = []
-        for arg in [argument for argument in ctx.argument().children if
-                    not isinstance(argument, TerminalNode)]:
-            if arg.getChild(0).symbol.type == CMakeParser.Quoted_argument or \
-                    arg.getText().upper() in reservedWords or \
-                    arg.getText().isnumeric():
-                elseIfCondition.append(arg.getText())
-            else:
-                elseIfCondition.append("${{{}}}".format(arg.getText()))
-        # We create a new condition list. Add previous condition (which drives from and if or prev else if)
-        # and NOT it and AND it with our condition. This new list will later be parsed to evaluate the query.
-        # We keep previous condition for else statement
-        condition = systemStateObject.getArgs()
-        condition = ['(( NOT'] + condition + [') AND'] + elseIfCondition + [')']
 
         self.rule.setType('elseif')
-        self.rule.setArgs(condition)
         self.rule.setLevel(vmodel.ifLevel)
-        vmodel.pushSystemState(self.rule)
 
     def enterElseStatement(self, ctx: CMakeParser.ElseStatementContext):
         # Make sure that the logical expression stack is empty every time we enter an else statement
         assert len(self.logicalExpressionStack) == 0
         self.rule = Rule()
 
-        # We create a new condition list which in a <CONDITION_1 or CONDITION_2 or ...> format
-        elseCondition = []
+        # Else statement is true when all the previous conditions are false
+        # Same as elseif, we only need to check the previous state
+        logic = self.getNegativeOfPrevLogics()
+
         while True:
             systemStateObject = vmodel.getCurrentSystemState()
-
-            condition = systemStateObject.getArgs()
             state = systemStateObject.getType()
-
-            elseCondition += condition
             if state != 'if':
                 vmodel.popSystemState()
-                elseCondition.append('OR')
             else:
                 break
 
         vmodel.popLookupTable()
         vmodel.pushCurrentLookupTable()
-        vmodel.pushSystemState('else', elseCondition)
 
         self.rule.setType('elseif')
-        self.rule.setArgs(condition)
         self.rule.setLevel(vmodel.ifLevel)
-        self.rule.setCondition(notLogic)
+        self.rule.setCondition(logic)
         vmodel.pushSystemState(self.rule)
 
     def exitIfCommand(self, ctx: CMakeParser.IfCommandContext):

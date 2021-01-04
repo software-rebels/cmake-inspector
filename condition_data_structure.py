@@ -85,7 +85,7 @@ class LocalVariable(LogicalExpression):
         self.variableName = variableName
 
     def getText(self):
-        return self.variableName
+        return "${{{}}}".format(self.variableName)
 
     def evaluate(self):
         # TODO: Given the fact, we should evaluate this last piece in the evaluate tree
@@ -118,7 +118,7 @@ class Rule:
         self.condition = condition
         self.args = self.getText().split()
 
-    def getCondition(self):
+    def getCondition(self) -> LogicalExpression:
         return self.condition
 
     def setType(self, type: str):
