@@ -8,7 +8,8 @@ from antlr4 import FileStream, CommonTokenStream, ParseTreeWalker
 from antlr4.tree.Tree import TerminalNode
 from neomodel import config
 # Grammar generates by Antlr
-from condition_data_structure import Rule, LogicalExpression, AndExpression, LocalVariable, NotExpression, OrExpression
+from condition_data_structure import Rule, LogicalExpression, AndExpression, LocalVariable, NotExpression, OrExpression, \
+    ConstantExpression
 from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
 from grammar.CMakeListener import CMakeListener
@@ -459,16 +460,19 @@ class CMakeExtractorListener(CMakeListener):
     def exitElseIfStatement(self, ctx:CMakeParser.ElseIfStatementContext):
         rightLogic = self.logicalExpressionStack.pop()
         # For the else if, to be evaluated as true, all the previous conditions should be evaluated as false
-        orLogic = OrExpression(, None)
+        # ~A and ~B = ~(A or B) = ~(False or A or B) = ~((False or A) or B)
+        # We use the third equation
+        orLogic = OrExpression(ConstantExpression('false'), None)
         for systemStateObject in reversed(vmodel.systemState):
             orLogic.rightExpression = systemStateObject.getCondition()
-            if systemStateObject.type is 'if':
+            if systemStateObject.type == 'if':
                 break
             orLogic = OrExpression(orLogic, None)
 
         # Make sure that we correctly set the right hand side of the latest or logic
-        assert  isinstance(orLogic.rightExpression, LogicalExpression)
-        andLogic = AndExpression(self.rule.getCondition(), rightLogic)
+        assert isinstance(orLogic.rightExpression, LogicalExpression)
+        notExpression = NotExpression(orLogic)
+        andLogic = AndExpression(notExpression, rightLogic)
         assert len(self.logicalExpressionStack) == 0
         self.rule.setCondition(andLogic)
 
@@ -480,32 +484,8 @@ class CMakeExtractorListener(CMakeListener):
         vmodel.setInsideIf()
         vmodel.pushCurrentLookupTable()
         vmodel.ifLevel += 1
-        arguments = [argument.getText() for argument in ctx.ifStatement().logical_expr().children]
-        processedArgs = []
-
-        reservedWords = [
-            'NOT', 'AND', 'OR', 'COMMAND', 'POLICY', 'TARGET', 'EXISTS', 'IS_NEWER_THAN', 'IS_DIRECTORY',
-            'IS_SYMLINK', 'IS_ABSOLUTE', 'MATCHES', 'LESS', 'GREATER', 'EQUAL', 'STRLESS', 'STRGREATER',
-            'STREQUAL', 'VERSION_LESS', 'VERSION_EQUAL', 'VERSION_GREATER', 'DEFINED',
-            'ON', 'OFF', 'YES', 'NO', 'TRUE', 'FALSE'
-        ]
-        vmodel.ifConditions.append(" ".join(arguments))
-        # As described in https://cmake.org/cmake/help/v3.1/command/if.html, to address a variable in a if statement
-        # we don't need to use ${} syntax. Here, we manually add those to have a consistent algorithm
-        for arg in [argument for argument in ctx.ifStatement().logical_expr().children]:
-            if isinstance(arg, TerminalNode) or \
-                    arg.getChild(0).getChild(0).symbol.type == CMakeParser.Quoted_argument or \
-                    arg.getText().upper() in reservedWords or \
-                    arg.getText().isnumeric():
-                processedArgs.append(arg.getText())
-                # TODO: A temporary fix to create space between arguments. Otherwise, NOT will be followed by the arg
-                #       without any space
-                # processedArgs.append(" ")
-            else:
-                processedArgs.append("${{{}}}".format(arg.getText()))
 
         self.rule.setType('if')
-        self.rule.setArgs(processedArgs)
         self.rule.setLevel(vmodel.ifLevel)
         vmodel.pushSystemState(self.rule)
 
@@ -580,7 +560,6 @@ class CMakeExtractorListener(CMakeListener):
 
     def exitIfCommand(self, ctx: CMakeParser.IfCommandContext):
         vmodel.setOutsideIf()
-        vmodel.ifConditions.pop()
         vmodel.popLookupTable()
         vmodel.ifLevel -= 1
         # In case of an if statement without else command, the state of the if itself and multiple else ifs

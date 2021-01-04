@@ -7,6 +7,9 @@ class LogicalExpression:
     def getType(self):
         return self.logicType
 
+    def getText(self) -> str:
+        pass
+
     def evaluate(self):
         pass
 
@@ -25,6 +28,10 @@ class OrExpression(LogicalExpression):
 
     def getRight(self):
         return self.rightExpression
+
+    def getText(self):
+        return '{} OR {}'.format(self.getLeft().getText(),
+                                 self.getRight().getText())
 
     def evaluate(self):
         return self.leftExpression.evaluate() or self.rightExpression.evaluate()
@@ -45,6 +52,10 @@ class AndExpression(LogicalExpression):
     def getRight(self):
         return self.rightExpression
 
+    def getText(self):
+        return '{} AND {}'.format(self.getLeft().getText(),
+                                  self.getRight().getText())
+
     def evaluate(self):
         return self.leftExpression.evaluate() and self.rightExpression.evaluate()
 
@@ -59,6 +70,9 @@ class NotExpression(LogicalExpression):
     def getRight(self):
         return self.rightExpression
 
+    def getText(self):
+        return 'NOT {}'.format(self.getRight().getText())
+
     def evaluate(self):
         return not self.rightExpression.evaluate()
 
@@ -69,6 +83,9 @@ class LocalVariable(LogicalExpression):
     def __init__(self, variableName):
         super(LocalVariable, self).__init__('var')
         self.variableName = variableName
+
+    def getText(self):
+        return self.variableName
 
     def evaluate(self):
         # TODO: Given the fact, we should evaluate this last piece in the evaluate tree
@@ -81,6 +98,9 @@ class ConstantExpression(LogicalExpression):
     def __init__(self, value):
         super(ConstantExpression, self).__init__('constant')
         self.value = value
+
+    def getText(self):
+        return self.value
 
     def evaluate(self):
         if self.value.lower() in ('false', 'no'):
@@ -96,6 +116,7 @@ class Rule:
 
     def setCondition(self, condition: LogicalExpression):
         self.condition = condition
+        self.args = self.getText().split()
 
     def getCondition(self):
         return self.condition
@@ -114,4 +135,7 @@ class Rule:
 
     def getArgs(self):
         return self.args
+
+    def getText(self):
+        return self.condition.getText()
 

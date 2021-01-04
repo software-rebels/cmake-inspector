@@ -32,27 +32,13 @@ class TestConditions(unittest.TestCase):
         VModel.clearInstance()
         Lookup.clearInstance()
 
-    def test_simple_condition(self):
+    def test_if_statement_logic_expression(self):
         text = """
-        set(var_a 1)
-        set(var_b false)
-        
-        set(foo mehran)
-        
-        if(var_a OR var_b)
-            set(foo bar)
-        elseif(a) --> NOT(var_a or var_b) and a
-            <>
-        elseif(b) --> NOT(NOT(var_a or var_b) and a) and b
-            <>
-        endif()
-        
-        if(NOT var_a)
-            set(foo doe)
-        endif()
+        set(foo on)
+        if(foo AND ON)
+            set(bar off)
+        endif(foo)
         """
         self.runTool(text)
-        # self.vmodel.export()
-        var = self.lookup.getKey('${foo}')
-        a = flattenAlgorithmWithConditions(var)
-        print(a)
+        self.vmodel.export()
+        # condition = self.vmodel.ru
