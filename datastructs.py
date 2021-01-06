@@ -741,10 +741,7 @@ class VModel:
 
     def setParents(self):
         result = set()
-        # result.add(node)
-        nodesToVisit = []
-        for node in self.nodes:
-            nodesToVisit.append(node)
+        nodesToVisit = self.nodes.copy()
 
         while nodesToVisit:
             node = nodesToVisit.pop()
