@@ -17,11 +17,11 @@ ifCommand
 	;
 
 ifStatement
-	: 'if' argument
+	: 'if' LPAREN logical_expr RPAREN
 	;
 
 elseIfStatement
-	: 'elseif' argument 
+	: 'elseif' LPAREN logical_expr RPAREN
 	;
 
 elseStatement
@@ -32,6 +32,16 @@ endIfStatement
 	: 'endif' argument
 	;
 
+logical_expr
+ : NOT logical_expr                                         # LogicalExpressionNot
+ | logical_expr AND logical_expr                            # LogicalExpressionAnd
+ | logical_expr OR logical_expr                             # LogicalExpressionOr
+ | single_argument comp_operator single_argument            # ComparisonExpression
+ | LPAREN logical_expr RPAREN                               # LogicalExpressionInParen
+ | constant_value                                           # ConstantValue
+ | single_argument                                          # LogicalEntity
+ ;
+
 optionCommand
     : 'option' argument
     ;
@@ -41,8 +51,10 @@ command_invocation
 	;
 
 argument
-	: '(' (single_argument|compound_argument)* ')'
+	: '(' (single_argument|compound_argument|constant_value)* ')'
 	;
+
+constant_value: CONSTANTS | DECIMAL;
 
 single_argument
 	: Identifier | Unquoted_argument | Bracket_argument | Quoted_argument
@@ -52,9 +64,27 @@ compound_argument
 	: '(' (single_argument|compound_argument)* ')'
 	;
 
+comp_operator : GT | LT | EQ | EQR;
+
+NOT : 'NOT';
+AND : 'AND';
+OR : 'OR';
+
+GT : 'GREATER' ;
+LT : 'LESS' ;
+EQ : 'EQUAL' ;
+EQR: 'MATCHES';
+
+LPAREN : '(' ;
+RPAREN : ')' ;
+
+CONSTANTS: 'ON' | 'YES' | 'TRUE' | 'Y' | 'OFF' | 'NO' | 'FALSE' | 'N';
+
 Identifier
 	: [A-Za-z_][A-Za-z0-9_]*
 	;
+
+DECIMAL : '-'?[0-9]+('.'[0-9]+)? ;
 
 Unquoted_argument
 	: (~[ \t\r\n()#"\\] | Escape_sequence)+

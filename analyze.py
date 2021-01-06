@@ -1,8 +1,8 @@
 import logging
 import pickle
 
-from datastructs import VModel, Lookup, RefNode, TargetNode, LiteralNode, CustomCommandNode, \
-    flattenAlgorithmWithConditions, FinalTarget, FinalSelectNode, Node, recursivelyResolveReference
+from algorithms import flattenAlgorithmWithConditions, recursivelyResolveReference
+from datastructs import Lookup, RefNode, TargetNode, LiteralNode, CustomCommandNode, Node
 from pydriller import RepositoryMining
 import itertools
 import glob
@@ -10,10 +10,8 @@ from collections import defaultdict
 import pprint
 import json
 import csv
-
-
+from vmodel import VModel
 # import matplotlib.pyplot as plt
-
 
 def printInputVariablesAndOptions(vmodel: VModel, lookup: Lookup):
     print("#### Input variables are:")
@@ -143,24 +141,6 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
     return result
 
 
-def buildRuntimeGraph(vmodel: VModel, lookup: Lookup):
-    targets = extractTargets(lookup)
-    for target in targets:
-        flattenedFiles = flattenAlgorithmWithConditions(target.sources)
-        finalTarget = FinalTarget("{}::final".format(target.getName()))
-        fileSelectNode = FinalSelectNode("{}::Select::FILES".format(target.getName()))
-        finalTarget.files = fileSelectNode
-        for item in flattenedFiles:
-            literalNode = LiteralNode(item[0])
-            test_cond = set()
-            for cond in item[1]:
-                test_cond.add("{}:{}".format(cond[0].getValue(), str(cond[1])))
-            fileSelectNode.addChild((literalNode, ",".join(test_cond)))
-
-        vmodel.nodes.append(finalTarget)
-        vmodel.export()
-
-
 def doChangeAnalysis(fileNode):
     vmodel = VModel.getInstance()
     unitTestsName = set()
@@ -246,6 +226,6 @@ def doGitAnalysis(repoPath):
     #     print("Extension: {}, freq: {}".format(key, extension[key]))
     lists = sorted(extension.items(), key=lambda item: item[1], reverse=True)
     x, y = zip(*lists)
-    plt.bar(x, y)
-    plt.xticks(rotation=90)
-    plt.savefig("plot.pdf")
+    # plt.bar(x, y)
+    # plt.xticks(rotation=90)
+    # plt.savefig("plot.pdf")
