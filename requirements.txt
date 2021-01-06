@@ -1,4 +1,4 @@
-antlr4-python3-runtime==4.7.2
+antlr4-python3-runtime==4.9.1
 attrs==20.2.0
 Django==1.11.29
 gitdb==4.0.5

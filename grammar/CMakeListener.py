@@ -1,4 +1,4 @@
-# Generated from CMake.g4 by ANTLR 4.7.2
+# Generated from CMake.g4 by ANTLR 4.9.1
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .CMakeParser import CMakeParser
@@ -71,6 +71,69 @@ class CMakeListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by CMakeParser#LogicalEntity.
+    def enterLogicalEntity(self, ctx:CMakeParser.LogicalEntityContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#LogicalEntity.
+    def exitLogicalEntity(self, ctx:CMakeParser.LogicalEntityContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#ComparisonExpression.
+    def enterComparisonExpression(self, ctx:CMakeParser.ComparisonExpressionContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#ComparisonExpression.
+    def exitComparisonExpression(self, ctx:CMakeParser.ComparisonExpressionContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#LogicalExpressionInParen.
+    def enterLogicalExpressionInParen(self, ctx:CMakeParser.LogicalExpressionInParenContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#LogicalExpressionInParen.
+    def exitLogicalExpressionInParen(self, ctx:CMakeParser.LogicalExpressionInParenContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#LogicalExpressionAnd.
+    def enterLogicalExpressionAnd(self, ctx:CMakeParser.LogicalExpressionAndContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#LogicalExpressionAnd.
+    def exitLogicalExpressionAnd(self, ctx:CMakeParser.LogicalExpressionAndContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#ConstantValue.
+    def enterConstantValue(self, ctx:CMakeParser.ConstantValueContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#ConstantValue.
+    def exitConstantValue(self, ctx:CMakeParser.ConstantValueContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#LogicalExpressionNot.
+    def enterLogicalExpressionNot(self, ctx:CMakeParser.LogicalExpressionNotContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#LogicalExpressionNot.
+    def exitLogicalExpressionNot(self, ctx:CMakeParser.LogicalExpressionNotContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#LogicalExpressionOr.
+    def enterLogicalExpressionOr(self, ctx:CMakeParser.LogicalExpressionOrContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#LogicalExpressionOr.
+    def exitLogicalExpressionOr(self, ctx:CMakeParser.LogicalExpressionOrContext):
+        pass
+
+
     # Enter a parse tree produced by CMakeParser#optionCommand.
     def enterOptionCommand(self, ctx:CMakeParser.OptionCommandContext):
         pass
@@ -98,6 +161,15 @@ class CMakeListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by CMakeParser#constant_value.
+    def enterConstant_value(self, ctx:CMakeParser.Constant_valueContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#constant_value.
+    def exitConstant_value(self, ctx:CMakeParser.Constant_valueContext):
+        pass
+
+
     # Enter a parse tree produced by CMakeParser#single_argument.
     def enterSingle_argument(self, ctx:CMakeParser.Single_argumentContext):
         pass
@@ -116,3 +188,14 @@ class CMakeListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by CMakeParser#comp_operator.
+    def enterComp_operator(self, ctx:CMakeParser.Comp_operatorContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#comp_operator.
+    def exitComp_operator(self, ctx:CMakeParser.Comp_operatorContext):
+        pass
+
+
+
+del CMakeParser

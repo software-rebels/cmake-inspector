@@ -4,13 +4,14 @@ from collections import defaultdict
 
 from antlr4 import CommonTokenStream, ParseTreeWalker, InputStream
 
-from analyze import buildRuntimeGraph, printFilesForATarget
+from analyze import printFilesForATarget
 from extract import CMakeExtractorListener
 from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
-from datastructs import VModel, Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, flattenAlgorithm, \
-    CustomCommandNode, getFlattedArguments, TargetNode, TestNode, OptionNode, \
-    flattenAlgorithmWithConditions, FinalTarget, Node
+from datastructs import Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, \
+    CustomCommandNode, TargetNode, TestNode, OptionNode, Node
+from algorithms import flattenAlgorithm, flattenAlgorithmWithConditions, getFlattedArguments
+from vmodel import VModel
 
 
 class TestVariableDefinitions(unittest.TestCase):

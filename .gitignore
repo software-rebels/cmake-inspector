@@ -1,4 +1,3 @@
-../Research/.vscode
 .antlr
 .Rhistory
 __pycache__/
@@ -7,3 +6,4 @@ graph.gv
 graph.gv.pdf
 *.log
 .venv
+.idea
