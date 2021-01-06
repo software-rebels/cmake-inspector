@@ -776,10 +776,7 @@ class VModel:
         return clusters
 
     def getNodeSet(self) -> Set[Node]:
-        nodesToVisit = []
-
-        for node in self.nodes:
-            nodesToVisit.append(node)
+        nodesToVisit = self.nodes.copy()
 
         nodes = set()
         while nodesToVisit:
@@ -789,7 +786,7 @@ class VModel:
             nodes.add(node)
             if node.getChildren() is not None:
                 nodesToVisit += node.getChildren()
-                # nodes.update(node.getChildren())
+
         return nodes
 
     @staticmethod
