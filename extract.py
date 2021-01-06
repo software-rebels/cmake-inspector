@@ -1,4 +1,5 @@
 # Bultin Libraries
+import logging
 import sys
 import os
 from typing import List, Optional
@@ -7,418 +8,27 @@ from antlr4 import FileStream, CommonTokenStream, ParseTreeWalker
 from antlr4.tree.Tree import TerminalNode
 from neomodel import config
 # Grammar generates by Antlr
+from algorithms import flattenAlgorithmWithConditions
 from condition_data_structure import Rule, LogicalExpression, AndExpression, LocalVariable, NotExpression, OrExpression, \
     ConstantExpression
 from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
 from grammar.CMakeListener import CMakeListener
 # Our own library
-from datastructs import RefNode, TargetNode, VModel, Lookup, SelectNode, ConcatNode, \
-    CustomCommandNode, TestNode, LiteralNode, flattenAlgorithm, Node, OptionNode, flattenAlgorithmWithConditions
+from datastructs import RefNode, TargetNode, Lookup, SelectNode, ConcatNode, \
+    CustomCommandNode, TestNode, LiteralNode, Node, OptionNode
 from analyze import printSourceFiles, printFilesForATarget, checkForCyclesAndPrint
-from analyze import printInputVariablesAndOptions
+from utils import util_handleConditions, util_getStringFromList,\
+    util_create_and_add_refNode_for_variable, util_extract_variable_name
+from commands import *
 
+logging.basicConfig(filename='cmakeInspector.log', level=logging.DEBUG)
 config.DATABASE_URL = 'bolt://neo4j:123@localhost:7687'
 
 project_dir = ""
 
 vmodel = VModel.getInstance()
 lookupTable = Lookup.getInstance()
-
-
-# Convert list of strings to a string separated by space.
-def util_getStringFromList(lst: List):
-    return " ".join(lst)
-
-
-# Given a list of strings, the function will return the next item after a given string name
-def util_extract_variable_name(argName: str, arguments: List) -> Optional[str]:
-    if argName in arguments:
-        argIndex = arguments.index(argName)
-        arguments.pop(argIndex)
-        return arguments.pop(argIndex)
-    return None
-
-
-def util_create_and_add_refNode_for_variable(varName: str, nextNode: Node,
-                                             parentScope=False, relatedProperty=None) -> RefNode:
-    variable_name = "${{{}}}".format(varName)
-    # Each variable has its own RefNode
-    variableNode = RefNode("{}".format(variable_name), nextNode)
-    if relatedProperty:
-        variableNode.relatedProperty = relatedProperty
-
-    variableNode.pointTo = util_handleConditions(nextNode, variable_name)
-
-    # Finally, we add the new RefNode to the graph and our lookup table
-    vmodel.nodes.append(variableNode)
-    lookupTable.setKey(variable_name, variableNode, parentScope)
-    return variableNode
-
-
-# This function looks for previously defined node in the lookup table which works for variables and targets, but
-# not for other nodes that we don't push to lookup table. This third argument helps to manually pass that node.
-def util_handleConditions(nextNode, newNodeName, prevNode=None):
-    # If inside condition, we just create a SelectNode after newly created RefNode (Node)
-    # which true edge points to the new node created for the arguments.
-    # If the variable were already defined before the if, the false edge points to that
-    systemState = None
-    stateProperty = None
-
-    # The for statement will traverse all nested if nodes and create corresponding select node for each of them
-    # However, we only interested in states in outer levels. So, we skip the ones in a same level
-    # For example, in an if -> if | else scenario, when we are processing the else, we skip in inner most if
-    currentIfLevel = 1000
-    for systemStateObject in reversed(vmodel.systemState):
-        level = systemStateObject.level
-        systemState = systemStateObject.type
-        stateProperty = systemStateObject.args
-        if currentIfLevel == level:
-            continue
-        currentIfLevel = min(currentIfLevel, level)
-        if systemState == 'if' or systemState == 'else' or systemState == 'elseif':
-            selectNodeName = "SELECT_{}_{}".format(newNodeName,
-                                                   util_getStringFromList(stateProperty))
-            newSelectNode = SelectNode(selectNodeName, stateProperty)
-            newSelectNode.args = vmodel.expand(stateProperty)
-            newSelectNode.rule = systemStateObject
-
-            if systemState == 'if' or systemState == 'elseif':
-                newSelectNode.setTrueNode(nextNode)
-            elif systemState == 'else':
-                newSelectNode.setFalseNode(nextNode)
-            # Inside if statement, we set true node to the variable defined outside if which pushed
-            # to this stack before entering the if statement
-            if prevNode or vmodel.getLastPushedLookupTable().getKey(newNodeName):
-                if systemState == 'if' or systemState == 'elseif':
-                    newSelectNode.setFalseNode(prevNode or vmodel.getLastPushedLookupTable().getKey(newNodeName))
-                elif systemState == 'else':
-                    newSelectNode.setTrueNode(prevNode or vmodel.getLastPushedLookupTable().getKey(newNodeName))
-            nextNode = newSelectNode
-            # newNodeName = nextNode.name
-
-    return nextNode
-
-
-def setCommand(arguments):
-    rawVarName = arguments.pop(0)
-    variable_name = "${{{}}}".format(rawVarName)
-    parentScope = False
-    if 'PARENT_SCOPE' in arguments:
-        parentScope = True
-        arguments.pop()
-    if arguments:
-        # Retrieve or create node for each argument
-        node = vmodel.expand(arguments)
-    else:  # SET (VAR) // Removes the definition of VAR.
-        lookupTable.deleteKey(variable_name)
-        return
-    util_create_and_add_refNode_for_variable(rawVarName, node, parentScope)
-
-
-def listCommand(arguments):
-    # List command supports many actions, like APPEND, INSERT, ...
-    action = arguments.pop(0)
-    action = action.upper()
-    rawListName = arguments.pop(0)
-    listName = "${{{}}}".format(rawListName)
-    listVariable = lookupTable.getKey(listName)
-
-    if action == 'LENGTH':
-        outVariable = arguments.pop(0)
-        commandName = 'LIST.LENGTH'
-        command = CustomCommandNode(commandName)
-        command.depends.append(listVariable)
-
-        util_create_and_add_refNode_for_variable(outVariable, command)
-
-    elif action == 'SORT' or action == 'REVERSE' or action == 'REMOVE_DUPLICATES':
-        commandName = 'LIST.' + action
-        command = CustomCommandNode(commandName)
-        command.depends.append(listVariable)
-
-        util_create_and_add_refNode_for_variable(rawListName, command)
-
-    elif action == 'REMOVE_AT' or action == 'REMOVE_ITEM' or action == 'INSERT':
-        commandName = 'LIST.{}'.format(action)
-        command = CustomCommandNode(commandName)
-        command.depends.append(listVariable)
-
-        command.commands.append(vmodel.expand(arguments))
-        util_create_and_add_refNode_for_variable(rawListName, command)
-
-    elif action == 'FIND':
-        valueToLook = arguments.pop(0)
-        outVariable = arguments.pop(0)
-        commandName = 'LIST.FIND'.format(valueToLook)
-        command = CustomCommandNode(commandName)
-
-        command.commands.append(vmodel.expand([valueToLook]))
-        command.depends.append(listVariable)
-
-        util_create_and_add_refNode_for_variable(outVariable, command)
-
-    elif action == 'GET':
-        outVariable = arguments.pop()
-        commandName = 'LIST.GET'
-        command = CustomCommandNode(commandName)
-        command.depends.append(listVariable)
-        command.commands.append(vmodel.expand(arguments))
-
-        util_create_and_add_refNode_for_variable(outVariable, command)
-
-    elif action == 'APPEND':
-        # We create a concatNode contains the arguments
-        concatNode = ConcatNode("LIST_" + listName + ",".join(arguments))
-
-        argumentSet = vmodel.flatten(arguments)
-        for item in argumentSet:
-            concatNode.addNode(item)
-
-        # Now we check if this variable were previously defined
-        prevListVar = lookupTable.getKey(listName)
-        if prevListVar:
-            concatNode.addToBeginning(prevListVar)
-
-        # A new RefNode will point to this new concatNode
-        util_create_and_add_refNode_for_variable(rawListName, concatNode)
-
-
-def whileCommand(arguments):
-    customCommand = CustomCommandNode("WHILE({})".format(util_getStringFromList(arguments)))
-    vmodel.pushSystemState('while', customCommand)
-    vmodel.pushCurrentLookupTable()
-    # We want to show the dependency between while command and newly created nodes. We compare nodes before and after
-    # while loop and connect while command node to them.
-    vmodel.nodeStack.append(list(vmodel.nodes))
-
-
-# We compare lookup table before while and after that. For any changed variable, or newly created one,
-# the tool will add the RefNode to the while command node, then it creates a new RefNode pointing to the
-# While command node
-def endwhileCommand():
-    lastPushedLookup = vmodel.getLastPushedLookupTable()
-    state, command, level = vmodel.popSystemState()
-    prevNodeStack = vmodel.nodeStack.pop()
-    for item in vmodel.nodes:
-        if item not in prevNodeStack:
-            command.pointTo.append(item)
-    for key in lookupTable.items[-1].keys():
-        if key not in lastPushedLookup.items[-1].keys() or lookupTable.getKey(key) != lastPushedLookup.getKey(key):
-            # command.pointTo.append(lookupTable.getKey(key))
-            refNode = RefNode("{}_{}".format(key, vmodel.getNextCounter()), command)
-            lookupTable.setKey(key, refNode)
-            vmodel.nodes.append(refNode)
-
-
-# 1- Create a custom command node for file command
-# 2- Write the action (WRITE APPEND ...) as the first argument on the name of the node (e.g FILE(APPEND))
-# 3- If file command mutate or define any variable, create a RefNode for that variable pointing to the file node
-# 4- Any other argument given to the file command will be expanded (as it may have a variable which needs to be
-# de-addressed) and added as child node to custom command node point to property
-
-def fileCommand(arguments):
-    action = arguments.pop(0)
-    fileCommandNode = None
-    if action in ('WRITE', 'APPEND'):
-        fileName = arguments.pop(0)
-        fileNode = vmodel.expand([fileName])
-        contents = vmodel.expand(arguments)
-        fileCommandNode = CustomCommandNode("FILE.({} {})".format(action, fileName))
-        fileCommandNode.pointTo.append(fileNode)
-        fileCommandNode.pointTo.append(contents)
-
-    elif action in ('READ', 'STRINGS', 'MD5', 'SHA1', 'SHA224', 'SHA256', 'SHA384', 'SHA512', 'TIMESTAMP'):
-        variableName = arguments.pop(1)
-        fileCommandNode = CustomCommandNode("FILE.({})".format(action))
-        fileCommandNode.pointTo.append(vmodel.expand(arguments))
-        refNode = RefNode("{}".format(variableName), fileCommandNode)
-        lookupTable.setKey("${{{}}}".format(variableName), refNode)
-        vmodel.nodes.append(refNode)
-
-    elif action in ('GLOB', 'GLOB_RECURSE', 'RELATIVE_PATH'):
-        variableName = arguments.pop(0)
-        fileCommandNode = CustomCommandNode("FILE")
-        fileCommandNode.commands.append(vmodel.expand([action] + arguments))
-        refNode = RefNode("{}".format(variableName), fileCommandNode)
-        lookupTable.setKey("${{{}}}".format(variableName), refNode)
-        vmodel.nodes.append(refNode)
-
-    elif action in ('REMOVE', 'REMOVE_RECURSE', 'MAKE_DIRECTORY'):
-        fileCommandNode = CustomCommandNode("FILE.({})".format(action))
-        fileCommandNode.pointTo.append(vmodel.expand(arguments))
-
-    elif action in ('TO_CMAKE_PATH', 'TO_NATIVE_PATH'):
-        pathText = arguments.pop(0)
-        variableName = arguments.pop(0)
-        fileCommandNode = CustomCommandNode("FILE.({})".format(action))
-        fileCommandNode.pointTo.append(vmodel.expand([pathText]))
-        refNode = RefNode("{}".format(variableName), fileCommandNode)
-        lookupTable.setKey("${{{}}}".format(variableName), refNode)
-        vmodel.nodes.append(refNode)
-
-    elif action in ('DOWNLOAD', 'UPLOAD', 'COPY', 'INSTALL'):
-        # TODO: There is a "log" option for download and upload
-        #  which takes a variable. Currently we ignore that specific option
-        fileCommandNode = CustomCommandNode("FILE.({})".format(action))
-        fileCommandNode.pointTo.append(vmodel.expand(arguments))
-
-    elif action == 'GENERATE':
-        # In cmake documentation (https://cmake.org/cmake/help/v3.1/command/file.html) there is only one possible
-        # word after GENERATE which is OUTPUT. So I assume that the full action name is GENERATE OUTPUT
-        arguments.pop(0)
-        fileCommandNode = CustomCommandNode("FILE.(GENERATE OUTPUT)")
-        fileCommandNode.pointTo.append(vmodel.expand(arguments))
-
-    fileCommandNode.extraInfo['pwd'] = project_dir
-    vmodel.nodes.append(fileCommandNode)
-
-
-def addCompileOptionsCommand(arguments):
-    nextNode = vmodel.expand(arguments)
-    targetNode = util_handleConditions(nextNode, nextNode.name, None)
-
-    newCompileOptions = ConcatNode("COMPILE_OPTIONS_{}".format(vmodel.getNextCounter()))
-    if vmodel.DIRECTORY_PROPERTIES.getOwnKey('COMPILE_OPTIONS'):
-        newCompileOptions.listOfNodes = list(vmodel.DIRECTORY_PROPERTIES.getKey('COMPILE_OPTIONS').listOfNodes)
-
-    vmodel.DIRECTORY_PROPERTIES.setKey('COMPILE_OPTIONS', newCompileOptions)
-    newCompileOptions.addNode(targetNode)
-
-
-def addLinkLibraries(arguments):
-    nextNode = vmodel.expand(arguments)
-    targetNode = util_handleConditions(nextNode, nextNode.name, None)
-
-    newLinkLibraries = ConcatNode("LINK_LIBRARIES_{}".format(vmodel.getNextCounter()))
-    if vmodel.DIRECTORY_PROPERTIES.getOwnKey('LINK_LIBRARIES'):
-        newLinkLibraries.listOfNodes = list(vmodel.DIRECTORY_PROPERTIES.getKey('LINK_LIBRARIES').listOfNodes)
-
-    vmodel.DIRECTORY_PROPERTIES.setKey('LINK_LIBRARIES', newLinkLibraries)
-    newLinkLibraries.addNode(targetNode)
-
-
-def addLinkDirectories(arguments):
-    nextNode = vmodel.expand(arguments)
-    targetNode = util_handleConditions(nextNode, nextNode.name, None)
-
-    newLinkDirectories = ConcatNode("LINK_DIRECTORIES_{}".format(vmodel.getNextCounter()))
-    if vmodel.DIRECTORY_PROPERTIES.getOwnKey('LINK_DIRECTORIES'):
-        newLinkDirectories.listOfNodes = list(vmodel.DIRECTORY_PROPERTIES.getKey('LINK_DIRECTORIES').listOfNodes)
-
-    vmodel.DIRECTORY_PROPERTIES.setKey('LINK_DIRECTORIES', newLinkDirectories)
-    newLinkDirectories.addNode(targetNode)
-
-
-# This function handles both add_library and add_executable
-def addTarget(arguments, isExecutable=True):
-    targetName = arguments.pop(0)
-    lookupTableName = 't:{}'.format(targetName)
-    nextNode = None
-    libraryType = None
-    isObjectLibrary = False
-    interfaceLibrary = None
-
-    # These values may exist in add_library only. There is a type property in TargetNode that we can set
-    if arguments[0] in ('STATIC', 'SHARED', 'MODULE'):
-        libraryType = arguments.pop(0)
-
-    # Object libraries just contains list of files, so there is small change in behaviour
-    if arguments[0] == 'OBJECT':
-        arguments.pop(0)
-        isObjectLibrary = True
-        lookupTableName = "$<TARGET_OBJECTS:{}>".format(targetName)
-
-    # Interface libraries are useful for header-only libraries.
-    # more info at: http://mariobadr.com/creating-a-header-only-library-with-cmake.html
-    if arguments[0] == 'INTERFACE':
-        arguments.pop(0)
-        interfaceLibrary = True
-
-    # IMPORTED target node doesn't have any more argument to expand
-    # ALIAS target node points to another target node, so the logic behind it is a little different
-    if arguments[0] not in ('IMPORTED', 'ALIAS'):
-        nextNode = vmodel.expand(arguments, True)
-
-    targetNode = lookupTable.getKey(lookupTableName)
-    if targetNode is None:
-        targetNode = TargetNode(targetName, nextNode)
-        targetNode.setDefinition(vmodel.DIRECTORY_PROPERTIES.getKey('COMPILE_OPTIONS'))
-        targetNode.linkLibraries = vmodel.DIRECTORY_PROPERTIES.getKey('LINK_LIBRARIES')
-        targetNode.includeDirectories = vmodel.DIRECTORY_PROPERTIES.getKey('INCLUDE_DIRECTORIES')
-        lookupTable.setKey(lookupTableName, targetNode)
-        vmodel.nodes.append(targetNode)
-
-    if libraryType:
-        targetNode.libraryType = libraryType
-
-    targetNode.isExecutable = isExecutable
-    targetNode.isObjectLibrary = isObjectLibrary
-    targetNode.interfaceLibrary = interfaceLibrary
-
-    # TODO: We have to decide whether keep the experiment to change it
-    # EXPERIMENT: We flatten the target name and add all the possible values to the graph as a potential target
-    flattedTargetName = flattenAlgorithmWithConditions(vmodel.expand([targetName]), useCache=False)
-    if flattedTargetName:
-        for item in flattedTargetName:
-            # We already set a key with the name targetNode
-            if item[0] != targetName:
-                lookupTable.setKey("t:{}".format(item[0]), targetNode)
-
-
-    if 'IMPORTED' in arguments:
-        targetNode.imported = True
-
-    if 'ALIAS' in arguments:
-        aliasTarget = lookupTable.getKey('t:{}'.format(arguments[1]))
-        targetNode.sources = aliasTarget
-
-    systemState = None
-    stateProperty = None
-    if vmodel.getCurrentSystemState():
-        systemState, stateProperty, level = vmodel.getCurrentSystemState()
-
-    if systemState == 'if' or systemState == 'else' or systemState == 'elseif':
-        selectNodeName = "SELECT_{}_{}_{}".format(targetName,
-                                                  util_getStringFromList(stateProperty),
-                                                  vmodel.getNextCounter())
-        newSelectNode = SelectNode(selectNodeName, stateProperty)
-
-        if systemState == 'if' or systemState == 'elseif':
-            newSelectNode.setTrueNode(nextNode)
-        elif systemState == 'else':
-            newSelectNode.setFalseNode(nextNode)
-        # Inside if statement, we set true node to the variable defined outside if which pushed
-        # to this stack before entering the if statement
-        if vmodel.getLastPushedLookupTable().getKey(lookupTableName):
-            if systemState == 'if' or systemState == 'elseif':
-                newSelectNode.setFalseNode(
-                    vmodel.getLastPushedLookupTable().getKey(lookupTableName).getPointTo())
-            elif systemState == 'else':
-                newSelectNode.setTrueNode(
-                    vmodel.getLastPushedLookupTable().getKey(lookupTableName).getPointTo())
-
-        targetNode.sources = newSelectNode
-
-
-# Very similar to while command
-def forEachCommand(arguments):
-    customCommand = CustomCommandNode("foreach_{}".format(vmodel.getNextCounter()))
-    customCommand.commands.append(vmodel.expand(arguments))
-    vmodel.pushSystemState('foreach', customCommand)
-    vmodel.pushCurrentLookupTable()
-    # We want to show the dependency between foreach command and newly created nodes. We compare nodes before and after
-    # while loop and connect while command node to them.
-    vmodel.nodeStack.append(list(vmodel.nodes))
-
-
-def processCommand(commandId, args):
-    possibles = globals().copy()
-    possibles.update(locals())
-    method = possibles.get("{}Command".format(commandId))
-    if not method:
-        raise NotImplementedError("Method %s not implemented" % commandId)
-    method(args)
 
 
 class CMakeExtractorListener(CMakeListener):
@@ -467,28 +77,12 @@ class CMakeExtractorListener(CMakeListener):
 
         # For the else if, to be evaluated as true, all the previous conditions should be evaluated as false
         # Using bellow algorithm, we need to check the latest condition only.
-        logic = self.getNegativeOfPrevLogics()
+        logic = util_getNegativeOfPrevLogics()
 
         andLogic = AndExpression(logic, rightLogic)
         assert len(self.logicalExpressionStack) == 0
         self.rule.setCondition(andLogic)
         vmodel.pushSystemState(self.rule)
-
-    def getNegativeOfPrevLogics(self):
-        # Previous expression could be an if or elseif. So, there are two cases that we have to handle:
-        # 1. If: We should "not" the condition and "and" it with the elseif condition
-        # 2. elseif: We already calculated not of the previous ones in the leftSide, so we only need to not the
-        # rightSide and and it with the current one.
-        prevState = vmodel.systemState[-1]
-        logic: LogicalExpression
-        if prevState.getType() == 'if':
-            logic = NotExpression(prevState.getCondition())
-        elif prevState.getType() == 'elseif':
-            logic = AndExpression(prevState.getCondition().getLeft(),
-                                  NotExpression(prevState.getCondition().getRight()))
-        else:
-            raise RuntimeError("Previous state of elseif could be if or elseif, but got {}".format(prevState.getType()))
-        return logic
 
     def enterIfCommand(self, ctx: CMakeParser.IfCommandContext):
         # Make sure that the logical expression stack is empty every time we enter an if statement
@@ -502,9 +96,6 @@ class CMakeExtractorListener(CMakeListener):
         self.rule.setType('if')
         self.rule.setLevel(vmodel.ifLevel)
         vmodel.pushSystemState(self.rule)
-
-    def exitLogical_expr(self, ctx:CMakeParser.Logical_exprContext):
-        print(ctx.getText())
 
     def enterElseIfStatement(self, ctx: CMakeParser.ElseIfStatementContext):
         # Make sure that the logical expression stack is empty every time we enter an else if statement
@@ -524,7 +115,7 @@ class CMakeExtractorListener(CMakeListener):
 
         # Else statement is true when all the previous conditions are false
         # Same as elseif, we only need to check the previous state
-        logic = self.getNegativeOfPrevLogics()
+        logic = util_getNegativeOfPrevLogics()
 
         while True:
             systemStateObject = vmodel.getCurrentSystemState()
@@ -1352,7 +943,7 @@ class CMakeExtractorListener(CMakeListener):
             listCommand(arguments)
 
         elif commandId == 'file':
-            fileCommand(arguments)
+            fileCommand(arguments, project_dir)
 
         # target_include_directories( < target > [SYSTEM][BEFORE]
         #         < INTERFACE | PUBLIC | PRIVATE > [items1...]
@@ -1517,23 +1108,11 @@ def main(argv):
     project_dir = argv[1]
     parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
     # vmodel.checkIntegrity()
-    # vmodel.export(True, False)
-    # vmodel.export(False, True)
-    # !!!!!!!!!!!!!! This is for test
-    # targetNode = vmodel.findNode("zlib")
-    # sampleFile = vmodel.findNode("contrib/masmx86/inffas32.asm")
-    # conditions = {"(MSVC)" : True, "(ASM686)": False}
-    # vmodel.pathWithCondition(targetNode, sampleFile, **conditions)
-    # !!!!!!!!!!!!!! Until here
     # vmodel.findAndSetTargets()
     # doGitAnalysis(project_dir)
     # code.interact(local=dict(globals(), **locals()))
     # printInputVariablesAndOptions(vmodel, lookupTable)
     # printSourceFiles(vmodel, lookupTable)
-    stackList = []
-    visited = []
-    # a = checkForCyclesAndPrint(vmodel, lookupTable, lookupTable.getKey("t:etl"), visited, stackList)
-    # print(a)
     # testNode = vmodel.findNode('${CLIENT_LIBRARIES}_662')
     # flattenAlgorithmWithConditions(testNode)
     a = printFilesForATarget(vmodel, lookupTable, 'etl', True)

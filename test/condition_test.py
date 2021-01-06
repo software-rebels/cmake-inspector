@@ -4,13 +4,12 @@ from collections import defaultdict
 
 from antlr4 import CommonTokenStream, ParseTreeWalker, InputStream
 
-from analyze import buildRuntimeGraph, printFilesForATarget
 from extract import CMakeExtractorListener
 from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
 from datastructs import VModel, Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, flattenAlgorithm, \
     CustomCommandNode, getFlattedArguments, TargetNode, TestNode, OptionNode, \
-    flattenAlgorithmWithConditions, FinalTarget, Node
+    flattenAlgorithmWithConditions, Node
 
 
 class TestConditions(unittest.TestCase):
@@ -56,6 +55,7 @@ class TestConditions(unittest.TestCase):
         else()
             set(john else_doe)
         endif()
+        add_executable(mehran ${john})
         """
         self.runTool(text)
         self.vmodel.export()

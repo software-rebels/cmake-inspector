@@ -51,7 +51,7 @@ command_invocation
 	;
 
 argument
-	: '(' (single_argument|compound_argument)* ')'
+	: '(' (single_argument|compound_argument|constant_value)* ')'
 	;
 
 constant_value: CONSTANTS | DECIMAL;
