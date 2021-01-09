@@ -21,7 +21,7 @@ class Node:
         self.dbNode = None
 
     def getName(self):
-        return self.name
+        return self.name.replace('::', '->')
 
     def getNodeName(self):
         return self.getName()
@@ -322,10 +322,12 @@ class Lookup:
         return self.variableHistory[key]
 
     def deleteKey(self, key, parentScope=False):
+        print(self.items)
         if parentScope:
             del (self.items[-2][key])
         else:
-            del (self.items[-1][key])
+            if key in self.items[-1]: #
+                del (self.items[-1][key])
 
     def dropScope(self):
         self.items.pop()
