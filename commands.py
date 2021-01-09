@@ -7,6 +7,8 @@ lookupTable = Lookup.getInstance()
 
 
 def setCommand(arguments):
+    if (len(arguments) == 1):
+        arguments.append('')
     rawVarName = arguments.pop(0)
     variable_name = "${{{}}}".format(rawVarName)
     parentScope = False
@@ -226,24 +228,24 @@ def addTarget(arguments, isExecutable=True):
     interfaceLibrary = None
 
     # These values may exist in add_library only. There is a type property in TargetNode that we can set
-    if arguments[0] in ('STATIC', 'SHARED', 'MODULE'):
+    if len(arguments) and arguments[0] in ('STATIC', 'SHARED', 'MODULE'):
         libraryType = arguments.pop(0)
 
     # Object libraries just contains list of files, so there is small change in behaviour
-    if arguments[0] == 'OBJECT':
+    if len(arguments) and arguments[0] == 'OBJECT':
         arguments.pop(0)
         isObjectLibrary = True
         lookupTableName = "$<TARGET_OBJECTS:{}>".format(targetName)
 
     # Interface libraries are useful for header-only libraries.
     # more info at: http://mariobadr.com/creating-a-header-only-library-with-cmake.html
-    if arguments[0] == 'INTERFACE':
+    if len(arguments) and arguments[0] == 'INTERFACE':
         arguments.pop(0)
         interfaceLibrary = True
 
     # IMPORTED target node doesn't have any more argument to expand
     # ALIAS target node points to another target node, so the logic behind it is a little different
-    if arguments[0] not in ('IMPORTED', 'ALIAS'):
+    if len(arguments) and arguments[0] not in ('IMPORTED', 'ALIAS'):
         nextNode = vmodel.expand(arguments, True)
 
     targetNode = lookupTable.getKey(lookupTableName)
@@ -296,7 +298,10 @@ def forEachCommand(arguments):
 def processCommand(commandId, args):
     possibles = globals().copy()
     possibles.update(locals())
-    method = possibles.get("{}Command".format(commandId))
+    possibleLower = {}
+    for func in possibles.keys():
+        possibleLower[func.lower()]=possibles[func]
+    method = possibleLower.get("{}command".format(commandId))
     if not method:
         raise NotImplementedError("Method %s not implemented" % commandId)
     method(args)
