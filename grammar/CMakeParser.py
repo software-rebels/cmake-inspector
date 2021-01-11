@@ -78,8 +78,9 @@ class CMakeParser ( Parser ):
     sharedContextCache = PredictionContextCache()
 
     literalNames = [ "<INVALID>", "'if'", "'elseif'", "'else'", "'endif'", 
-                     "'option'", "'NOT'", "'AND'", "'OR'", "'GREATER'", 
-                     "'LESS'", "'EQUAL'", "'MATCHES'", "'('", "')'" ]
+                     "'option'", "<INVALID>", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                     "'('", "')'" ]
 
     symbolicNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                       "<INVALID>", "<INVALID>", "NOT", "AND", "OR", "GT", 

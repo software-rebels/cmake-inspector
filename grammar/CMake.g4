@@ -66,19 +66,19 @@ compound_argument
 
 comp_operator : GT | LT | EQ | EQR;
 
-NOT : 'NOT';
-AND : 'AND';
-OR : 'OR';
+NOT : N O T;
+AND : A N D;
+OR : O R;
 
-GT : 'GREATER' ;
-LT : 'LESS' ;
-EQ : 'EQUAL' ;
-EQR: 'MATCHES';
+GT : G R E A T E R;
+LT : L E S S ;
+EQ : E Q U A L;
+EQR: M A T C H E S;
 
 LPAREN : '(' ;
 RPAREN : ')' ;
 
-CONSTANTS: 'ON' | 'YES' | 'TRUE' | 'Y' | 'OFF' | 'NO' | 'FALSE' | 'N';
+CONSTANTS: O N | Y E S | T R U E | Y | O F F | N O | F A L S E | N;
 
 Identifier
 	: [A-Za-z_][A-Za-z0-9_]*
@@ -119,6 +119,33 @@ Bracket_arg_nested
 	: '=' Bracket_arg_nested '='
 	| '[' .*? ']'
 	;
+// A recommended way to make parser case insensitive
+fragment A : [aA]; // match either an 'a' or 'A'
+fragment B : [bB];
+fragment C : [cC];
+fragment D : [dD];
+fragment E : [eE];
+fragment F : [fF];
+fragment G : [gG];
+fragment H : [hH];
+fragment I : [iI];
+fragment J : [jJ];
+fragment K : [kK];
+fragment L : [lL];
+fragment M : [mM];
+fragment N : [nN];
+fragment O : [oO];
+fragment P : [pP];
+fragment Q : [qQ];
+fragment R : [rR];
+fragment S : [sS];
+fragment T : [tT];
+fragment U : [uU];
+fragment V : [vV];
+fragment W : [wW];
+fragment X : [xX];
+fragment Y : [yY];
+fragment Z : [zZ];
 Bracket_comment
 	: '#[' Bracket_arg_nested ']'
 	-> skip
