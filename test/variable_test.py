@@ -1893,7 +1893,7 @@ class TestVariableDefinitions(unittest.TestCase):
         
         if(opt2)
             list(append var_a mehran)
-        elseif(not opt1 and opt2)
+        elseif(NOT opt1 AND opt2)
             list(append var_a meidani)
         else()
             list(append var_a farshad)
@@ -1903,6 +1903,7 @@ class TestVariableDefinitions(unittest.TestCase):
         add_executable(exec ${var_a})
         """
         self.runTool(text)
+        self.vmodel.export()
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
         # print(a)
 
