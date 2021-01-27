@@ -1,69 +1,84 @@
-# Generated from CMake.g4 by ANTLR 4.9.1
+# Generated from CMake.g4 by ANTLR 4.7.2
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
+from typing.io import TextIO
 import sys
-if sys.version_info[1] > 5:
-	from typing import TextIO
-else:
-	from typing.io import TextIO
-
 
 def serializedATN():
     with StringIO() as buf:
-        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\33")
-        buf.write("\u0097\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7")
+        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\37")
+        buf.write("\u00bd\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7")
         buf.write("\4\b\t\b\4\t\t\t\4\n\t\n\4\13\t\13\4\f\t\f\4\r\t\r\4\16")
-        buf.write("\t\16\4\17\t\17\4\20\t\20\3\2\7\2\"\n\2\f\2\16\2%\13\2")
-        buf.write("\3\2\3\2\3\3\3\3\3\3\5\3,\n\3\3\4\3\4\7\4\60\n\4\f\4\16")
-        buf.write("\4\63\13\4\3\4\3\4\7\4\67\n\4\f\4\16\4:\13\4\7\4<\n\4")
-        buf.write("\f\4\16\4?\13\4\3\4\3\4\7\4C\n\4\f\4\16\4F\13\4\5\4H\n")
-        buf.write("\4\3\4\3\4\3\5\3\5\3\5\3\5\3\5\3\6\3\6\3\6\3\6\3\6\3\7")
-        buf.write("\3\7\3\7\3\b\3\b\3\b\3\t\3\t\3\t\3\t\3\t\3\t\3\t\3\t\3")
-        buf.write("\t\3\t\3\t\3\t\3\t\5\ti\n\t\3\t\3\t\3\t\3\t\3\t\3\t\7")
-        buf.write("\tq\n\t\f\t\16\tt\13\t\3\n\3\n\3\n\3\13\3\13\3\13\3\f")
-        buf.write("\3\f\3\f\3\f\7\f\u0080\n\f\f\f\16\f\u0083\13\f\3\f\3\f")
-        buf.write("\3\r\3\r\3\16\3\16\3\17\3\17\3\17\7\17\u008e\n\17\f\17")
-        buf.write("\16\17\u0091\13\17\3\17\3\17\3\20\3\20\3\20\2\3\20\21")
-        buf.write("\2\4\6\b\n\f\16\20\22\24\26\30\32\34\36\2\5\4\2\21\21")
-        buf.write("\23\23\5\2\22\22\24\24\26\27\3\2\13\16\2\u009a\2#\3\2")
-        buf.write("\2\2\4+\3\2\2\2\6-\3\2\2\2\bK\3\2\2\2\nP\3\2\2\2\fU\3")
-        buf.write("\2\2\2\16X\3\2\2\2\20h\3\2\2\2\22u\3\2\2\2\24x\3\2\2\2")
-        buf.write("\26{\3\2\2\2\30\u0086\3\2\2\2\32\u0088\3\2\2\2\34\u008a")
-        buf.write("\3\2\2\2\36\u0094\3\2\2\2 \"\5\4\3\2! \3\2\2\2\"%\3\2")
-        buf.write("\2\2#!\3\2\2\2#$\3\2\2\2$&\3\2\2\2%#\3\2\2\2&\'\7\2\2")
-        buf.write("\3\'\3\3\2\2\2(,\5\6\4\2),\5\22\n\2*,\5\24\13\2+(\3\2")
-        buf.write("\2\2+)\3\2\2\2+*\3\2\2\2,\5\3\2\2\2-\61\5\b\5\2.\60\5")
-        buf.write("\4\3\2/.\3\2\2\2\60\63\3\2\2\2\61/\3\2\2\2\61\62\3\2\2")
-        buf.write("\2\62=\3\2\2\2\63\61\3\2\2\2\648\5\n\6\2\65\67\5\4\3\2")
-        buf.write("\66\65\3\2\2\2\67:\3\2\2\28\66\3\2\2\289\3\2\2\29<\3\2")
-        buf.write("\2\2:8\3\2\2\2;\64\3\2\2\2<?\3\2\2\2=;\3\2\2\2=>\3\2\2")
-        buf.write("\2>G\3\2\2\2?=\3\2\2\2@D\5\f\7\2AC\5\4\3\2BA\3\2\2\2C")
-        buf.write("F\3\2\2\2DB\3\2\2\2DE\3\2\2\2EH\3\2\2\2FD\3\2\2\2G@\3")
-        buf.write("\2\2\2GH\3\2\2\2HI\3\2\2\2IJ\5\16\b\2J\7\3\2\2\2KL\7\3")
-        buf.write("\2\2LM\7\17\2\2MN\5\20\t\2NO\7\20\2\2O\t\3\2\2\2PQ\7\4")
-        buf.write("\2\2QR\7\17\2\2RS\5\20\t\2ST\7\20\2\2T\13\3\2\2\2UV\7")
-        buf.write("\5\2\2VW\5\26\f\2W\r\3\2\2\2XY\7\6\2\2YZ\5\26\f\2Z\17")
-        buf.write("\3\2\2\2[\\\b\t\1\2\\]\7\b\2\2]i\5\20\t\t^_\5\32\16\2")
-        buf.write("_`\5\36\20\2`a\5\32\16\2ai\3\2\2\2bc\7\17\2\2cd\5\20\t")
-        buf.write("\2de\7\20\2\2ei\3\2\2\2fi\5\30\r\2gi\5\32\16\2h[\3\2\2")
-        buf.write("\2h^\3\2\2\2hb\3\2\2\2hf\3\2\2\2hg\3\2\2\2ir\3\2\2\2j")
-        buf.write("k\f\b\2\2kl\7\t\2\2lq\5\20\t\tmn\f\7\2\2no\7\n\2\2oq\5")
-        buf.write("\20\t\bpj\3\2\2\2pm\3\2\2\2qt\3\2\2\2rp\3\2\2\2rs\3\2")
-        buf.write("\2\2s\21\3\2\2\2tr\3\2\2\2uv\7\7\2\2vw\5\26\f\2w\23\3")
-        buf.write("\2\2\2xy\7\22\2\2yz\5\26\f\2z\25\3\2\2\2{\u0081\7\17\2")
-        buf.write("\2|\u0080\5\32\16\2}\u0080\5\34\17\2~\u0080\5\30\r\2\177")
-        buf.write("|\3\2\2\2\177}\3\2\2\2\177~\3\2\2\2\u0080\u0083\3\2\2")
-        buf.write("\2\u0081\177\3\2\2\2\u0081\u0082\3\2\2\2\u0082\u0084\3")
-        buf.write("\2\2\2\u0083\u0081\3\2\2\2\u0084\u0085\7\20\2\2\u0085")
-        buf.write("\27\3\2\2\2\u0086\u0087\t\2\2\2\u0087\31\3\2\2\2\u0088")
-        buf.write("\u0089\t\3\2\2\u0089\33\3\2\2\2\u008a\u008f\7\17\2\2\u008b")
-        buf.write("\u008e\5\32\16\2\u008c\u008e\5\34\17\2\u008d\u008b\3\2")
-        buf.write("\2\2\u008d\u008c\3\2\2\2\u008e\u0091\3\2\2\2\u008f\u008d")
-        buf.write("\3\2\2\2\u008f\u0090\3\2\2\2\u0090\u0092\3\2\2\2\u0091")
-        buf.write("\u008f\3\2\2\2\u0092\u0093\7\20\2\2\u0093\35\3\2\2\2\u0094")
-        buf.write("\u0095\t\4\2\2\u0095\37\3\2\2\2\20#+\618=DGhpr\177\u0081")
-        buf.write("\u008d\u008f")
+        buf.write("\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22\4\23\t\23")
+        buf.write("\3\2\7\2(\n\2\f\2\16\2+\13\2\3\2\3\2\3\3\3\3\3\3\3\3\5")
+        buf.write("\3\63\n\3\3\4\3\4\7\4\67\n\4\f\4\16\4:\13\4\3\4\3\4\3")
+        buf.write("\5\3\5\3\5\3\5\3\5\3\6\3\6\3\6\7\6F\n\6\f\6\16\6I\13\6")
+        buf.write("\3\6\3\6\3\7\3\7\7\7O\n\7\f\7\16\7R\13\7\3\7\3\7\7\7V")
+        buf.write("\n\7\f\7\16\7Y\13\7\7\7[\n\7\f\7\16\7^\13\7\3\7\3\7\7")
+        buf.write("\7b\n\7\f\7\16\7e\13\7\5\7g\n\7\3\7\3\7\3\b\3\b\3\b\3")
+        buf.write("\b\3\b\3\t\3\t\3\t\3\t\3\t\3\n\3\n\3\n\3\13\3\13\3\13")
+        buf.write("\7\13{\n\13\f\13\16\13~\13\13\3\13\3\13\3\f\3\f\3\f\3")
+        buf.write("\f\3\f\3\f\3\f\3\f\3\f\3\f\3\f\3\f\3\f\5\f\u008f\n\f\3")
+        buf.write("\f\3\f\3\f\3\f\3\f\3\f\7\f\u0097\n\f\f\f\16\f\u009a\13")
+        buf.write("\f\3\r\3\r\3\r\3\16\3\16\3\16\3\17\3\17\3\17\3\17\7\17")
+        buf.write("\u00a6\n\17\f\17\16\17\u00a9\13\17\3\17\3\17\3\20\3\20")
+        buf.write("\3\21\3\21\3\22\3\22\3\22\7\22\u00b4\n\22\f\22\16\22\u00b7")
+        buf.write("\13\22\3\22\3\22\3\23\3\23\3\23\2\3\26\24\2\4\6\b\n\f")
+        buf.write("\16\20\22\24\26\30\32\34\36 \"$\2\5\4\2\25\25\27\27\4")
+        buf.write("\2\26\30\32\33\3\2\r\22\2\u00c1\2)\3\2\2\2\4\62\3\2\2")
+        buf.write("\2\6\64\3\2\2\2\b=\3\2\2\2\nB\3\2\2\2\fL\3\2\2\2\16j\3")
+        buf.write("\2\2\2\20o\3\2\2\2\22t\3\2\2\2\24w\3\2\2\2\26\u008e\3")
+        buf.write("\2\2\2\30\u009b\3\2\2\2\32\u009e\3\2\2\2\34\u00a1\3\2")
+        buf.write("\2\2\36\u00ac\3\2\2\2 \u00ae\3\2\2\2\"\u00b0\3\2\2\2$")
+        buf.write("\u00ba\3\2\2\2&(\5\4\3\2\'&\3\2\2\2(+\3\2\2\2)\'\3\2\2")
+        buf.write("\2)*\3\2\2\2*,\3\2\2\2+)\3\2\2\2,-\7\2\2\3-\3\3\2\2\2")
+        buf.write(".\63\5\f\7\2/\63\5\6\4\2\60\63\5\30\r\2\61\63\5\32\16")
+        buf.write("\2\62.\3\2\2\2\62/\3\2\2\2\62\60\3\2\2\2\62\61\3\2\2\2")
+        buf.write("\63\5\3\2\2\2\648\5\b\5\2\65\67\5\4\3\2\66\65\3\2\2\2")
+        buf.write("\67:\3\2\2\28\66\3\2\2\289\3\2\2\29;\3\2\2\2:8\3\2\2\2")
+        buf.write(";<\5\n\6\2<\7\3\2\2\2=>\7\3\2\2>?\7\23\2\2?@\5\26\f\2")
+        buf.write("@A\7\24\2\2A\t\3\2\2\2BC\7\4\2\2CG\7\23\2\2DF\5\26\f\2")
+        buf.write("ED\3\2\2\2FI\3\2\2\2GE\3\2\2\2GH\3\2\2\2HJ\3\2\2\2IG\3")
+        buf.write("\2\2\2JK\7\24\2\2K\13\3\2\2\2LP\5\16\b\2MO\5\4\3\2NM\3")
+        buf.write("\2\2\2OR\3\2\2\2PN\3\2\2\2PQ\3\2\2\2Q\\\3\2\2\2RP\3\2")
+        buf.write("\2\2SW\5\20\t\2TV\5\4\3\2UT\3\2\2\2VY\3\2\2\2WU\3\2\2")
+        buf.write("\2WX\3\2\2\2X[\3\2\2\2YW\3\2\2\2ZS\3\2\2\2[^\3\2\2\2\\")
+        buf.write("Z\3\2\2\2\\]\3\2\2\2]f\3\2\2\2^\\\3\2\2\2_c\5\22\n\2`")
+        buf.write("b\5\4\3\2a`\3\2\2\2be\3\2\2\2ca\3\2\2\2cd\3\2\2\2dg\3")
+        buf.write("\2\2\2ec\3\2\2\2f_\3\2\2\2fg\3\2\2\2gh\3\2\2\2hi\5\24")
+        buf.write("\13\2i\r\3\2\2\2jk\7\f\2\2kl\7\23\2\2lm\5\26\f\2mn\7\24")
+        buf.write("\2\2n\17\3\2\2\2op\7\5\2\2pq\7\23\2\2qr\5\26\f\2rs\7\24")
+        buf.write("\2\2s\21\3\2\2\2tu\7\6\2\2uv\5\34\17\2v\23\3\2\2\2wx\7")
+        buf.write("\7\2\2x|\7\23\2\2y{\5\26\f\2zy\3\2\2\2{~\3\2\2\2|z\3\2")
+        buf.write("\2\2|}\3\2\2\2}\177\3\2\2\2~|\3\2\2\2\177\u0080\7\24\2")
+        buf.write("\2\u0080\25\3\2\2\2\u0081\u0082\b\f\1\2\u0082\u0083\7")
+        buf.write("\t\2\2\u0083\u008f\5\26\f\t\u0084\u0085\5 \21\2\u0085")
+        buf.write("\u0086\5$\23\2\u0086\u0087\5 \21\2\u0087\u008f\3\2\2\2")
+        buf.write("\u0088\u0089\7\23\2\2\u0089\u008a\5\26\f\2\u008a\u008b")
+        buf.write("\7\24\2\2\u008b\u008f\3\2\2\2\u008c\u008f\5\36\20\2\u008d")
+        buf.write("\u008f\5 \21\2\u008e\u0081\3\2\2\2\u008e\u0084\3\2\2\2")
+        buf.write("\u008e\u0088\3\2\2\2\u008e\u008c\3\2\2\2\u008e\u008d\3")
+        buf.write("\2\2\2\u008f\u0098\3\2\2\2\u0090\u0091\f\b\2\2\u0091\u0092")
+        buf.write("\7\n\2\2\u0092\u0097\5\26\f\t\u0093\u0094\f\7\2\2\u0094")
+        buf.write("\u0095\7\13\2\2\u0095\u0097\5\26\f\b\u0096\u0090\3\2\2")
+        buf.write("\2\u0096\u0093\3\2\2\2\u0097\u009a\3\2\2\2\u0098\u0096")
+        buf.write("\3\2\2\2\u0098\u0099\3\2\2\2\u0099\27\3\2\2\2\u009a\u0098")
+        buf.write("\3\2\2\2\u009b\u009c\7\b\2\2\u009c\u009d\5\34\17\2\u009d")
+        buf.write("\31\3\2\2\2\u009e\u009f\7\26\2\2\u009f\u00a0\5\34\17\2")
+        buf.write("\u00a0\33\3\2\2\2\u00a1\u00a7\7\23\2\2\u00a2\u00a6\5 ")
+        buf.write("\21\2\u00a3\u00a6\5\"\22\2\u00a4\u00a6\5\36\20\2\u00a5")
+        buf.write("\u00a2\3\2\2\2\u00a5\u00a3\3\2\2\2\u00a5\u00a4\3\2\2\2")
+        buf.write("\u00a6\u00a9\3\2\2\2\u00a7\u00a5\3\2\2\2\u00a7\u00a8\3")
+        buf.write("\2\2\2\u00a8\u00aa\3\2\2\2\u00a9\u00a7\3\2\2\2\u00aa\u00ab")
+        buf.write("\7\24\2\2\u00ab\35\3\2\2\2\u00ac\u00ad\t\2\2\2\u00ad\37")
+        buf.write("\3\2\2\2\u00ae\u00af\t\3\2\2\u00af!\3\2\2\2\u00b0\u00b5")
+        buf.write("\7\23\2\2\u00b1\u00b4\5 \21\2\u00b2\u00b4\5\"\22\2\u00b3")
+        buf.write("\u00b1\3\2\2\2\u00b3\u00b2\3\2\2\2\u00b4\u00b7\3\2\2\2")
+        buf.write("\u00b5\u00b3\3\2\2\2\u00b5\u00b6\3\2\2\2\u00b6\u00b8\3")
+        buf.write("\2\2\2\u00b7\u00b5\3\2\2\2\u00b8\u00b9\7\24\2\2\u00b9")
+        buf.write("#\3\2\2\2\u00ba\u00bb\t\4\2\2\u00bb%\3\2\2\2\23)\628G")
+        buf.write("PW\\cf|\u008e\u0096\u0098\u00a5\u00a7\u00b3\u00b5")
         return buf.getvalue()
 
 
@@ -77,39 +92,43 @@ class CMakeParser ( Parser ):
 
     sharedContextCache = PredictionContextCache()
 
-    literalNames = [ "<INVALID>", "'if'", "'elseif'", "'else'", "'endif'", 
-                     "'option'", "<INVALID>", "<INVALID>", "<INVALID>", 
+    literalNames = [ "<INVALID>", "'while'", "'endwhile'", "'elseif'", "'else'", 
+                     "'endif'", "'option'", "<INVALID>", "<INVALID>", "<INVALID>", 
                      "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                     "'('", "')'" ]
+                     "<INVALID>", "<INVALID>", "<INVALID>", "'('", "')'" ]
 
     symbolicNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                      "<INVALID>", "<INVALID>", "NOT", "AND", "OR", "GT", 
-                      "LT", "EQ", "EQR", "LPAREN", "RPAREN", "CONSTANTS", 
-                      "Identifier", "DECIMAL", "Unquoted_argument", "Escape_sequence", 
-                      "Quoted_argument", "Bracket_argument", "Bracket_comment", 
-                      "Line_comment", "Newline", "Space" ]
+                      "<INVALID>", "<INVALID>", "<INVALID>", "NOT", "AND", 
+                      "OR", "IF", "GT", "LT", "EQ", "EQR", "STQE", "VGEQ", 
+                      "LPAREN", "RPAREN", "CONSTANTS", "Identifier", "DECIMAL", 
+                      "Unquoted_argument", "Escape_sequence", "Quoted_argument", 
+                      "Bracket_argument", "Bracket_comment", "Line_comment", 
+                      "Newline", "Space" ]
 
     RULE_cmakefile = 0
     RULE_commands = 1
-    RULE_ifCommand = 2
-    RULE_ifStatement = 3
-    RULE_elseIfStatement = 4
-    RULE_elseStatement = 5
-    RULE_endIfStatement = 6
-    RULE_logical_expr = 7
-    RULE_optionCommand = 8
-    RULE_command_invocation = 9
-    RULE_argument = 10
-    RULE_constant_value = 11
-    RULE_single_argument = 12
-    RULE_compound_argument = 13
-    RULE_comp_operator = 14
+    RULE_whileCommand = 2
+    RULE_whileStatement = 3
+    RULE_endWhileStatement = 4
+    RULE_ifCommand = 5
+    RULE_ifStatement = 6
+    RULE_elseIfStatement = 7
+    RULE_elseStatement = 8
+    RULE_endIfStatement = 9
+    RULE_logical_expr = 10
+    RULE_optionCommand = 11
+    RULE_command_invocation = 12
+    RULE_argument = 13
+    RULE_constant_value = 14
+    RULE_single_argument = 15
+    RULE_compound_argument = 16
+    RULE_comp_operator = 17
 
-    ruleNames =  [ "cmakefile", "commands", "ifCommand", "ifStatement", 
-                   "elseIfStatement", "elseStatement", "endIfStatement", 
-                   "logical_expr", "optionCommand", "command_invocation", 
-                   "argument", "constant_value", "single_argument", "compound_argument", 
-                   "comp_operator" ]
+    ruleNames =  [ "cmakefile", "commands", "whileCommand", "whileStatement", 
+                   "endWhileStatement", "ifCommand", "ifStatement", "elseIfStatement", 
+                   "elseStatement", "endIfStatement", "logical_expr", "optionCommand", 
+                   "command_invocation", "argument", "constant_value", "single_argument", 
+                   "compound_argument", "comp_operator" ]
 
     EOF = Token.EOF
     T__0=1
@@ -117,38 +136,40 @@ class CMakeParser ( Parser ):
     T__2=3
     T__3=4
     T__4=5
-    NOT=6
-    AND=7
-    OR=8
-    GT=9
-    LT=10
-    EQ=11
-    EQR=12
-    LPAREN=13
-    RPAREN=14
-    CONSTANTS=15
-    Identifier=16
-    DECIMAL=17
-    Unquoted_argument=18
-    Escape_sequence=19
-    Quoted_argument=20
-    Bracket_argument=21
-    Bracket_comment=22
-    Line_comment=23
-    Newline=24
-    Space=25
+    T__5=6
+    NOT=7
+    AND=8
+    OR=9
+    IF=10
+    GT=11
+    LT=12
+    EQ=13
+    EQR=14
+    STQE=15
+    VGEQ=16
+    LPAREN=17
+    RPAREN=18
+    CONSTANTS=19
+    Identifier=20
+    DECIMAL=21
+    Unquoted_argument=22
+    Escape_sequence=23
+    Quoted_argument=24
+    Bracket_argument=25
+    Bracket_comment=26
+    Line_comment=27
+    Newline=28
+    Space=29
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
-        self.checkVersion("4.9.1")
+        self.checkVersion("4.7.2")
         self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
         self._predicates = None
 
 
 
-
     class CmakefileContext(ParserRuleContext):
-        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -185,17 +206,17 @@ class CMakeParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 33
+            self.state = 39
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << CMakeParser.T__0) | (1 << CMakeParser.T__4) | (1 << CMakeParser.Identifier))) != 0):
-                self.state = 30
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << CMakeParser.T__0) | (1 << CMakeParser.T__5) | (1 << CMakeParser.IF) | (1 << CMakeParser.Identifier))) != 0):
+                self.state = 36
                 self.commands()
-                self.state = 35
+                self.state = 41
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
 
-            self.state = 36
+            self.state = 42
             self.match(CMakeParser.EOF)
         except RecognitionException as re:
             localctx.exception = re
@@ -205,9 +226,7 @@ class CMakeParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class CommandsContext(ParserRuleContext):
-        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -215,6 +234,10 @@ class CMakeParser ( Parser ):
 
         def ifCommand(self):
             return self.getTypedRuleContext(CMakeParser.IfCommandContext,0)
+
+
+        def whileCommand(self):
+            return self.getTypedRuleContext(CMakeParser.WhileCommandContext,0)
 
 
         def optionCommand(self):
@@ -244,22 +267,27 @@ class CMakeParser ( Parser ):
         localctx = CMakeParser.CommandsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 2, self.RULE_commands)
         try:
-            self.state = 41
+            self.state = 48
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [CMakeParser.T__0]:
+            if token in [CMakeParser.IF]:
                 self.enterOuterAlt(localctx, 1)
-                self.state = 38
+                self.state = 44
                 self.ifCommand()
                 pass
-            elif token in [CMakeParser.T__4]:
+            elif token in [CMakeParser.T__0]:
                 self.enterOuterAlt(localctx, 2)
-                self.state = 39
+                self.state = 45
+                self.whileCommand()
+                pass
+            elif token in [CMakeParser.T__5]:
+                self.enterOuterAlt(localctx, 3)
+                self.state = 46
                 self.optionCommand()
                 pass
             elif token in [CMakeParser.Identifier]:
-                self.enterOuterAlt(localctx, 3)
-                self.state = 40
+                self.enterOuterAlt(localctx, 4)
+                self.state = 47
                 self.command_invocation()
                 pass
             else:
@@ -273,9 +301,188 @@ class CMakeParser ( Parser ):
             self.exitRule()
         return localctx
 
+    class WhileCommandContext(ParserRuleContext):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
+            self.parser = parser
+            self.ifBody = None # CommandsContext
+
+        def whileStatement(self):
+            return self.getTypedRuleContext(CMakeParser.WhileStatementContext,0)
+
+
+        def endWhileStatement(self):
+            return self.getTypedRuleContext(CMakeParser.EndWhileStatementContext,0)
+
+
+        def commands(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(CMakeParser.CommandsContext)
+            else:
+                return self.getTypedRuleContext(CMakeParser.CommandsContext,i)
+
+
+        def getRuleIndex(self):
+            return CMakeParser.RULE_whileCommand
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterWhileCommand" ):
+                listener.enterWhileCommand(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitWhileCommand" ):
+                listener.exitWhileCommand(self)
+
+
+
+
+    def whileCommand(self):
+
+        localctx = CMakeParser.WhileCommandContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 4, self.RULE_whileCommand)
+        self._la = 0 # Token type
+        try:
+            self.enterOuterAlt(localctx, 1)
+            self.state = 50
+            self.whileStatement()
+            self.state = 54
+            self._errHandler.sync(self)
+            _la = self._input.LA(1)
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << CMakeParser.T__0) | (1 << CMakeParser.T__5) | (1 << CMakeParser.IF) | (1 << CMakeParser.Identifier))) != 0):
+                self.state = 51
+                localctx.ifBody = self.commands()
+                self.state = 56
+                self._errHandler.sync(self)
+                _la = self._input.LA(1)
+
+            self.state = 57
+            self.endWhileStatement()
+        except RecognitionException as re:
+            localctx.exception = re
+            self._errHandler.reportError(self, re)
+            self._errHandler.recover(self, re)
+        finally:
+            self.exitRule()
+        return localctx
+
+    class WhileStatementContext(ParserRuleContext):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
+            self.parser = parser
+
+        def LPAREN(self):
+            return self.getToken(CMakeParser.LPAREN, 0)
+
+        def logical_expr(self):
+            return self.getTypedRuleContext(CMakeParser.Logical_exprContext,0)
+
+
+        def RPAREN(self):
+            return self.getToken(CMakeParser.RPAREN, 0)
+
+        def getRuleIndex(self):
+            return CMakeParser.RULE_whileStatement
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterWhileStatement" ):
+                listener.enterWhileStatement(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitWhileStatement" ):
+                listener.exitWhileStatement(self)
+
+
+
+
+    def whileStatement(self):
+
+        localctx = CMakeParser.WhileStatementContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 6, self.RULE_whileStatement)
+        try:
+            self.enterOuterAlt(localctx, 1)
+            self.state = 59
+            self.match(CMakeParser.T__0)
+            self.state = 60
+            self.match(CMakeParser.LPAREN)
+            self.state = 61
+            self.logical_expr(0)
+            self.state = 62
+            self.match(CMakeParser.RPAREN)
+        except RecognitionException as re:
+            localctx.exception = re
+            self._errHandler.reportError(self, re)
+            self._errHandler.recover(self, re)
+        finally:
+            self.exitRule()
+        return localctx
+
+    class EndWhileStatementContext(ParserRuleContext):
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
+            self.parser = parser
+
+        def LPAREN(self):
+            return self.getToken(CMakeParser.LPAREN, 0)
+
+        def RPAREN(self):
+            return self.getToken(CMakeParser.RPAREN, 0)
+
+        def logical_expr(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(CMakeParser.Logical_exprContext)
+            else:
+                return self.getTypedRuleContext(CMakeParser.Logical_exprContext,i)
+
+
+        def getRuleIndex(self):
+            return CMakeParser.RULE_endWhileStatement
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterEndWhileStatement" ):
+                listener.enterEndWhileStatement(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitEndWhileStatement" ):
+                listener.exitEndWhileStatement(self)
+
+
+
+
+    def endWhileStatement(self):
+
+        localctx = CMakeParser.EndWhileStatementContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 8, self.RULE_endWhileStatement)
+        self._la = 0 # Token type
+        try:
+            self.enterOuterAlt(localctx, 1)
+            self.state = 64
+            self.match(CMakeParser.T__1)
+            self.state = 65
+            self.match(CMakeParser.LPAREN)
+            self.state = 69
+            self._errHandler.sync(self)
+            _la = self._input.LA(1)
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << CMakeParser.NOT) | (1 << CMakeParser.LPAREN) | (1 << CMakeParser.CONSTANTS) | (1 << CMakeParser.Identifier) | (1 << CMakeParser.DECIMAL) | (1 << CMakeParser.Unquoted_argument) | (1 << CMakeParser.Quoted_argument) | (1 << CMakeParser.Bracket_argument))) != 0):
+                self.state = 66
+                self.logical_expr(0)
+                self.state = 71
+                self._errHandler.sync(self)
+                _la = self._input.LA(1)
+
+            self.state = 72
+            self.match(CMakeParser.RPAREN)
+        except RecognitionException as re:
+            localctx.exception = re
+            self._errHandler.reportError(self, re)
+            self._errHandler.recover(self, re)
+        finally:
+            self.exitRule()
+        return localctx
 
     class IfCommandContext(ParserRuleContext):
-        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -327,61 +534,61 @@ class CMakeParser ( Parser ):
     def ifCommand(self):
 
         localctx = CMakeParser.IfCommandContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 4, self.RULE_ifCommand)
+        self.enterRule(localctx, 10, self.RULE_ifCommand)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 43
+            self.state = 74
             self.ifStatement()
-            self.state = 47
+            self.state = 78
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << CMakeParser.T__0) | (1 << CMakeParser.T__4) | (1 << CMakeParser.Identifier))) != 0):
-                self.state = 44
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << CMakeParser.T__0) | (1 << CMakeParser.T__5) | (1 << CMakeParser.IF) | (1 << CMakeParser.Identifier))) != 0):
+                self.state = 75
                 localctx.ifBody = self.commands()
-                self.state = 49
+                self.state = 80
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
 
-            self.state = 59
+            self.state = 90
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==CMakeParser.T__1:
-                self.state = 50
+            while _la==CMakeParser.T__2:
+                self.state = 81
                 self.elseIfStatement()
-                self.state = 54
+                self.state = 85
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << CMakeParser.T__0) | (1 << CMakeParser.T__4) | (1 << CMakeParser.Identifier))) != 0):
-                    self.state = 51
+                while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << CMakeParser.T__0) | (1 << CMakeParser.T__5) | (1 << CMakeParser.IF) | (1 << CMakeParser.Identifier))) != 0):
+                    self.state = 82
                     localctx.elseIfBody = self.commands()
-                    self.state = 56
+                    self.state = 87
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
 
-                self.state = 61
+                self.state = 92
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
 
-            self.state = 69
+            self.state = 100
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==CMakeParser.T__2:
-                self.state = 62
+            if _la==CMakeParser.T__3:
+                self.state = 93
                 self.elseStatement()
-                self.state = 66
+                self.state = 97
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << CMakeParser.T__0) | (1 << CMakeParser.T__4) | (1 << CMakeParser.Identifier))) != 0):
-                    self.state = 63
+                while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << CMakeParser.T__0) | (1 << CMakeParser.T__5) | (1 << CMakeParser.IF) | (1 << CMakeParser.Identifier))) != 0):
+                    self.state = 94
                     localctx.elseBody = self.commands()
-                    self.state = 68
+                    self.state = 99
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
 
 
 
-            self.state = 71
+            self.state = 102
             self.endIfStatement()
         except RecognitionException as re:
             localctx.exception = re
@@ -391,13 +598,14 @@ class CMakeParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class IfStatementContext(ParserRuleContext):
-        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
+
+        def IF(self):
+            return self.getToken(CMakeParser.IF, 0)
 
         def LPAREN(self):
             return self.getToken(CMakeParser.LPAREN, 0)
@@ -426,16 +634,16 @@ class CMakeParser ( Parser ):
     def ifStatement(self):
 
         localctx = CMakeParser.IfStatementContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 6, self.RULE_ifStatement)
+        self.enterRule(localctx, 12, self.RULE_ifStatement)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 73
-            self.match(CMakeParser.T__0)
-            self.state = 74
+            self.state = 104
+            self.match(CMakeParser.IF)
+            self.state = 105
             self.match(CMakeParser.LPAREN)
-            self.state = 75
+            self.state = 106
             self.logical_expr(0)
-            self.state = 76
+            self.state = 107
             self.match(CMakeParser.RPAREN)
         except RecognitionException as re:
             localctx.exception = re
@@ -445,9 +653,7 @@ class CMakeParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ElseIfStatementContext(ParserRuleContext):
-        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -480,16 +686,16 @@ class CMakeParser ( Parser ):
     def elseIfStatement(self):
 
         localctx = CMakeParser.ElseIfStatementContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 8, self.RULE_elseIfStatement)
+        self.enterRule(localctx, 14, self.RULE_elseIfStatement)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 78
-            self.match(CMakeParser.T__1)
-            self.state = 79
+            self.state = 109
+            self.match(CMakeParser.T__2)
+            self.state = 110
             self.match(CMakeParser.LPAREN)
-            self.state = 80
+            self.state = 111
             self.logical_expr(0)
-            self.state = 81
+            self.state = 112
             self.match(CMakeParser.RPAREN)
         except RecognitionException as re:
             localctx.exception = re
@@ -499,9 +705,7 @@ class CMakeParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ElseStatementContext(ParserRuleContext):
-        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -528,12 +732,12 @@ class CMakeParser ( Parser ):
     def elseStatement(self):
 
         localctx = CMakeParser.ElseStatementContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 10, self.RULE_elseStatement)
+        self.enterRule(localctx, 16, self.RULE_elseStatement)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 83
-            self.match(CMakeParser.T__2)
-            self.state = 84
+            self.state = 114
+            self.match(CMakeParser.T__3)
+            self.state = 115
             self.argument()
         except RecognitionException as re:
             localctx.exception = re
@@ -543,16 +747,23 @@ class CMakeParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class EndIfStatementContext(ParserRuleContext):
-        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def argument(self):
-            return self.getTypedRuleContext(CMakeParser.ArgumentContext,0)
+        def LPAREN(self):
+            return self.getToken(CMakeParser.LPAREN, 0)
+
+        def RPAREN(self):
+            return self.getToken(CMakeParser.RPAREN, 0)
+
+        def logical_expr(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(CMakeParser.Logical_exprContext)
+            else:
+                return self.getTypedRuleContext(CMakeParser.Logical_exprContext,i)
 
 
         def getRuleIndex(self):
@@ -572,13 +783,26 @@ class CMakeParser ( Parser ):
     def endIfStatement(self):
 
         localctx = CMakeParser.EndIfStatementContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 12, self.RULE_endIfStatement)
+        self.enterRule(localctx, 18, self.RULE_endIfStatement)
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 86
-            self.match(CMakeParser.T__3)
-            self.state = 87
-            self.argument()
+            self.state = 117
+            self.match(CMakeParser.T__4)
+            self.state = 118
+            self.match(CMakeParser.LPAREN)
+            self.state = 122
+            self._errHandler.sync(self)
+            _la = self._input.LA(1)
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << CMakeParser.NOT) | (1 << CMakeParser.LPAREN) | (1 << CMakeParser.CONSTANTS) | (1 << CMakeParser.Identifier) | (1 << CMakeParser.DECIMAL) | (1 << CMakeParser.Unquoted_argument) | (1 << CMakeParser.Quoted_argument) | (1 << CMakeParser.Bracket_argument))) != 0):
+                self.state = 119
+                self.logical_expr(0)
+                self.state = 124
+                self._errHandler.sync(self)
+                _la = self._input.LA(1)
+
+            self.state = 125
+            self.match(CMakeParser.RPAREN)
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -587,9 +811,7 @@ class CMakeParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Logical_exprContext(ParserRuleContext):
-        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -765,21 +987,21 @@ class CMakeParser ( Parser ):
         _parentState = self.state
         localctx = CMakeParser.Logical_exprContext(self, self._ctx, _parentState)
         _prevctx = localctx
-        _startState = 14
-        self.enterRecursionRule(localctx, 14, self.RULE_logical_expr, _p)
+        _startState = 20
+        self.enterRecursionRule(localctx, 20, self.RULE_logical_expr, _p)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 102
+            self.state = 140
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,7,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input,10,self._ctx)
             if la_ == 1:
                 localctx = CMakeParser.LogicalExpressionNotContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
 
-                self.state = 90
+                self.state = 128
                 self.match(CMakeParser.NOT)
-                self.state = 91
+                self.state = 129
                 self.logical_expr(7)
                 pass
 
@@ -787,11 +1009,11 @@ class CMakeParser ( Parser ):
                 localctx = CMakeParser.ComparisonExpressionContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 92
+                self.state = 130
                 self.single_argument()
-                self.state = 93
+                self.state = 131
                 self.comp_operator()
-                self.state = 94
+                self.state = 132
                 self.single_argument()
                 pass
 
@@ -799,11 +1021,11 @@ class CMakeParser ( Parser ):
                 localctx = CMakeParser.LogicalExpressionInParenContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 96
+                self.state = 134
                 self.match(CMakeParser.LPAREN)
-                self.state = 97
+                self.state = 135
                 self.logical_expr(0)
-                self.state = 98
+                self.state = 136
                 self.match(CMakeParser.RPAREN)
                 pass
 
@@ -811,7 +1033,7 @@ class CMakeParser ( Parser ):
                 localctx = CMakeParser.ConstantValueContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 100
+                self.state = 138
                 self.constant_value()
                 pass
 
@@ -819,53 +1041,53 @@ class CMakeParser ( Parser ):
                 localctx = CMakeParser.LogicalEntityContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 101
+                self.state = 139
                 self.single_argument()
                 pass
 
 
             self._ctx.stop = self._input.LT(-1)
-            self.state = 112
+            self.state = 150
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,9,self._ctx)
+            _alt = self._interp.adaptivePredict(self._input,12,self._ctx)
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
                 if _alt==1:
                     if self._parseListeners is not None:
                         self.triggerExitRuleEvent()
                     _prevctx = localctx
-                    self.state = 110
+                    self.state = 148
                     self._errHandler.sync(self)
-                    la_ = self._interp.adaptivePredict(self._input,8,self._ctx)
+                    la_ = self._interp.adaptivePredict(self._input,11,self._ctx)
                     if la_ == 1:
                         localctx = CMakeParser.LogicalExpressionAndContext(self, CMakeParser.Logical_exprContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_logical_expr)
-                        self.state = 104
+                        self.state = 142
                         if not self.precpred(self._ctx, 6):
                             from antlr4.error.Errors import FailedPredicateException
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 6)")
-                        self.state = 105
+                        self.state = 143
                         self.match(CMakeParser.AND)
-                        self.state = 106
+                        self.state = 144
                         self.logical_expr(7)
                         pass
 
                     elif la_ == 2:
                         localctx = CMakeParser.LogicalExpressionOrContext(self, CMakeParser.Logical_exprContext(self, _parentctx, _parentState))
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_logical_expr)
-                        self.state = 107
+                        self.state = 145
                         if not self.precpred(self._ctx, 5):
                             from antlr4.error.Errors import FailedPredicateException
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 5)")
-                        self.state = 108
+                        self.state = 146
                         self.match(CMakeParser.OR)
-                        self.state = 109
+                        self.state = 147
                         self.logical_expr(6)
                         pass
 
              
-                self.state = 114
+                self.state = 152
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,9,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,12,self._ctx)
 
         except RecognitionException as re:
             localctx.exception = re
@@ -875,9 +1097,7 @@ class CMakeParser ( Parser ):
             self.unrollRecursionContexts(_parentctx)
         return localctx
 
-
     class OptionCommandContext(ParserRuleContext):
-        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -904,12 +1124,12 @@ class CMakeParser ( Parser ):
     def optionCommand(self):
 
         localctx = CMakeParser.OptionCommandContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 16, self.RULE_optionCommand)
+        self.enterRule(localctx, 22, self.RULE_optionCommand)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 115
-            self.match(CMakeParser.T__4)
-            self.state = 116
+            self.state = 153
+            self.match(CMakeParser.T__5)
+            self.state = 154
             self.argument()
         except RecognitionException as re:
             localctx.exception = re
@@ -919,9 +1139,7 @@ class CMakeParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Command_invocationContext(ParserRuleContext):
-        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -951,12 +1169,12 @@ class CMakeParser ( Parser ):
     def command_invocation(self):
 
         localctx = CMakeParser.Command_invocationContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 18, self.RULE_command_invocation)
+        self.enterRule(localctx, 24, self.RULE_command_invocation)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 118
+            self.state = 156
             self.match(CMakeParser.Identifier)
-            self.state = 119
+            self.state = 157
             self.argument()
         except RecognitionException as re:
             localctx.exception = re
@@ -966,9 +1184,7 @@ class CMakeParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class ArgumentContext(ParserRuleContext):
-        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1018,39 +1234,40 @@ class CMakeParser ( Parser ):
     def argument(self):
 
         localctx = CMakeParser.ArgumentContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 20, self.RULE_argument)
+        self.enterRule(localctx, 26, self.RULE_argument)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 121
+            self.state = 159
             self.match(CMakeParser.LPAREN)
-            self.state = 127
+            self.state = 165
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << CMakeParser.LPAREN) | (1 << CMakeParser.CONSTANTS) | (1 << CMakeParser.Identifier) | (1 << CMakeParser.DECIMAL) | (1 << CMakeParser.Unquoted_argument) | (1 << CMakeParser.Quoted_argument) | (1 << CMakeParser.Bracket_argument))) != 0):
-                self.state = 125
+                self.state = 163
                 self._errHandler.sync(self)
-                token = self._input.LA(1)
-                if token in [CMakeParser.Identifier, CMakeParser.Unquoted_argument, CMakeParser.Quoted_argument, CMakeParser.Bracket_argument]:
-                    self.state = 122
+                la_ = self._interp.adaptivePredict(self._input,13,self._ctx)
+                if la_ == 1:
+                    self.state = 160
                     self.single_argument()
                     pass
-                elif token in [CMakeParser.LPAREN]:
-                    self.state = 123
+
+                elif la_ == 2:
+                    self.state = 161
                     self.compound_argument()
                     pass
-                elif token in [CMakeParser.CONSTANTS, CMakeParser.DECIMAL]:
-                    self.state = 124
+
+                elif la_ == 3:
+                    self.state = 162
                     self.constant_value()
                     pass
-                else:
-                    raise NoViableAltException(self)
 
-                self.state = 129
+
+                self.state = 167
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
 
-            self.state = 130
+            self.state = 168
             self.match(CMakeParser.RPAREN)
         except RecognitionException as re:
             localctx.exception = re
@@ -1060,9 +1277,7 @@ class CMakeParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Constant_valueContext(ParserRuleContext):
-        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1091,11 +1306,11 @@ class CMakeParser ( Parser ):
     def constant_value(self):
 
         localctx = CMakeParser.Constant_valueContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 22, self.RULE_constant_value)
+        self.enterRule(localctx, 28, self.RULE_constant_value)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 132
+            self.state = 170
             _la = self._input.LA(1)
             if not(_la==CMakeParser.CONSTANTS or _la==CMakeParser.DECIMAL):
                 self._errHandler.recoverInline(self)
@@ -1110,9 +1325,7 @@ class CMakeParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Single_argumentContext(ParserRuleContext):
-        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1129,6 +1342,9 @@ class CMakeParser ( Parser ):
 
         def Quoted_argument(self):
             return self.getToken(CMakeParser.Quoted_argument, 0)
+
+        def DECIMAL(self):
+            return self.getToken(CMakeParser.DECIMAL, 0)
 
         def getRuleIndex(self):
             return CMakeParser.RULE_single_argument
@@ -1147,13 +1363,13 @@ class CMakeParser ( Parser ):
     def single_argument(self):
 
         localctx = CMakeParser.Single_argumentContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 24, self.RULE_single_argument)
+        self.enterRule(localctx, 30, self.RULE_single_argument)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 134
+            self.state = 172
             _la = self._input.LA(1)
-            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << CMakeParser.Identifier) | (1 << CMakeParser.Unquoted_argument) | (1 << CMakeParser.Quoted_argument) | (1 << CMakeParser.Bracket_argument))) != 0)):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << CMakeParser.Identifier) | (1 << CMakeParser.DECIMAL) | (1 << CMakeParser.Unquoted_argument) | (1 << CMakeParser.Quoted_argument) | (1 << CMakeParser.Bracket_argument))) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -1166,9 +1382,7 @@ class CMakeParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Compound_argumentContext(ParserRuleContext):
-        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1211,35 +1425,35 @@ class CMakeParser ( Parser ):
     def compound_argument(self):
 
         localctx = CMakeParser.Compound_argumentContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 26, self.RULE_compound_argument)
+        self.enterRule(localctx, 32, self.RULE_compound_argument)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 136
+            self.state = 174
             self.match(CMakeParser.LPAREN)
-            self.state = 141
+            self.state = 179
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << CMakeParser.LPAREN) | (1 << CMakeParser.Identifier) | (1 << CMakeParser.Unquoted_argument) | (1 << CMakeParser.Quoted_argument) | (1 << CMakeParser.Bracket_argument))) != 0):
-                self.state = 139
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << CMakeParser.LPAREN) | (1 << CMakeParser.Identifier) | (1 << CMakeParser.DECIMAL) | (1 << CMakeParser.Unquoted_argument) | (1 << CMakeParser.Quoted_argument) | (1 << CMakeParser.Bracket_argument))) != 0):
+                self.state = 177
                 self._errHandler.sync(self)
                 token = self._input.LA(1)
-                if token in [CMakeParser.Identifier, CMakeParser.Unquoted_argument, CMakeParser.Quoted_argument, CMakeParser.Bracket_argument]:
-                    self.state = 137
+                if token in [CMakeParser.Identifier, CMakeParser.DECIMAL, CMakeParser.Unquoted_argument, CMakeParser.Quoted_argument, CMakeParser.Bracket_argument]:
+                    self.state = 175
                     self.single_argument()
                     pass
                 elif token in [CMakeParser.LPAREN]:
-                    self.state = 138
+                    self.state = 176
                     self.compound_argument()
                     pass
                 else:
                     raise NoViableAltException(self)
 
-                self.state = 143
+                self.state = 181
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
 
-            self.state = 144
+            self.state = 182
             self.match(CMakeParser.RPAREN)
         except RecognitionException as re:
             localctx.exception = re
@@ -1249,9 +1463,7 @@ class CMakeParser ( Parser ):
             self.exitRule()
         return localctx
 
-
     class Comp_operatorContext(ParserRuleContext):
-        __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
@@ -1268,6 +1480,12 @@ class CMakeParser ( Parser ):
 
         def EQR(self):
             return self.getToken(CMakeParser.EQR, 0)
+
+        def VGEQ(self):
+            return self.getToken(CMakeParser.VGEQ, 0)
+
+        def STQE(self):
+            return self.getToken(CMakeParser.STQE, 0)
 
         def getRuleIndex(self):
             return CMakeParser.RULE_comp_operator
@@ -1286,13 +1504,13 @@ class CMakeParser ( Parser ):
     def comp_operator(self):
 
         localctx = CMakeParser.Comp_operatorContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 28, self.RULE_comp_operator)
+        self.enterRule(localctx, 34, self.RULE_comp_operator)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 146
+            self.state = 184
             _la = self._input.LA(1)
-            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << CMakeParser.GT) | (1 << CMakeParser.LT) | (1 << CMakeParser.EQ) | (1 << CMakeParser.EQR))) != 0)):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << CMakeParser.GT) | (1 << CMakeParser.LT) | (1 << CMakeParser.EQ) | (1 << CMakeParser.EQR) | (1 << CMakeParser.STQE) | (1 << CMakeParser.VGEQ))) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -1310,7 +1528,7 @@ class CMakeParser ( Parser ):
     def sempred(self, localctx:RuleContext, ruleIndex:int, predIndex:int):
         if self._predicates == None:
             self._predicates = dict()
-        self._predicates[7] = self.logical_expr_sempred
+        self._predicates[10] = self.logical_expr_sempred
         pred = self._predicates.get(ruleIndex, None)
         if pred is None:
             raise Exception("No predicate with index:" + str(ruleIndex))

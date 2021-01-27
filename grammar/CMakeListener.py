@@ -1,4 +1,4 @@
-# Generated from CMake.g4 by ANTLR 4.9.1
+# Generated from CMake.g4 by ANTLR 4.7.2
 from antlr4 import *
 if __name__ is not None and "." in __name__:
     from .CMakeParser import CMakeParser
@@ -23,6 +23,33 @@ class CMakeListener(ParseTreeListener):
 
     # Exit a parse tree produced by CMakeParser#commands.
     def exitCommands(self, ctx:CMakeParser.CommandsContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#whileCommand.
+    def enterWhileCommand(self, ctx:CMakeParser.WhileCommandContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#whileCommand.
+    def exitWhileCommand(self, ctx:CMakeParser.WhileCommandContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#whileStatement.
+    def enterWhileStatement(self, ctx:CMakeParser.WhileStatementContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#whileStatement.
+    def exitWhileStatement(self, ctx:CMakeParser.WhileStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#endWhileStatement.
+    def enterEndWhileStatement(self, ctx:CMakeParser.EndWhileStatementContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#endWhileStatement.
+    def exitEndWhileStatement(self, ctx:CMakeParser.EndWhileStatementContext):
         pass
 
 
@@ -197,5 +224,3 @@ class CMakeListener(ParseTreeListener):
         pass
 
 
-
-del CMakeParser
