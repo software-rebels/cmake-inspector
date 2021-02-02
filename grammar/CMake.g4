@@ -14,7 +14,22 @@ commands: ifCommand
           | whileCommand
           | optionCommand
           | command_invocation
+          | foreachCommand
           ;
+
+foreachCommand
+	: foreachStatement (ifBody=commands)* endForeachStatement
+	;
+
+foreachStatement
+	: 'foreach' LPAREN foreachExpression RPAREN
+	;
+foreachExpression
+    : logical_expr IN? single_argument*
+    ;
+endForeachStatement
+	: 'endforeach' LPAREN (logical_expr)* RPAREN
+	;
 
 whileCommand
 	: whileStatement (ifBody=commands)* endWhileStatement
@@ -99,6 +114,7 @@ comp_operator : GT | GTEQ | LT | EQ | EQR | VGEQ | STQE;
 
 NOT : N O T;
 AND : A N D;
+IN: I N;
 VERSION_LESS : V E R S I O N '_' L E S S;
 VERSION_EQUALL : V E R S I O N '_' E Q U A L;
 VERSION_GREATER : V E R S I O N '_' G R E A T E R;
