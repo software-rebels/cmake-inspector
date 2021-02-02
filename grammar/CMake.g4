@@ -13,8 +13,8 @@ cmakefile
 commands: ifCommand
           | whileCommand
           | optionCommand
-          | command_invocation
           | foreachCommand
+          | command_invocation
           ;
 
 foreachCommand
@@ -22,13 +22,13 @@ foreachCommand
 	;
 
 foreachStatement
-	: 'foreach' LPAREN foreachExpression RPAREN
+	: FOREACH LPAREN foreachExpression RPAREN
 	;
 foreachExpression
-    : logical_expr IN? single_argument*
+    : single_argument (IN|RANGE)? single_argument*
     ;
 endForeachStatement
-	: 'endforeach' LPAREN (logical_expr)* RPAREN
+	: ENDFOREACH LPAREN (logical_expr)* RPAREN
 	;
 
 whileCommand
@@ -36,11 +36,11 @@ whileCommand
 	;
 
 whileStatement
-	: 'while' LPAREN logical_expr RPAREN
+	: WHILE LPAREN logical_expr RPAREN
 	;
 
 endWhileStatement
-	: 'endwhile' LPAREN (logical_expr)* RPAREN
+	: ENDWHILE LPAREN (logical_expr)* RPAREN
 	;
 
 ifCommand
@@ -103,11 +103,13 @@ constant_value: CONSTANTS | DECIMAL;
 
 // TODO: Guess it would be better to replace it with logic expression since many function input is logic
 single_argument
-	: Identifier | Unquoted_argument | Bracket_argument | Quoted_argument | DECIMAL | TARGET | EQ | OR | EXISTS | AND | COMMAND| POLICY//TODO: fix the placement from Target onward
+	: Identifier | Unquoted_argument | Bracket_argument
+	| Quoted_argument | DECIMAL | TARGET | EQ | OR | EXISTS
+	| AND | COMMAND| POLICY//TODO: fix the placement from Target onward
 	;
 
 compound_argument
-	: '(' (single_argument|compound_argument)* ')'
+	: LPAREN (single_argument|compound_argument)* RPAREN
 	;
 
 comp_operator : GT | GTEQ | LT | EQ | EQR | VGEQ | STQE;
@@ -115,6 +117,7 @@ comp_operator : GT | GTEQ | LT | EQ | EQR | VGEQ | STQE;
 NOT : N O T;
 AND : A N D;
 IN: I N;
+RANGE: R A N G E;
 VERSION_LESS : V E R S I O N '_' L E S S;
 VERSION_EQUALL : V E R S I O N '_' E Q U A L;
 VERSION_GREATER : V E R S I O N '_' G R E A T E R;
@@ -122,6 +125,10 @@ STRGREATER: S T R G R E A T E R;
 STRLESS: S T R L E S S;
 COMMAND: C O M M A N D;
 MATCHES: M A T C H E S;
+FOREACH: F O R E A C H;
+ENDFOREACH: E N D F O R E A C H;
+WHILE: W H I L E;
+ENDWHILE: E N D W H I L E;
 
 OR : O R;
 IF: I F;

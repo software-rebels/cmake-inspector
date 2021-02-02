@@ -322,12 +322,13 @@ class Lookup:
         return self.variableHistory[key]
 
     def deleteKey(self, key, parentScope=False):
-        print(self.items)
         if parentScope:
             del (self.items[-2][key])
         else:
             if key in self.items[-1]: #
                 del (self.items[-1][key])
+            else:
+                print(f"[WARNING] Called deleteKey without finding the key in lookup table for {key}")
 
     def dropScope(self):
         self.items.pop()
