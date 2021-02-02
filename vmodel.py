@@ -65,6 +65,7 @@ class VModel:
         self.systemState.append(rule)
 
     def getCurrentSystemState(self) -> Optional[Rule]:
+
         if self.systemState:
             return self.systemState[-1]
         else:

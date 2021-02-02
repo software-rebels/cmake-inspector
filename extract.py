@@ -231,10 +231,6 @@ class CMakeExtractorListener(CMakeListener):
                 util_create_and_add_refNode_for_variable(arguments.pop(varIndex), commandNode,
                                                          relatedProperty='RESULT_VARIABLE')
 
-            systemState = None
-            stateProperty = None
-            if vmodel.getCurrentSystemState():
-                systemState, stateProperty, level = vmodel.getCurrentSystemState()
 
             args = vmodel.expand(arguments)
             commandNode.depends.append(args)
@@ -930,7 +926,12 @@ class CMakeExtractorListener(CMakeListener):
         elif commandId == 'add_subdirectory':
             tempProjectDir = project_dir
             project_dir = os.path.join(project_dir, ctx.argument().single_argument()[0].getText())
+            # TODO check if we need to bring anything from the new state
+            lookupTable.newScope()
+            print('start new file',os.path.join(project_dir, 'CMakeLists.txt'))
             parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
+            print('finished new file',os.path.join(project_dir, 'CMakeLists.txt'))
+            lookupTable.dropScope()
             project_dir = tempProjectDir
 
         elif commandId == 'add_library':
@@ -1107,6 +1108,7 @@ def main(argv):
     global project_dir
     project_dir = argv[1]
     parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
+    vmodel.export();
     # vmodel.checkIntegrity()
     # vmodel.findAndSetTargets()
     # doGitAnalysis(project_dir)
@@ -1115,8 +1117,8 @@ def main(argv):
     # printSourceFiles(vmodel, lookupTable)
     # testNode = vmodel.findNode('${CLIENT_LIBRARIES}_662')
     # flattenAlgorithmWithConditions(testNode)
-    a = printFilesForATarget(vmodel, lookupTable, 'etl', True)
-    print(a)
+    # a = printFilesForATarget(vmodel, lookupTable, 'etl', True)
+    # print(a)
 
 if __name__ == "__main__":
     main(sys.argv)

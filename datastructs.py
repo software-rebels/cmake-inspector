@@ -21,7 +21,7 @@ class Node:
         self.dbNode = None
 
     def getName(self):
-        return self.name
+        return self.name.replace('::', '->')
 
     def getNodeName(self):
         return self.getName()
@@ -325,7 +325,10 @@ class Lookup:
         if parentScope:
             del (self.items[-2][key])
         else:
-            del (self.items[-1][key])
+            if key in self.items[-1]: #
+                del (self.items[-1][key])
+            else:
+                print(f"[WARNING] Called deleteKey without finding the key in lookup table for {key}")
 
     def dropScope(self):
         self.items.pop()
