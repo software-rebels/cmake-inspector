@@ -26,6 +26,69 @@ class CMakeListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by CMakeParser#foreachCommand.
+    def enterForeachCommand(self, ctx:CMakeParser.ForeachCommandContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#foreachCommand.
+    def exitForeachCommand(self, ctx:CMakeParser.ForeachCommandContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#foreachStatement.
+    def enterForeachStatement(self, ctx:CMakeParser.ForeachStatementContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#foreachStatement.
+    def exitForeachStatement(self, ctx:CMakeParser.ForeachStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#foreachExpression.
+    def enterForeachExpression(self, ctx:CMakeParser.ForeachExpressionContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#foreachExpression.
+    def exitForeachExpression(self, ctx:CMakeParser.ForeachExpressionContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#endForeachStatement.
+    def enterEndForeachStatement(self, ctx:CMakeParser.EndForeachStatementContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#endForeachStatement.
+    def exitEndForeachStatement(self, ctx:CMakeParser.EndForeachStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#whileCommand.
+    def enterWhileCommand(self, ctx:CMakeParser.WhileCommandContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#whileCommand.
+    def exitWhileCommand(self, ctx:CMakeParser.WhileCommandContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#whileStatement.
+    def enterWhileStatement(self, ctx:CMakeParser.WhileStatementContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#whileStatement.
+    def exitWhileStatement(self, ctx:CMakeParser.WhileStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#endWhileStatement.
+    def enterEndWhileStatement(self, ctx:CMakeParser.EndWhileStatementContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#endWhileStatement.
+    def exitEndWhileStatement(self, ctx:CMakeParser.EndWhileStatementContext):
+        pass
+
+
     # Enter a parse tree produced by CMakeParser#ifCommand.
     def enterIfCommand(self, ctx:CMakeParser.IfCommandContext):
         pass
@@ -71,6 +134,69 @@ class CMakeListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by CMakeParser#LogicalExpressionExists.
+    def enterLogicalExpressionExists(self, ctx:CMakeParser.LogicalExpressionExistsContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#LogicalExpressionExists.
+    def exitLogicalExpressionExists(self, ctx:CMakeParser.LogicalExpressionExistsContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#LogicalExpressionTarget.
+    def enterLogicalExpressionTarget(self, ctx:CMakeParser.LogicalExpressionTargetContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#LogicalExpressionTarget.
+    def exitLogicalExpressionTarget(self, ctx:CMakeParser.LogicalExpressionTargetContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#LogicalExpressionIsAbsolute.
+    def enterLogicalExpressionIsAbsolute(self, ctx:CMakeParser.LogicalExpressionIsAbsoluteContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#LogicalExpressionIsAbsolute.
+    def exitLogicalExpressionIsAbsolute(self, ctx:CMakeParser.LogicalExpressionIsAbsoluteContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#LogicalExpressionVersionEqual.
+    def enterLogicalExpressionVersionEqual(self, ctx:CMakeParser.LogicalExpressionVersionEqualContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#LogicalExpressionVersionEqual.
+    def exitLogicalExpressionVersionEqual(self, ctx:CMakeParser.LogicalExpressionVersionEqualContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#LogicalExpressionVersionGreater.
+    def enterLogicalExpressionVersionGreater(self, ctx:CMakeParser.LogicalExpressionVersionGreaterContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#LogicalExpressionVersionGreater.
+    def exitLogicalExpressionVersionGreater(self, ctx:CMakeParser.LogicalExpressionVersionGreaterContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#LogicalExpressionStrLess.
+    def enterLogicalExpressionStrLess(self, ctx:CMakeParser.LogicalExpressionStrLessContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#LogicalExpressionStrLess.
+    def exitLogicalExpressionStrLess(self, ctx:CMakeParser.LogicalExpressionStrLessContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#LogicalExpressionMatches.
+    def enterLogicalExpressionMatches(self, ctx:CMakeParser.LogicalExpressionMatchesContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#LogicalExpressionMatches.
+    def exitLogicalExpressionMatches(self, ctx:CMakeParser.LogicalExpressionMatchesContext):
+        pass
+
+
     # Enter a parse tree produced by CMakeParser#LogicalEntity.
     def enterLogicalEntity(self, ctx:CMakeParser.LogicalEntityContext):
         pass
@@ -95,6 +221,15 @@ class CMakeListener(ParseTreeListener):
 
     # Exit a parse tree produced by CMakeParser#LogicalExpressionInParen.
     def exitLogicalExpressionInParen(self, ctx:CMakeParser.LogicalExpressionInParenContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#LogicalExpressionPolicy.
+    def enterLogicalExpressionPolicy(self, ctx:CMakeParser.LogicalExpressionPolicyContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#LogicalExpressionPolicy.
+    def exitLogicalExpressionPolicy(self, ctx:CMakeParser.LogicalExpressionPolicyContext):
         pass
 
 
@@ -131,6 +266,42 @@ class CMakeListener(ParseTreeListener):
 
     # Exit a parse tree produced by CMakeParser#LogicalExpressionOr.
     def exitLogicalExpressionOr(self, ctx:CMakeParser.LogicalExpressionOrContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#LogicalExpressionVersionLess.
+    def enterLogicalExpressionVersionLess(self, ctx:CMakeParser.LogicalExpressionVersionLessContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#LogicalExpressionVersionLess.
+    def exitLogicalExpressionVersionLess(self, ctx:CMakeParser.LogicalExpressionVersionLessContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#LogicalExpressionDefined.
+    def enterLogicalExpressionDefined(self, ctx:CMakeParser.LogicalExpressionDefinedContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#LogicalExpressionDefined.
+    def exitLogicalExpressionDefined(self, ctx:CMakeParser.LogicalExpressionDefinedContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#LogicalExpressionIsDirectory.
+    def enterLogicalExpressionIsDirectory(self, ctx:CMakeParser.LogicalExpressionIsDirectoryContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#LogicalExpressionIsDirectory.
+    def exitLogicalExpressionIsDirectory(self, ctx:CMakeParser.LogicalExpressionIsDirectoryContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#LogicalExpressionStrGreater.
+    def enterLogicalExpressionStrGreater(self, ctx:CMakeParser.LogicalExpressionStrGreaterContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#LogicalExpressionStrGreater.
+    def exitLogicalExpressionStrGreater(self, ctx:CMakeParser.LogicalExpressionStrGreaterContext):
         pass
 
 

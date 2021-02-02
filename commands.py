@@ -7,6 +7,9 @@ lookupTable = Lookup.getInstance()
 
 
 def setCommand(arguments):
+    # TODO: @Farshad: Why you added this line?
+    if len(arguments) == 1:
+        arguments.append('')
     rawVarName = arguments.pop(0)
     variable_name = "${{{}}}".format(rawVarName)
     parentScope = False
@@ -230,20 +233,20 @@ def addTarget(arguments, isExecutable=True):
         libraryType = arguments.pop(0)
 
     # Object libraries just contains list of files, so there is small change in behaviour
-    if arguments[0] == 'OBJECT':
+    if arguments and arguments[0] == 'OBJECT':
         arguments.pop(0)
         isObjectLibrary = True
         lookupTableName = "$<TARGET_OBJECTS:{}>".format(targetName)
 
     # Interface libraries are useful for header-only libraries.
     # more info at: http://mariobadr.com/creating-a-header-only-library-with-cmake.html
-    if arguments[0] == 'INTERFACE':
+    if arguments and arguments[0] == 'INTERFACE':
         arguments.pop(0)
         interfaceLibrary = True
 
     # IMPORTED target node doesn't have any more argument to expand
     # ALIAS target node points to another target node, so the logic behind it is a little different
-    if arguments[0] not in ('IMPORTED', 'ALIAS'):
+    if arguments and arguments[0] not in ('IMPORTED', 'ALIAS'):
         nextNode = vmodel.expand(arguments, True)
 
     targetNode = lookupTable.getKey(lookupTableName)

@@ -10,32 +10,76 @@ grammar CMake;
 cmakefile
 	: commands* EOF
 	;
-commands: ifCommand|optionCommand|command_invocation;
+commands: ifCommand
+          | whileCommand
+          | optionCommand
+          | foreachCommand
+          | command_invocation
+          ;
+
+foreachCommand
+	: foreachStatement (ifBody=commands)* endForeachStatement
+	;
+
+foreachStatement
+	: FOREACH LPAREN foreachExpression RPAREN
+	;
+foreachExpression
+    : single_argument (IN|RANGE)? single_argument*
+    ;
+endForeachStatement
+	: ENDFOREACH LPAREN (logical_expr)* RPAREN
+	;
+
+whileCommand
+	: whileStatement (ifBody=commands)* endWhileStatement
+	;
+
+whileStatement
+	: WHILE LPAREN logical_expr RPAREN
+	;
+
+endWhileStatement
+	: ENDWHILE LPAREN (logical_expr)* RPAREN
+	;
 
 ifCommand
-	: ifStatement (ifBody=commands)* (elseIfStatement (elseIfBody=commands)*)* (elseStatement (elseBody=commands)*)? endIfStatement
+	: ifStatement (ifBody=commands)* (elseIfStatement (elseIfBody=commands)*)* (elseStatement (elseBody=commands)*)* endIfStatement
 	;
 
 ifStatement
-	: 'if' LPAREN logical_expr RPAREN
+	: IF LPAREN logical_expr RPAREN
 	;
 
 elseIfStatement
-	: 'elseif' LPAREN logical_expr RPAREN
+	: ELSEIF LPAREN (logical_expr)* RPAREN
 	;
 
 elseStatement
-	: 'else' argument
+	: ELSE LPAREN (logical_expr)* RPAREN
 	;
 
 endIfStatement
-	: 'endif' argument
+	: ENDIF LPAREN (logical_expr)* RPAREN
 	;
 
 logical_expr
  : NOT logical_expr                                         # LogicalExpressionNot
+ | EXISTS logical_expr                                      # LogicalExpressionExists
+ | POLICY logical_expr                                      # LogicalExpressionPolicy
+ | DEFINED logical_expr                                     # LogicalExpressionDefined
+ | TARGET logical_expr                                      # LogicalExpressionTarget
+ | IS_ABSOLUTE logical_expr                                 # LogicalExpressionIsAbsolute
+ | IS_DIRECTORY logical_expr                                # LogicalExpressionIsDirectory
+ | COMMAND logical_expr                                     # LogicalExpressionIsDirectory
  | logical_expr AND logical_expr                            # LogicalExpressionAnd
  | logical_expr OR logical_expr                             # LogicalExpressionOr
+ | logical_expr MATCHES logical_expr                        # LogicalExpressionMatches
+ | logical_expr VERSION_LESS logical_expr                   # LogicalExpressionVersionLess
+ | logical_expr VERSION_EQUALL logical_expr                 # LogicalExpressionVersionEqual
+ | logical_expr VERSION_GREATER logical_expr                # LogicalExpressionVersionGreater
+ | logical_expr STRGREATER logical_expr                     # LogicalExpressionStrGreater
+ | logical_expr STRLESS logical_expr                        # LogicalExpressionStrLess
  | single_argument comp_operator single_argument            # ComparisonExpression
  | LPAREN logical_expr RPAREN                               # LogicalExpressionInParen
  | constant_value                                           # ConstantValue
@@ -54,26 +98,57 @@ argument
 	: '(' (single_argument|compound_argument|constant_value)* ')'
 	;
 
+
 constant_value: CONSTANTS | DECIMAL;
 
+// TODO: Guess it would be better to replace it with logic expression since many function input is logic
 single_argument
-	: Identifier | Unquoted_argument | Bracket_argument | Quoted_argument
+	: Identifier | Unquoted_argument | Bracket_argument
+	| Quoted_argument | DECIMAL | TARGET | EQ | OR | EXISTS
+	| AND | COMMAND| POLICY//TODO: fix the placement from Target onward
 	;
 
 compound_argument
-	: '(' (single_argument|compound_argument)* ')'
+	: LPAREN (single_argument|compound_argument)* RPAREN
 	;
 
-comp_operator : GT | LT | EQ | EQR;
+comp_operator : GT | GTEQ | LT | EQ | EQR | VGEQ | STQE;
 
 NOT : N O T;
 AND : A N D;
+IN: I N;
+RANGE: R A N G E;
+VERSION_LESS : V E R S I O N '_' L E S S;
+VERSION_EQUALL : V E R S I O N '_' E Q U A L;
+VERSION_GREATER : V E R S I O N '_' G R E A T E R;
+STRGREATER: S T R G R E A T E R;
+STRLESS: S T R L E S S;
+COMMAND: C O M M A N D;
+MATCHES: M A T C H E S;
+FOREACH: F O R E A C H;
+ENDFOREACH: E N D F O R E A C H;
+WHILE: W H I L E;
+ENDWHILE: E N D W H I L E;
+
 OR : O R;
+IF: I F;
+ELSEIF: E L S E I F;
+ELSE: E L S E;
+ENDIF: E N D I F ;
+EXISTS: E X I S T S;
+DEFINED: D E F I N E D;
+TARGET: T A R G E T;
+IS_ABSOLUTE: I S '_' A B S O L U T E;
+IS_DIRECTORY: I S '_' D I R E C T O R Y;
 
 GT : G R E A T E R;
+GTEQ : G R E A T E R '_' EQ;
 LT : L E S S ;
 EQ : E Q U A L;
 EQR: M A T C H E S;
+STQE: S T R E Q U A L;
+VGEQ: V E R S I O N UL G R E A T E R UL E Q U A L;
+POLICY: P O L I C Y;
 
 LPAREN : '(' ;
 RPAREN : ')' ;
@@ -106,6 +181,7 @@ Escape_semicolon
 	;
 Quoted_argument
 	: '"' (~[\\"] | Escape_sequence | Quoted_cont)* '"'
+//    :'"' (~[\\"] | Escape_sequence | Quoted_cont | \$\{(.*?)\} '"'
 	;
 fragment
 Quoted_cont
@@ -146,6 +222,7 @@ fragment W : [wW];
 fragment X : [xX];
 fragment Y : [yY];
 fragment Z : [zZ];
+fragment UL: '_';
 Bracket_comment
 	: '#[' Bracket_arg_nested ']'
 	-> skip
