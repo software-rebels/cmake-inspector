@@ -3,6 +3,7 @@ import logging
 import os
 import re
 from collections import Set
+from typing import Dict
 
 from datastructs import Node, LiteralNode, RefNode, CustomCommandNode, SelectNode, ConcatNode, TargetNode
 from vmodel import VModel
@@ -45,9 +46,9 @@ def flattenAlgorithm(node: Node):
         return list(result)
 
 
-def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=True, recStack=None, useCache=True):
+def flattenAlgorithmWithConditions(node: Node, conditions: Dict = None, debug=True, recStack=None, useCache=True):
     if conditions is None:
-        conditions = set()
+        conditions = dict()
     if recStack is None:
         recStack = list()
 
@@ -61,11 +62,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
 
     flattedResult = None
     # We return result from memoize variable if available:
-    if useCache and node in VModel.getInstance().flattenMemoize:
-        logging.debug("CACHE HIT for " + node.getName())
-        flattedResult = [(x, set(y)) for x, y in VModel.getInstance().flattenMemoize[node]]
-        # flattedResult = [(node, conditions)]
-    elif isinstance(node, LiteralNode):
+    if isinstance(node, LiteralNode):
         flattedResult = [(node.getValue(), conditions)]
     elif isinstance(node, TargetNode):
         flattedResult = [(node.rawName, conditions)]
@@ -74,27 +71,31 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
         if node.getPointTo() is None:
             flattedResult = [(node.rawName, conditions)]
         else:
-            flattedResult = flattenAlgorithmWithConditions(node.getPointTo(), None, debug, recStack, useCache=useCache)
+            flattedResult = flattenAlgorithmWithConditions(node.getPointTo(), conditions,
+                                                           debug, recStack, useCache=useCache)
     elif isinstance(node, CustomCommandNode):
-        flattedResult = flattenCustomCommandNode(node, None, recStack)
+        flattedResult = flattenCustomCommandNode(node, conditions, recStack)
     elif isinstance(node, SelectNode):
-        # TODO: Check if conditions satisfiable before expanding the tree (Using the new data structure)
-        if node.falseNode and node.trueNode:
-            flattedResult = flattenAlgorithmWithConditions(node.falseNode, {(node.args, False)}, debug, recStack,
-                                                           useCache=useCache) + \
-                            flattenAlgorithmWithConditions(node.trueNode, {(node.args, True)}, debug, recStack,
-                                                           useCache=useCache)
-        elif node.trueNode:
-            flattedResult = flattenAlgorithmWithConditions(node.trueNode, {(node.args, True)}, debug, recStack,
-                                                           useCache=useCache)
-        elif node.falseNode:
-            flattedResult = flattenAlgorithmWithConditions(node.falseNode, {(node.args, False)}, debug, recStack,
-                                                           useCache=useCache)
+        # Check if conditions satisfiable before expanding the tree (Using the new data structure)
+        possible_evaluation = node.rule.getCondition().satisfiable(conditions)
+        true_evaluations = [evaluation for evaluation in possible_evaluation if evaluation[0]]
+        false_evaluations = [evaluation for evaluation in possible_evaluation if evaluation[0] is False]
+        flattedResult = []
+        if node.falseNode and false_evaluations:
+            for evaluation in false_evaluations:
+                flattedResult += flattenAlgorithmWithConditions(node.falseNode,
+                                                                {**conditions, **evaluation[1]},
+                                                                debug, recStack, useCache=useCache)
+        if node.trueNode and true_evaluations:
+            for evaluation in true_evaluations:
+                flattedResult += flattenAlgorithmWithConditions(node.trueNode,
+                                                                {**conditions, **evaluation[1]},
+                                                                debug, recStack, useCache=useCache)
     elif isinstance(node, ConcatNode):
         result = ['']
         numberOfChildren = len(node.getChildren())
         for idx, item in enumerate(node.getChildren()):
-            childSet = flattenAlgorithmWithConditions(item, None, debug, recStack, useCache=useCache)
+            childSet = flattenAlgorithmWithConditions(item, conditions, debug, recStack, useCache=useCache)
             tempSet = []
             if childSet is None:
                 continue
@@ -119,7 +120,15 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
 
                             tempSet.append(str2)
                         else:
-                            tempSet.append(["{}{}".format(str1[0], str2[0]), str1[1].union(str2[1])])
+                            # There shouldn't be any contradiction in the returned conditions. If there is, we raise
+                            # an exception
+                            contradiction = False
+                            for common_key in set(str1[1]).intersection(set(str2[1])):
+                                if str1[1].get(common_key) != str2[1].get(common_key):
+                                    contradiction = True
+                            if contradiction:
+                                raise Exception('Contradiction in the concat node')
+                            tempSet.append(["{}{}".format(str1[0], str2[0]), {**str1[1], **str2[1]}])
                 result = tempSet
             else:
                 if result[0] == '':
@@ -128,15 +137,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                     result += childSet
         flattedResult = result
 
-    if useCache and node not in VModel.getInstance().flattenMemoize and flattedResult:
-        copied_result = [(x, set(y)) for x, y in flattedResult]
-        VModel.getInstance().flattenMemoize[node] = copied_result
-
     recStack.remove(node)
-
-    if conditions and flattedResult:
-        for item in flattedResult:
-            item[1].update(conditions)
 
     # Try to remove items with condition both false and true
     if flattedResult:
