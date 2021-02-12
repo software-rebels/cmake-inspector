@@ -2,11 +2,10 @@ from algorithms import flattenAlgorithmWithConditions
 from datastructs import Lookup, CustomCommandNode, TargetNode, ConcatNode
 from utils import *
 
-vmodel = VModel.getInstance()
-lookupTable = Lookup.getInstance()
-
 
 def setCommand(arguments):
+    vmodel = VModel.getInstance()
+    lookupTable = Lookup.getInstance()
     # TODO: @Farshad: Why you added this line?
     if len(arguments) == 1:
         arguments.append('')
@@ -27,6 +26,9 @@ def setCommand(arguments):
 
 def listCommand(arguments):
     # List command supports many actions, like APPEND, INSERT, ...
+    vmodel = VModel.getInstance()
+    lookupTable = Lookup.getInstance()
+
     action = arguments.pop(0)
     action = action.upper()
     rawListName = arguments.pop(0)
@@ -94,6 +96,8 @@ def listCommand(arguments):
 
 
 def whileCommand(arguments):
+    vmodel = VModel.getInstance()
+
     customCommand = CustomCommandNode("WHILE({})".format(util_getStringFromList(arguments)))
     vmodel.pushSystemState('while', customCommand)
     vmodel.pushCurrentLookupTable()
@@ -106,6 +110,9 @@ def whileCommand(arguments):
 # the tool will add the RefNode to the while command node, then it creates a new RefNode pointing to the
 # While command node
 def endwhileCommand():
+    vmodel = VModel.getInstance()
+    lookupTable = Lookup.getInstance()
+
     lastPushedLookup = vmodel.getLastPushedLookupTable()
     state, command, level = vmodel.popSystemState()
     prevNodeStack = vmodel.nodeStack.pop()
@@ -127,6 +134,9 @@ def endwhileCommand():
 # de-addressed) and added as child node to custom command node point to property
 
 def fileCommand(arguments, project_dir):
+    vmodel = VModel.getInstance()
+    lookupTable = Lookup.getInstance()
+
     action = arguments.pop(0)
     fileCommandNode = None
     if action in ('WRITE', 'APPEND'):
@@ -184,6 +194,8 @@ def fileCommand(arguments, project_dir):
 
 
 def addCompileOptionsCommand(arguments):
+    vmodel = VModel.getInstance()
+
     nextNode = vmodel.expand(arguments)
     targetNode = util_handleConditions(nextNode, nextNode.name, None)
 
@@ -196,6 +208,8 @@ def addCompileOptionsCommand(arguments):
 
 
 def addLinkLibraries(arguments):
+    vmodel = VModel.getInstance()
+
     nextNode = vmodel.expand(arguments)
     targetNode = util_handleConditions(nextNode, nextNode.name, None)
 
@@ -208,6 +222,8 @@ def addLinkLibraries(arguments):
 
 
 def addLinkDirectories(arguments):
+    vmodel = VModel.getInstance()
+
     nextNode = vmodel.expand(arguments)
     targetNode = util_handleConditions(nextNode, nextNode.name, None)
 
@@ -221,6 +237,9 @@ def addLinkDirectories(arguments):
 
 # This function handles both add_library and add_executable
 def addTarget(arguments, isExecutable=True):
+    vmodel = VModel.getInstance()
+    lookupTable = Lookup.getInstance()
+
     targetName = arguments.pop(0)
     lookupTableName = 't:{}'.format(targetName)
     nextNode = None
@@ -279,7 +298,7 @@ def addTarget(arguments, isExecutable=True):
 
     if 'ALIAS' in arguments:
         aliasTarget = lookupTable.getKey('t:{}'.format(arguments[1]))
-        targetNode.sources = aliasTarget
+        nextNode = aliasTarget
 
     nextNode = util_handleConditions(nextNode, targetName)
     targetNode.sources = nextNode
@@ -287,6 +306,8 @@ def addTarget(arguments, isExecutable=True):
 
 # Very similar to while command
 def forEachCommand(arguments):
+    vmodel = VModel.getInstance()
+
     customCommand = CustomCommandNode("foreach_{}".format(vmodel.getNextCounter()))
     customCommand.commands.append(vmodel.expand(arguments))
     vmodel.pushSystemState('foreach', customCommand)

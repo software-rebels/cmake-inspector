@@ -431,6 +431,7 @@ class TestVariableDefinitions(unittest.TestCase):
         endif()
         """
         self.runTool(text)
+        self.vmodel.export()
         self.assertIsInstance(self.lookup.getKey("t:foo").getPointTo(), SelectNode)
         self.assertIsInstance(self.lookup.getKey("t:foo").getPointTo().trueNode, SelectNode)
         self.assertEqual("john.c", self.lookup.getKey("t:foo").getPointTo().falseNode.getChildren()[0].getValue())
@@ -1548,10 +1549,11 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'test_exec', False)
+        self.assertEqual(4, len(a))
         self.assertSetEqual({"another_folder_for_test/b2.cxx",
-                             "another_folder_for_test/a.cxx"}, a['NOT source_file:True && foo:False'])
+                             "another_folder_for_test/a.cxx"}, a['foo:False && source_file:False'])
         self.assertSetEqual({"files_for_test/a.cxx",
-                             "files_for_test/b.cxx", "files_for_test/c.cxx"}, a['NOT source_file:True && foo:True'])
+                             "files_for_test/b.cxx", "files_for_test/c.cxx"}, a['foo:True && source_file:False'])
 
     def test_runtime_graph_with_file_command(self):
         text = """

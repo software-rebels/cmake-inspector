@@ -100,10 +100,7 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
     for item in finalFlattenList:
         test_cond = set()
         for cond in item[1]:
-            # TODO: For some reason
-            if cond[0] is None:
-                continue
-            test_cond.add("{}:{}".format(cond[0].getValue(), str(cond[1])))
+            test_cond.add("{}:{}".format(cond, str(item[1].get(cond))))
         if test_cond:
             result[" && ".join(sorted(test_cond))].add(item[0])
         elif item[0]:

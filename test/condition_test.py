@@ -1,61 +1,121 @@
-import json
 import unittest
-from collections import defaultdict
-
-from antlr4 import CommonTokenStream, ParseTreeWalker, InputStream
-
-from extract import CMakeExtractorListener
-from grammar.CMakeLexer import CMakeLexer
-from grammar.CMakeParser import CMakeParser
-from datastructs import VModel, Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, flattenAlgorithm, \
-    CustomCommandNode, getFlattedArguments, TargetNode, TestNode, OptionNode, \
-    flattenAlgorithmWithConditions, Node
+from condition_data_structure import *
 
 
 class TestConditions(unittest.TestCase):
-
-    def runTool(self, text):
-        lexer = CMakeLexer(InputStream(text))
-        stream = CommonTokenStream(lexer)
-        parser = CMakeParser(stream)
-        tree = parser.cmakefile()
-        extractor = CMakeExtractorListener()
-        walker = ParseTreeWalker()
-        walker.walk(extractor, tree)
-
     def setUp(self) -> None:
-        self.vmodel = VModel.getInstance()
-        self.lookup = Lookup.getInstance()
+        self.fooVar = LocalVariable('foo')
+        self.barVar = LocalVariable('bar')
+        self.johnVar = LocalVariable('john')
+        self.doeVar = LocalVariable('doe')
 
-    def tearDown(self) -> None:
-        VModel.clearInstance()
-        Lookup.clearInstance()
+    def test_local_variable_satisfiable_true(self):
+        conditions = {
+            'foo': True
+        }
+        # foo
+        self.assertCountEqual(
+            [(True, {})], self.fooVar.satisfiable(conditions)
+        )
 
-    def test_if_statement_logic_expression(self):
-        text = """
-        set(foo on)
-        if(foo AND ON)
-            set(bar off)
-        endif(foo)
-        """
-        self.runTool(text)
-        self.vmodel.export()
-        # condition = self.vmodel.ru
+    def test_local_variable_satisfiable_false(self):
+        conditions = {
+            'foo': False
+        }
+        # foo
+        self.assertCountEqual(
+            [(False, {})], self.fooVar.satisfiable(conditions)
+        )
 
-    def test_if_else_if_statement_logic_expression(self):
-        text = """
-        set(foo on)
-        set(bar off)
-        if(foo OR bar)
-            set(john doe)
-        elseif(NOT bar)
-            set(john bar_doe)
-        elseif(NOT foo)
-            set(john foo_doe)
-        else()
-            set(john else_doe)
-        endif()
-        add_executable(mehran ${john})
-        """
-        self.runTool(text)
-        self.vmodel.export()
+    def test_local_variable_satisfiable_unknown(self):
+        conditions = {
+            'bar': True
+        }
+        # foo
+        self.assertCountEqual(
+            [(True, {'foo': True}), (False, {'foo': False})], self.fooVar.satisfiable(conditions)
+        )
+
+    def test_not_satisfiable(self):
+        conditions = {
+            'bar': True
+        }
+        # NOT foo
+        notExpression = NotExpression(self.fooVar)
+        self.assertCountEqual(
+            [(False, {'foo': True}), (True, {'foo': False})], notExpression.satisfiable(conditions)
+        )
+
+    def test_and_satisfiable_true(self):
+        conditions = {
+            'foo': True,
+            'bar': True
+        }
+        # foo AND bar
+        andExpression = AndExpression(self.fooVar, self.barVar)
+        self.assertCountEqual(
+            [(True, {})], andExpression.satisfiable(conditions)
+        )
+
+    def test_and_satisfiable_false(self):
+        conditions = {
+        }
+        # foo AND bar
+        andExpression = AndExpression(self.fooVar, self.barVar)
+        self.assertCountEqual(
+            [(False, {})], andExpression.satisfiable(conditions)
+        )
+
+    def test_and_satisfiable_false_triple_statement(self):
+        conditions = {
+            'foo': False
+        }
+        # (foo AND bar) AND john
+        andEx1 = AndExpression(self.fooVar, self.barVar)
+        andEx2 = AndExpression(andEx1, self.johnVar)
+        self.assertCountEqual(
+            [(False, {})], andEx2.satisfiable(conditions)
+        )
+
+    def test_and_satisfiable_without_condition(self):
+        andEx1 = AndExpression(self.fooVar, self.barVar)
+        # (foo AND bar) AND NOT(NOT foo AND NOT bar)
+        expression = AndExpression(andEx1,
+                                   NotExpression(AndExpression(NotExpression(self.fooVar),
+                                                               NotExpression(self.barVar))))
+        self.assertCountEqual(
+            [
+                (True, {'foo': True, 'bar': True}), (False, {'foo': False}), (False, {'bar': False})
+            ], expression.satisfiable({})
+        )
+
+    def test_or_satisfiable_true(self):
+        condition = {
+            'foo': True
+        }
+        orExp = OrExpression(self.fooVar, self.barVar)
+        # foo OR bar
+        self.assertCountEqual(
+            [
+                (True, {})
+            ], orExp.satisfiable(condition)
+        )
+
+    def test_and_or_satisfiable_without_condition(self):
+        andEx1 = AndExpression(self.fooVar, self.barVar)
+        # (foo AND bar) AND (foo OR bar)
+        expression = AndExpression(andEx1, OrExpression(self.fooVar, self.barVar))
+        self.assertCountEqual(
+            [
+                (True, {'foo': True, 'bar': True}), (False, {'foo': False}), (False, {'bar': False})
+            ], expression.satisfiable({})
+        )
+
+    def test_or_duplicate_expression(self):
+        expression = OrExpression(OrExpression(self.fooVar, self.barVar), OrExpression(self.fooVar, self.barVar))
+        # (foo OR bar) OR (foo OR bar)
+        self.assertCountEqual(
+            [
+                (True, {'foo': True}), (True, {'bar': True}), (False, {'foo': False, 'bar': False})
+            ], expression.satisfiable({})
+        )

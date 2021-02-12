@@ -1,3 +1,6 @@
+from typing import Dict, List
+
+
 class LogicalExpression:
     logicType = None
 
@@ -11,6 +14,9 @@ class LogicalExpression:
         pass
 
     def evaluate(self):
+        pass
+
+    def satisfiable(self, condition: Dict) -> List:
         pass
 
 
@@ -37,6 +43,11 @@ class OrExpression(LogicalExpression):
     def evaluate(self):
         return self.leftExpression.evaluate() or self.rightExpression.evaluate()
 
+    def satisfiable(self, condition: Dict) -> List:
+        # We convert OR to AND and use the same function we have for AND to avoid duplicates
+        andEquivalent = NotExpression(AndExpression(NotExpression(self.getLeft()), NotExpression(self.getRight())))
+        return andEquivalent.satisfiable(condition)
+
 
 class AndExpression(LogicalExpression):
     leftExpression: LogicalExpression = None
@@ -61,6 +72,42 @@ class AndExpression(LogicalExpression):
     def evaluate(self):
         return self.leftExpression.evaluate() and self.rightExpression.evaluate()
 
+    def satisfiable(self, condition: Dict) -> List:
+        left_satisfiable = self.getLeft().satisfiable(condition)
+        right_satisfiable = self.getRight().satisfiable(condition)
+        result = []
+        for l_sat in left_satisfiable:
+            for r_sat in right_satisfiable:
+                # We cannot merge two list of conditions with different values, like foo:True and foo:False
+                contradiction = False
+                for common_key in set(l_sat[1]).intersection(set(r_sat[1])):
+                    if l_sat[1].get(common_key) != r_sat[1].get(common_key):
+                        contradiction = True
+                if contradiction:
+                    continue
+
+                # If left and right evaluated to True
+                if l_sat[0] and r_sat[0]:
+                    if (True, {**l_sat[1], **r_sat[1]}) not in result:
+                        result.append((True, {**l_sat[1], **r_sat[1]}))
+                    continue
+                # If left and right evaluated to False, we only add one which is a subset of another
+                if l_sat[0] is False and r_sat[0] is False:
+                    if set(l_sat[1]).issubset(set(r_sat[1])):
+                        if (False, l_sat[1]) not in result:
+                            result.append((False, l_sat[1]))
+                        continue
+                    elif set(r_sat[1]).issubset(set(l_sat[1])):
+                        if (False, r_sat[1]) not in result:
+                            result.append((False, r_sat[1]))
+                        continue
+                if l_sat[0] is False and (False, l_sat[1]) not in result:
+                    result.append((False, l_sat[1]))
+                if r_sat[0] is False and (False, r_sat[1]) not in result:
+                    result.append((False, r_sat[1]))
+
+        return result
+
 
 class NotExpression(LogicalExpression):
     rightExpression: LogicalExpression = None
@@ -79,6 +126,13 @@ class NotExpression(LogicalExpression):
     def evaluate(self):
         return not self.rightExpression.evaluate()
 
+    def satisfiable(self, condition: Dict) -> List:
+        child_satisfiable = self.rightExpression.satisfiable(condition)
+        result = []
+        for item in child_satisfiable:
+            result.append((not item[0], item[1]))
+        return result
+
 
 class LocalVariable(LogicalExpression):
     variableName: str = None
@@ -93,6 +147,15 @@ class LocalVariable(LogicalExpression):
     def evaluate(self):
         # TODO: Given the fact, we should evaluate this last piece in the evaluate tree
         pass
+
+    def satisfiable(self, condition: Dict) -> List:
+        # First check if we have a fact about the variable
+        if self.variableName in condition:
+            return [(condition[self.variableName], {})]
+        return [
+            (True, {self.variableName: True}),
+            (False, {self.variableName: False})
+        ]
 
 
 class ConstantExpression(LogicalExpression):
@@ -109,6 +172,9 @@ class ConstantExpression(LogicalExpression):
         if self.value.lower() in ('false', 'no'):
             return False
         return True
+
+    def satisfiable(self, condition: Dict) -> List:
+        return [(self.evaluate(), {})]
 
 
 class Rule:
