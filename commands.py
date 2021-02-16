@@ -300,7 +300,7 @@ def addTarget(arguments, isExecutable=True):
         aliasTarget = lookupTable.getKey('t:{}'.format(arguments[1]))
         nextNode = aliasTarget
 
-    nextNode = util_handleConditions(nextNode, targetName)
+    nextNode = util_handleConditions(nextNode, targetName, targetNode.sources)
     targetNode.sources = nextNode
 
 

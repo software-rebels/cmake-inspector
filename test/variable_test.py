@@ -431,10 +431,9 @@ class TestVariableDefinitions(unittest.TestCase):
         endif()
         """
         self.runTool(text)
-        self.vmodel.export()
         self.assertIsInstance(self.lookup.getKey("t:foo").getPointTo(), SelectNode)
-        self.assertIsInstance(self.lookup.getKey("t:foo").getPointTo().trueNode, SelectNode)
-        self.assertEqual("john.c", self.lookup.getKey("t:foo").getPointTo().falseNode.getChildren()[0].getValue())
+        self.assertIsInstance(self.lookup.getKey("t:foo").getPointTo().falseNode, SelectNode)
+        self.assertEqual("john.c", self.lookup.getKey("t:foo").getPointTo().trueNode.getChildren()[0].getValue())
 
     def test_add_compile_option(self):
         text = """
@@ -629,8 +628,8 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         self.assertIsInstance(self.lookup.getKey("t:foo").getPointTo(), SelectNode)
-        self.assertIsInstance(self.lookup.getKey("t:foo").getPointTo().trueNode, SelectNode)
-        self.assertEqual("john.c", self.lookup.getKey("t:foo").getPointTo().falseNode.getChildren()[0].getValue())
+        self.assertIsInstance(self.lookup.getKey("t:foo").getPointTo().falseNode, SelectNode)
+        self.assertEqual("john.c", self.lookup.getKey("t:foo").getPointTo().trueNode.getChildren()[0].getValue())
         self.assertEqual('STATIC', self.lookup.getKey("t:foo").libraryType)
 
     def test_add_imported_library(self):
