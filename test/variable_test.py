@@ -1697,11 +1697,11 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
         self.assertSetEqual({"another_folder_for_test/b2.cxx", "another_folder_for_test/a.cxx"},
-                            a["(( NOT foo ) AND NOT john ) OR foo:False"])
+                            a['foo:False && john:True'])
         self.assertSetEqual({"files_for_test/a.cxx", "files_for_test/b.cxx"},
-                            a["(( NOT foo ) AND NOT john ) OR foo:True && (( NOT foo ) AND NOT john ):False && foo:True"])
+                            a['foo:True'])
         self.assertSetEqual({"files_for_test/c.cxx"},
-                            a["(( NOT foo ) AND NOT john ) OR foo:True && (( NOT foo ) AND NOT john ):True"])
+                            a['foo:False && john:False'])
 
     def test_flatten_target_with_link_libraries_and_else_if(self):
         text = """
