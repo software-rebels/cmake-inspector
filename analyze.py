@@ -1,7 +1,8 @@
 import logging
 import pickle
 
-from algorithms import flattenAlgorithmWithConditions, recursivelyResolveReference
+from algorithms import flattenAlgorithmWithConditions, recursivelyResolveReference, mergeFlattedList, \
+    removeDuplicatesFromFlattedList
 from datastructs import Lookup, RefNode, TargetNode, LiteralNode, CustomCommandNode, Node
 from pydriller import RepositoryMining
 import itertools
@@ -88,13 +89,15 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
     for library, conditions in targetNode.linkLibrariesConditions.items():
         flattenedFiles += flattenAlgorithmWithConditions(library, conditions)
 
-    # Now we should expand the cached results (DEPRECATED)
-    finalFlattenList = []
-    for item in flattenedFiles:
-        if isinstance(item[0], Node):
-            finalFlattenList += recursivelyResolveReference(item[0], item[1])
-        else:
-            finalFlattenList.append(item)
+    finalFlattenList = mergeFlattedList(flattenedFiles)
+    finalFlattenList = removeDuplicatesFromFlattedList(finalFlattenList)
+    # # Now we should expand the cached results (DEPRECATED)
+    # finalFlattenList = []
+    # for item in flattenedFiles:
+    #     if isinstance(item[0], Node):
+    #         finalFlattenList += recursivelyResolveReference(item[0], item[1])
+    #     else:
+    #         finalFlattenList.append(item)
 
     result = defaultdict(set)
     for item in finalFlattenList:
@@ -102,9 +105,9 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
         for cond in item[1]:
             test_cond.add("{}:{}".format(cond, str(item[1].get(cond))))
         if test_cond:
-            result[" && ".join(sorted(test_cond))].add(item[0])
+            result[" && ".join(sorted(test_cond))].update(item[0])
         elif item[0]:
-            result[""].add(item[0])
+            result[""].update(item[0])
 
     # Post-processing
     # 1. Resolve wildcard path

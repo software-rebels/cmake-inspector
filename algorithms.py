@@ -3,7 +3,7 @@ import logging
 import os
 import re
 from collections import Set
-from typing import Dict
+from typing import Dict, List
 
 from datastructs import Node, LiteralNode, RefNode, CustomCommandNode, SelectNode, ConcatNode, TargetNode
 from vmodel import VModel
@@ -215,3 +215,32 @@ def recursivelyResolveReference(item, conditionToAppend):
 
     return result
 
+
+def mergeFlattedList(flatted: List) -> List:
+    result = []
+    for item in flatted:
+        found = False
+        for result_item in result:
+            if result_item[1] == item[1]:
+                result_item[0].add(item[0])
+                found = True
+        if found is False:
+            result.append((set([item[0]]), item[1]))
+    return result
+
+
+def removeDuplicatesFromFlattedList(flatted: List) -> List:
+    result = []
+    for flatted_item in flatted:
+        found = False
+        for result_index in range(len(result)):
+            result_item = result[result_index]
+            if result_item[0] == flatted_item[0] and all(item in result_item[1].items() for item in flatted_item[1].items()):
+                found = True
+                result.pop(result_index)
+                result.insert(result_index, flatted_item)
+            elif result_item[0] == flatted_item[0] and all(item in flatted_item[1].items() for item in result_item[1].items()):
+                found = True
+        if found is False:
+            result.append(flatted_item)
+    return result
