@@ -1039,7 +1039,7 @@ class CMakeExtractorListener(CMakeListener):
                     targetNode = lookupTable.getKey("t:{}".format(targetNode))
                 # Now we should have a TargetNode
                 assert isinstance(targetNode, TargetNode)
-                assert isinstance(target[1], set)
+                assert isinstance(target[1], dict)
                 targetNode.linkLibrariesConditions[finalNode] = target[1]
 
             vmodel.nodes.append(
