@@ -10,7 +10,7 @@ from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
 from datastructs import Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, \
     CustomCommandNode, TargetNode, TestNode, OptionNode, Node
-from algorithms import flattenAlgorithm, flattenAlgorithmWithConditions, getFlattedArguments
+from algorithms import flattenAlgorithm, flattenAlgorithmWithConditions, getFlattedArguments, flattenCustomCommandNode
 from vmodel import VModel
 
 
@@ -156,9 +156,9 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         self.assertEqual(self.lookup.getVariableHistory("${var}")[1],
-                         self.lookup.getKey("${var}").getPointTo().trueNode)
+                         self.lookup.getKey("${var}").getPointTo().falseNode)
         self.assertEqual('bar',
-                         self.lookup.getKey("${var}").getPointTo().falseNode.listOfNodes[1].getValue())
+                         self.lookup.getKey("${var}").getPointTo().trueNode.listOfNodes[1].getValue())
 
     def test_list_assignment_in_elseif_and_else_statement(self):
         text = """
@@ -173,9 +173,9 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         self.assertEqual(self.lookup.getVariableHistory("${var}")[2],
-                         self.lookup.getKey("${var}").getPointTo().trueNode)
+                         self.lookup.getKey("${var}").getPointTo().falseNode)
         self.assertEqual('bar',
-                         self.lookup.getKey("${var}").getPointTo().falseNode.listOfNodes[1].getValue())
+                         self.lookup.getKey("${var}").getPointTo().trueNode.listOfNodes[1].getValue())
 
     def test_variable_assignment_in_else_statement(self):
         text = """
@@ -330,11 +330,11 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
 
-        self.assertIsNone(self.lookup.getKey("${out_var}").pointTo.trueNode)
-        self.assertIsInstance(self.lookup.getKey("${out_var}").pointTo.falseNode, CustomCommandNode)
+        self.assertIsNone(self.lookup.getKey("${out_var}").pointTo.falseNode)
+        self.assertIsInstance(self.lookup.getKey("${out_var}").pointTo.trueNode, CustomCommandNode)
 
         self.assertEqual(self.lookup.getVariableHistory("${var}")[3],
-                         self.lookup.getKey("${out_var}").pointTo.falseNode.depends[0])
+                         self.lookup.getKey("${out_var}").pointTo.trueNode.depends[0])
 
         self.assertEqual(self.lookup.getVariableHistory("${var}")[1],
                          self.lookup.getVariableHistory("${var}")[3].pointTo.falseNode)
@@ -357,11 +357,11 @@ class TestVariableDefinitions(unittest.TestCase):
 
         """
         self.runTool(text)
-        self.assertIsNone(self.lookup.getKey("${out_var}").pointTo.trueNode)
-        self.assertIsInstance(self.lookup.getKey("${out_var}").pointTo.falseNode, CustomCommandNode)
+        self.assertIsNone(self.lookup.getKey("${out_var}").pointTo.falseNode)
+        self.assertIsInstance(self.lookup.getKey("${out_var}").pointTo.trueNode, CustomCommandNode)
 
         self.assertEqual(self.lookup.getVariableHistory("${var}")[4],
-                         self.lookup.getKey("${out_var}").pointTo.falseNode.depends[0])
+                         self.lookup.getKey("${out_var}").pointTo.trueNode.depends[0])
 
         self.assertEqual(self.lookup.getVariableHistory("${var}")[1],
                          self.lookup.getVariableHistory("${var}")[3].pointTo.falseNode)
@@ -522,7 +522,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual(self.vmodel.findNode('FILE'), fileCommand)
         self.assertEqual("GLOB files_for_test/*.cxx", " ".join(getFlattedArguments(fileCommand.commands[0])))
         self.assertEqual(['files_for_test/b.cxx', 'files_for_test/c.cxx', 'files_for_test/a.cxx'],
-                         [item[0] for item in fileCommand.evaluate(set(), recStack=[])])
+                         [item[0] for item in flattenCustomCommandNode(fileCommand, {}, [])])
 
     def test_simple_file_remove(self):
         text = """
@@ -1723,8 +1723,8 @@ class TestVariableDefinitions(unittest.TestCase):
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
         self.assertSetEqual({"files_for_test/b.cxx", "files_for_test/a.cxx"}, a[""])
         self.assertSetEqual({"another_folder_for_test/b2.cxx","another_folder_for_test/a.cxx"},
-                            a["(( NOT foo ) AND NOT john ) OR foo:False"])
-        self.assertSetEqual({"another_folder_for_test/a.cxx"}, a["(( NOT foo ) AND NOT john ):True"])
+                            a['foo:False && john:True'])
+        self.assertSetEqual({"another_folder_for_test/a.cxx"}, a['foo:False && john:False'])
         self.assertSetEqual({"files_for_test/c.cxx"}, a["foo:True"])
 
     def test_flatten_target_with_nested_if_statements(self):
@@ -1904,7 +1904,6 @@ class TestVariableDefinitions(unittest.TestCase):
         add_executable(exec ${var_a})
         """
         self.runTool(text)
-        self.vmodel.export()
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
         # print(a)
 
