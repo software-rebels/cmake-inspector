@@ -32,7 +32,7 @@ lookupTable = Lookup.getInstance()
 
 
 class CMakeExtractorListener(CMakeListener):
-    rule: Rule = None
+    rule: Optional[Rule] = None
     logicalExpressionStack: List[LogicalExpression] = []
 
     def __init__(self):
@@ -40,6 +40,8 @@ class CMakeExtractorListener(CMakeListener):
         global lookupTable
         vmodel = VModel.getInstance()
         lookupTable = Lookup.getInstance()
+        self.rule = None
+        self.logicalExpressionStack = []
 
     def exitLogicalExpressionAnd(self, ctx:CMakeParser.LogicalExpressionAndContext):
         # Popping order matters

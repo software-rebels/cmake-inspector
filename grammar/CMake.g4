@@ -60,7 +60,7 @@ elseStatement
 	;
 
 endIfStatement
-	: ENDIF LPAREN (logical_expr)* RPAREN
+	: ENDIF LPAREN .*? RPAREN
 	;
 
 logical_expr
