@@ -214,6 +214,14 @@ class CustomCommandNode(Node):
         raise Exception('Deprecated')
 
 
+class WhileCommandNode(CustomCommandNode):
+    rule: Rule
+
+    def __init__(self, name: str, rule: Rule):
+        super(WhileCommandNode, self).__init__(name)
+        self.rule = rule
+
+
 class ConcatNode(Node):
     def __init__(self, name: str):
         super().__init__(name)
@@ -287,6 +295,9 @@ class SelectNode(Node):
             result.append(self.args)
         return result
 
+    def getCondition(self):
+        return self.rule.getCondition()
+
 
 class Lookup:
     _instance = None
@@ -325,7 +336,7 @@ class Lookup:
         if parentScope:
             del (self.items[-2][key])
         else:
-            if key in self.items[-1]: #
+            if key in self.items[-1]:  #
                 del (self.items[-1][key])
             else:
                 print(f"[WARNING] Called deleteKey without finding the key in lookup table for {key}")

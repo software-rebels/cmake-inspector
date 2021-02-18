@@ -159,6 +159,12 @@ class CMakeExtractorListener(CMakeListener):
         optionNode.default = optionInitialValue
         util_create_and_add_refNode_for_variable(optionName, optionNode)
 
+    def enterWhileCommand(self, ctx:CMakeParser.WhileCommandContext):
+        assert len(self.logicalExpressionStack) == 0
+        self.rule = Rule()
+
+
+
     def enterCommand_invocation(self, ctx: CMakeParser.Command_invocationContext):
         global project_dir
         commandId = ctx.Identifier().getText().lower()
