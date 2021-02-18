@@ -40,7 +40,7 @@ whileStatement
 	;
 
 endWhileStatement
-	: ENDWHILE LPAREN (logical_expr)* RPAREN
+	: ENDWHILE LPAREN .*? RPAREN
 	;
 
 ifCommand
