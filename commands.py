@@ -1,4 +1,5 @@
 from algorithms import flattenAlgorithmWithConditions
+from condition_data_structure import Rule
 from datastructs import Lookup, CustomCommandNode, TargetNode, ConcatNode
 from utils import *
 
@@ -95,9 +96,9 @@ def listCommand(arguments):
         util_create_and_add_refNode_for_variable(rawListName, concatNode)
 
 
-def whileCommand(arguments):
+def whileCommand(arguments, rule: Rule):
     vmodel = VModel.getInstance()
-
+    # customCommand = CustomCommandNode("WHILE({})".format(util_getStringFromList(arguments)))
     customCommand = CustomCommandNode("WHILE({})".format(util_getStringFromList(arguments)))
     vmodel.pushSystemState('while', customCommand)
     vmodel.pushCurrentLookupTable()
