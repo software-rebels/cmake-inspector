@@ -39,7 +39,7 @@ def serializedATN():
         buf.write("\23\3\23\3\23\3\23\7\23\u0100\n\23\f\23\16\23\u0103\13")
         buf.write("\23\3\23\3\23\3\24\3\24\3\25\3\25\3\26\3\26\3\26\7\26")
         buf.write("\u010e\n\26\f\26\16\26\u0111\13\26\3\26\3\26\3\27\3\27")
-        buf.write("\3\27\3\u00b6\3\36\30\2\4\6\b\n\f\16\20\22\24\26\30\32")
+        buf.write("\3\27\4r\u00b6\3\36\30\2\4\6\b\n\f\16\20\22\24\26\30\32")
         buf.write("\34\36 \"$&(*,\2\6\3\2\6\7\4\2\'\'))\13\2\5\5\r\r\23\23")
         buf.write("\30\30\32\32  $$(*,-\3\2\35#\2\u012b\2\61\3\2\2\2\4;\3")
         buf.write("\2\2\2\6=\3\2\2\2\bF\3\2\2\2\nK\3\2\2\2\fU\3\2\2\2\16")
@@ -62,8 +62,8 @@ def serializedATN():
         buf.write("\2\2\2_c\5\20\t\2`b\5\4\3\2a`\3\2\2\2be\3\2\2\2ca\3\2")
         buf.write("\2\2cd\3\2\2\2df\3\2\2\2ec\3\2\2\2fg\5\22\n\2g\17\3\2")
         buf.write("\2\2hi\7\21\2\2ij\7%\2\2jk\5\36\20\2kl\7&\2\2l\21\3\2")
-        buf.write("\2\2mn\7\22\2\2nr\7%\2\2oq\5\36\20\2po\3\2\2\2qt\3\2\2")
-        buf.write("\2rp\3\2\2\2rs\3\2\2\2su\3\2\2\2tr\3\2\2\2uv\7&\2\2v\23")
+        buf.write("\2\2mn\7\22\2\2nr\7%\2\2oq\13\2\2\2po\3\2\2\2qt\3\2\2")
+        buf.write("\2rs\3\2\2\2rp\3\2\2\2su\3\2\2\2tr\3\2\2\2uv\7&\2\2v\23")
         buf.write("\3\2\2\2w{\5\26\f\2xz\5\4\3\2yx\3\2\2\2z}\3\2\2\2{y\3")
         buf.write("\2\2\2{|\3\2\2\2|\u0087\3\2\2\2}{\3\2\2\2~\u0082\5\30")
         buf.write("\r\2\177\u0081\5\4\3\2\u0080\177\3\2\2\2\u0081\u0084\3")
@@ -811,13 +811,6 @@ class CMakeParser ( Parser ):
         def RPAREN(self):
             return self.getToken(CMakeParser.RPAREN, 0)
 
-        def logical_expr(self, i:int=None):
-            if i is None:
-                return self.getTypedRuleContexts(CMakeParser.Logical_exprContext)
-            else:
-                return self.getTypedRuleContext(CMakeParser.Logical_exprContext,i)
-
-
         def getRuleIndex(self):
             return CMakeParser.RULE_endWhileStatement
 
@@ -836,7 +829,6 @@ class CMakeParser ( Parser ):
 
         localctx = CMakeParser.EndWhileStatementContext(self, self._ctx, self.state)
         self.enterRule(localctx, 16, self.RULE_endWhileStatement)
-        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 107
@@ -845,13 +837,14 @@ class CMakeParser ( Parser ):
             self.match(CMakeParser.LPAREN)
             self.state = 112
             self._errHandler.sync(self)
-            _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << CMakeParser.NOT) | (1 << CMakeParser.AND) | (1 << CMakeParser.COMMAND) | (1 << CMakeParser.OR) | (1 << CMakeParser.EXISTS) | (1 << CMakeParser.DEFINED) | (1 << CMakeParser.TARGET) | (1 << CMakeParser.IS_ABSOLUTE) | (1 << CMakeParser.IS_DIRECTORY) | (1 << CMakeParser.EQ) | (1 << CMakeParser.POLICY) | (1 << CMakeParser.LPAREN) | (1 << CMakeParser.CONSTANTS) | (1 << CMakeParser.Identifier) | (1 << CMakeParser.DECIMAL) | (1 << CMakeParser.Unquoted_argument) | (1 << CMakeParser.Quoted_argument) | (1 << CMakeParser.Bracket_argument))) != 0):
-                self.state = 109
-                self.logical_expr(0)
+            _alt = self._interp.adaptivePredict(self._input,7,self._ctx)
+            while _alt!=1 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1+1:
+                    self.state = 109
+                    self.matchWildcard() 
                 self.state = 114
                 self._errHandler.sync(self)
-                _la = self._input.LA(1)
+                _alt = self._interp.adaptivePredict(self._input,7,self._ctx)
 
             self.state = 115
             self.match(CMakeParser.RPAREN)

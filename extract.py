@@ -1123,7 +1123,7 @@ def main(argv):
     global project_dir
     project_dir = argv[1]
     parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
-    vmodel.export();
+    # vmodel.export()
     # vmodel.checkIntegrity()
     # vmodel.findAndSetTargets()
     # doGitAnalysis(project_dir)
@@ -1132,7 +1132,7 @@ def main(argv):
     # printSourceFiles(vmodel, lookupTable)
     # testNode = vmodel.findNode('${CLIENT_LIBRARIES}_662')
     # flattenAlgorithmWithConditions(testNode)
-    # a = printFilesForATarget(vmodel, lookupTable, 'etl', True)
+    a = printFilesForATarget(vmodel, lookupTable, 'etl', True)
     # print(a)
 
 if __name__ == "__main__":
