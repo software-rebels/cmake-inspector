@@ -217,8 +217,8 @@ class CustomCommandNode(Node):
 class WhileCommandNode(CustomCommandNode):
     rule: Rule
 
-    def __init__(self, name: str, rule: Rule):
-        super(WhileCommandNode, self).__init__(name)
+    def __init__(self, rule: Rule):
+        super(WhileCommandNode, self).__init__(rule.getCondition().getText(True))
         self.rule = rule
 
 

@@ -1,6 +1,6 @@
 from algorithms import flattenAlgorithmWithConditions
 from condition_data_structure import Rule
-from datastructs import Lookup, CustomCommandNode, TargetNode, ConcatNode
+from datastructs import Lookup, CustomCommandNode, TargetNode, ConcatNode, WhileCommandNode
 from utils import *
 
 
@@ -96,11 +96,10 @@ def listCommand(arguments):
         util_create_and_add_refNode_for_variable(rawListName, concatNode)
 
 
-def whileCommand(arguments, rule: Rule):
+def whileCommand(rule: Rule):
     vmodel = VModel.getInstance()
     # customCommand = CustomCommandNode("WHILE({})".format(util_getStringFromList(arguments)))
-    customCommand = CustomCommandNode("WHILE({})".format(util_getStringFromList(arguments)))
-    vmodel.pushSystemState('while', customCommand)
+    vmodel.pushSystemState(rule)
     vmodel.pushCurrentLookupTable()
     # We want to show the dependency between while command and newly created nodes. We compare nodes before and after
     # while loop and connect while command node to them.
@@ -115,7 +114,8 @@ def endwhileCommand():
     lookupTable = Lookup.getInstance()
 
     lastPushedLookup = vmodel.getLastPushedLookupTable()
-    state, command, level = vmodel.popSystemState()
+    rule = vmodel.popSystemState()
+    command = WhileCommandNode(rule)
     prevNodeStack = vmodel.nodeStack.pop()
     for item in vmodel.nodes:
         if item not in prevNodeStack:

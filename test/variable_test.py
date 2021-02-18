@@ -378,7 +378,6 @@ class TestVariableDefinitions(unittest.TestCase):
         endwhile()
         """
         self.runTool(text)
-        self.vmodel.export()
         self.assertIsInstance(self.lookup.getKey('${a}').pointTo, CustomCommandNode)
         self.assertIsInstance(self.lookup.getKey('${b}').pointTo, CustomCommandNode)
         customCommand = self.lookup.getKey('${b}').pointTo
@@ -1780,7 +1779,7 @@ class TestVariableDefinitions(unittest.TestCase):
         add_executable(exec ${libraries})
         """
         self.runTool(text)
-        a = printFilesForATarget(self.vmodel, self.lookup, 'exec', True)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
         self.assertSetEqual({"files_for_test/a.cxx"}, a["foo:False"])
         self.assertSetEqual({"files_for_test/b.cxx"}, a["foo:True"])
 
@@ -1797,7 +1796,7 @@ class TestVariableDefinitions(unittest.TestCase):
         add_executable(exec ${SERVER_SRC})
         """
         self.runTool(text)
-        a = printFilesForATarget(self.vmodel, self.lookup, 'exec', True)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
         self.assertSetEqual({"files_for_test/b.cxx"}, a["BUILD_SERVER:True && FEATURE_IRC_SERVER:True"])
         self.assertSetEqual({"files_for_test/a.cxx"}, a["NO_MATTER_WHAT"])
 

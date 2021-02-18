@@ -162,8 +162,15 @@ class CMakeExtractorListener(CMakeListener):
     def enterWhileCommand(self, ctx:CMakeParser.WhileCommandContext):
         assert len(self.logicalExpressionStack) == 0
         self.rule = Rule()
+        self.rule.setType('while')
 
+    def exitWhileStatement(self, ctx:CMakeParser.WhileStatementContext):
+        self.rule.setCondition(self.logicalExpressionStack.pop())
+        assert len(self.logicalExpressionStack) == 0
+        whileCommand(self.rule)
 
+    def exitWhileCommand(self, ctx:CMakeParser.WhileCommandContext):
+        endwhileCommand()
 
     def enterCommand_invocation(self, ctx: CMakeParser.Command_invocationContext):
         global project_dir
