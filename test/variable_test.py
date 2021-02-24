@@ -1829,7 +1829,9 @@ class TestVariableDefinitions(unittest.TestCase):
         list(REMOVE_ITEM foo b)
         """
         self.runTool(text)
-        # self.vmodel.export()
+        listVar = self.lookup.getKey('${foo}')
+        a = flattenAlgorithmWithConditions(listVar)
+        self.assertListEqual([('a', {}), ('c', {})], a)
 
     def test_variable_growth(self):
         text = """
@@ -1860,13 +1862,80 @@ class TestVariableDefinitions(unittest.TestCase):
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
         # print(a)
 
-    def test_sample_1(self):
+    def test_concat_node_with_multiple_condition(self):
         text = """
-        set(mehran meidani farsad kazemi)
-        set(var foo bar john doe ${mehran}/hi)
-        list(FIND var foo out_var)
+        option(opt1 "des" YES)
+        option(opt2 "des" YES)
+        
+        set(foo john)
+        set(bar doe)
+        if(opt1)
+            set(foo opt1_john)
+        endif()
+        if(opt2)
+            set(bar opt2_doe)
+        endif()
+        
+        set(baz ${foo} ${bar})
         """
         self.runTool(text)
+        bazVar = self.lookup.getKey('${baz}')
+        a = flattenAlgorithmWithConditions(bazVar)
+        self.assertIn(('john', {'opt1': False, 'opt2': True}), a)
+        self.assertIn(('john', {'opt1': False, 'opt2': False}), a)
+
+        self.assertIn(('opt2_doe', {'opt1': False, 'opt2': True}), a)
+        self.assertIn(('opt2_doe', {'opt1': True, 'opt2': True}), a)
+
+    def test_string_concat_node_with_multiple_condition(self):
+        text = """
+        option(opt1 "des" YES)
+        option(opt2 "des" YES)
+
+        set(foo john)
+        set(bar doe)
+        if(opt1)
+            set(foo opt1_john)
+        endif()
+        if(opt2)
+            set(bar opt2_doe)
+        endif()
+
+        set(baz ${foo}/${bar})
+        """
+        self.runTool(text)
+        bazVar = self.lookup.getKey('${baz}')
+        a = flattenAlgorithmWithConditions(bazVar)
+        self.assertEqual(4, len(a))
+        self.assertIn(('john/doe', {'opt1': False, 'opt2': False}), a)
+        self.assertIn(('john/opt2_doe', {'opt1': False, 'opt2': True}), a)
+        self.assertIn(('opt1_john/doe', {'opt1': True, 'opt2': False}), a)
+        self.assertIn(('opt1_john/opt2_doe', {'opt1': True, 'opt2': True}), a)
+
+    def test_string_concat_node_with_multiple_condition_not_first_condition(self):
+        text = """
+        option(opt1 "des" YES)
+        option(opt2 "des" YES)
+
+        set(foo john)
+        set(bar doe)
+        if(opt1)
+            set(foo opt1_john)
+        endif()
+        if(opt2 AND NOT opt1)
+            set(bar opt2_doe)
+        endif()
+
+        set(baz ${foo}/${bar})
+        """
+        self.runTool(text)
+        bazVar = self.lookup.getKey('${baz}')
+        a = flattenAlgorithmWithConditions(bazVar)
+        self.assertEqual(4, len(a))
+        self.assertIn(('john/doe', {'opt1': False, 'opt2': False}), a)
+        self.assertIn(('john/opt2_doe', {'opt1': False, 'opt2': True}), a)
+        self.assertIn(('opt1_john/doe', {'opt1': True}), a)
+        self.assertIn(('opt1_john/doe', {'opt1': True, 'opt2': False}), a)
 
 if __name__ == '__main__':
     unittest.main()

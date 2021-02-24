@@ -56,7 +56,7 @@ elseIfStatement
 	;
 
 elseStatement
-	: ELSE LPAREN (logical_expr)* RPAREN
+	: ELSE LPAREN .*? RPAREN
 	;
 
 endIfStatement
@@ -74,13 +74,7 @@ logical_expr
  | COMMAND logical_expr                                     # LogicalExpressionIsDirectory
  | logical_expr AND logical_expr                            # LogicalExpressionAnd
  | logical_expr OR logical_expr                             # LogicalExpressionOr
- | logical_expr MATCHES logical_expr                        # LogicalExpressionMatches
- | logical_expr VERSION_LESS logical_expr                   # LogicalExpressionVersionLess
- | logical_expr VERSION_EQUALL logical_expr                 # LogicalExpressionVersionEqual
- | logical_expr VERSION_GREATER logical_expr                # LogicalExpressionVersionGreater
- | logical_expr STRGREATER logical_expr                     # LogicalExpressionStrGreater
- | logical_expr STRLESS logical_expr                        # LogicalExpressionStrLess
- | single_argument comp_operator single_argument            # ComparisonExpression
+ | left=single_argument operator=comp_operator right=single_argument            # ComparisonExpression
  | LPAREN logical_expr RPAREN                               # LogicalExpressionInParen
  | constant_value                                           # ConstantValue
  | single_argument                                          # LogicalEntity
@@ -112,7 +106,8 @@ compound_argument
 	: LPAREN (single_argument|compound_argument)* RPAREN
 	;
 
-comp_operator : GT | GTEQ | LT | EQ | EQR | VGEQ | STQE;
+comp_operator : GT | GTEQ | LT | EQ | EQR | VGEQ |
+                STQE | STRLESS | STRGREATER | VERSION_GREATER | VERSION_EQUALL | VERSION_LESS | MATCHES;
 
 NOT : N O T;
 AND : A N D;

@@ -177,6 +177,31 @@ class ConstantExpression(LogicalExpression):
         return [(self.evaluate(), {})]
 
 
+class ComparisonExpression(LogicalExpression):
+    leftExpression: LogicalExpression = None
+    rightExpression: LogicalExpression = None
+
+    def __init__(self, left: LogicalExpression, right: LogicalExpression, operator):
+        super(ComparisonExpression, self).__init__(operator)
+        self.leftExpression = left
+        self.rightExpression = right
+
+    def getLeft(self):
+        return self.leftExpression
+
+    def getRight(self):
+        return self.rightExpression
+
+    def getText(self, pretty=False):
+        result = '{} {} {}'.format(self.getLeft().getText(pretty),
+                                   self.logicType,
+                                   self.getRight().getText(pretty))
+        return result if pretty is False else "({})".format(result)
+
+    def satisfiable(self, condition: Dict) -> List:
+        return [(False, {})]
+
+
 class Rule:
     type: str = None
     level: int = None

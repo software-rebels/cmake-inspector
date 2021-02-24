@@ -106,46 +106,27 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Dict = None, debug=Tr
 
             # There are two types of concat node. One which concat the literal string
             # and other one which make a list of values
-            if node.concatString:
-                for str1 in result:
-                    # Now we should expand the cached results
-                    finalFlattenList = []
-                    for subItem in childSet:
-                        if isinstance(subItem[0], Node):
-                            finalFlattenList += recursivelyResolveReference(subItem[0], subItem[1])
-                        else:
-                            finalFlattenList.append(subItem)
-                    for str2 in finalFlattenList:
-                        if str1 == '':
-
-                            tempSet.append(str2)
-                        else:
-                            # There shouldn't be any contradiction in the returned conditions. If there is, we raise
-                            # an exception
-                            contradiction = False
-                            for common_key in set(str1[1]).intersection(set(str2[1])):
-                                if str1[1].get(common_key) != str2[1].get(common_key):
-                                    contradiction = True
-                            if contradiction:
-                                raise Exception('Contradiction in the concat node')
-                            tempSet.append(["{}{}".format(str1[0], str2[0]), {**str1[1], **str2[1]}])
-                result = tempSet
-            else:
-                if result[0] == '':
-                    result = childSet
-                else:
-                    result += childSet
+            for str1 in result:
+                for str2 in childSet:
+                    if str1 == '':
+                        tempSet.append(str2)
+                    else:
+                        # There shouldn't be any contradiction in the returned conditions. If there is, we won't
+                        # append the value to the one with contradiction
+                        contradiction = False
+                        for common_key in set(str1[1]).intersection(set(str2[1])):
+                            if str1[1].get(common_key) != str2[1].get(common_key):
+                                contradiction = True
+                        if contradiction:
+                            continue
+                        if node.concatString:
+                            tempSet.append(("{}{}".format(str1[0], str2[0]), {**str1[1], **str2[1]}))
+                        elif (str2[0], {**str1[1], **str2[1]}) not in tempSet:
+                            tempSet.append((str1[0], {**str1[1], **str2[1]}))
+                            tempSet.append((str2[0], {**str1[1], **str2[1]}))
+            result = tempSet
         flattedResult = result
-
     recStack.remove(node)
-
-    # Try to remove items with condition both false and true
-    if flattedResult:
-        for row in list(flattedResult):
-            for condition in row[1]:
-                if (condition[0], not condition[1]) in row[1]:
-                    flattedResult.remove(row)
-                    break
     return flattedResult
 
 
@@ -153,7 +134,7 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions, recStack, look
     print("##### Start evaluating custom command " + node.rawName)
     if conditions is None:
         conditions = set()
-
+    result = None
     if 'file' in node.getName().lower():
         arguments = node.commands[0].getChildren()
         fileCommandType = arguments[0].getValue()
@@ -190,7 +171,21 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions, recStack, look
                     for library, conditions in node.linkLibrariesConditions.items():
                         result += flattenAlgorithmWithConditions(library, conditions.union(item[1]),
                                                                  recStack=recStack)
-        return result
+    elif 'remove_item' in node.getName().lower():
+        arguments = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
+        result = flattenAlgorithmWithConditions(node.depends[0], conditions, recStack=recStack)
+        for argument in arguments:
+            for item in result:
+                if item[0] == argument[0]:
+                    result = [i for i in result if i != item]
+
+    elif 'remove_at' in node.getName().lower():
+        arguments = node.commands[0].getChildren()
+        result = flattenAlgorithmWithConditions(node.depends[0], conditions, recStack=recStack)
+        for argument in arguments:
+            del result[argument.getValue()]
+
+    return result
 
 
 # Given a Node (often a ConcatNode) this algorithm will return flatted arguments
