@@ -1,0 +1,17 @@
+{
+    "foo:False && source_file:False": [
+        "another_folder_for_test/b2.cxx",
+        "another_folder_for_test/a.cxx"
+    ],
+    "foo:False && source_file:True": [
+        "another_folder_for_test/a.cxx"
+    ],
+    "foo:True && source_file:False": [
+        "files_for_test/a.cxx",
+        "files_for_test/b.cxx",
+        "files_for_test/c.cxx"
+    ],
+    "foo:True && source_file:True": [
+        "files_for_test/a.cxx"
+    ]
+}
