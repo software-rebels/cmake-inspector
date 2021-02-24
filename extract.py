@@ -10,7 +10,7 @@ from neomodel import config
 # Grammar generates by Antlr
 from algorithms import flattenAlgorithmWithConditions
 from condition_data_structure import Rule, LogicalExpression, AndExpression, LocalVariable, NotExpression, OrExpression, \
-    ConstantExpression
+    ConstantExpression, ComparisonExpression
 from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
 from grammar.CMakeListener import CMakeListener
@@ -72,6 +72,21 @@ class CMakeExtractorListener(CMakeListener):
     def exitIfStatement(self, ctx:CMakeParser.IfStatementContext):
         self.rule.setCondition(self.logicalExpressionStack.pop())
         assert len(self.logicalExpressionStack) == 0
+
+    def exitComparisonExpression(self, ctx:CMakeParser.ComparisonExpressionContext):
+        if lookupTable.getKey(f'${{{ctx.left.getText()}}}'):
+            leftExpression = LocalVariable(ctx.left.getText())
+        else:
+            leftExpression = ConstantExpression(ctx.left.getText())
+
+        if lookupTable.getKey(f'${{{ctx.right.getText()}}}'):
+            rightExpression = LocalVariable(ctx.right.getText())
+        else:
+            rightExpression = ConstantExpression(ctx.right.getText())
+
+        self.logicalExpressionStack.append(
+            ComparisonExpression(leftExpression, rightExpression, ctx.operator.getText().upper())
+        )
 
     def exitElseIfStatement(self, ctx:CMakeParser.ElseIfStatementContext):
         # Logical expression for the elseif itself
