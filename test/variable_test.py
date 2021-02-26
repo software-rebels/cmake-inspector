@@ -10,7 +10,8 @@ from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
 from datastructs import Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, \
     CustomCommandNode, TargetNode, TestNode, OptionNode, Node
-from algorithms import flattenAlgorithm, flattenAlgorithmWithConditions, getFlattedArguments, flattenCustomCommandNode
+from algorithms import flattenAlgorithm, flattenAlgorithmWithConditions, getFlattedArguments, flattenCustomCommandNode, \
+    CycleDetectedException
 from vmodel import VModel
 
 
@@ -1651,7 +1652,7 @@ class TestVariableDefinitions(unittest.TestCase):
         target_link_libraries(bar PUBLIC foo)
         """
         self.runTool(text)
-        self.assertRaises(Exception, printFilesForATarget, self.vmodel, self.lookup, 'foo')
+        self.assertRaises(CycleDetectedException, printFilesForATarget, self.vmodel, self.lookup, 'foo')
 
     def test_flatten_file_for_a_target_from_a_list(self):
         text = """

@@ -46,6 +46,10 @@ def flattenAlgorithm(node: Node):
         return list(result)
 
 
+class CycleDetectedException(Exception):
+    pass
+
+
 def flattenAlgorithmWithConditions(node: Node, conditions: Dict = None, debug=True, recStack=None, useCache=True):
     if conditions is None:
         conditions = dict()
@@ -55,7 +59,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Dict = None, debug=Tr
     # We keep nodes in current recursion stack in a set. If current node has been already added
     # to this list, it means we are expanding a node from upper levels which is a cycle.
     if node in recStack:
-        raise Exception('We have a cycle here!!')
+        raise CycleDetectedException('We have a cycle here!!')
 
     recStack.append(node)
     logging.debug("++++++ Flatten node with name: " + node.getName())
@@ -169,7 +173,7 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions, recStack, look
                 if isinstance(node, TargetNode):
                     result += flattenAlgorithmWithConditions(node.sources, item[1], recStack=recStack)
                     for library, conditions in node.linkLibrariesConditions.items():
-                        result += flattenAlgorithmWithConditions(library, conditions.union(item[1]),
+                        result += flattenAlgorithmWithConditions(library, {**conditions, **item[1]},
                                                                  recStack=recStack)
     elif 'remove_item' in node.getName().lower():
         arguments = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
