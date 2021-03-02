@@ -7,3 +7,9 @@ graph.gv.pdf
 *.log
 .venv
 .idea
+.env/
+.vscode/
+KDE
+result.json
+result.pkl
+venv/
