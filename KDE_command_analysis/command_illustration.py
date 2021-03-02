@@ -5,7 +5,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import LinearSegmentedColormap
+import inspect
+import subprocess
+import time
 
+script_folder = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 commands_freq = dict()
 commands_support = []
 show_number = 50
@@ -16,20 +20,20 @@ def main(argv):
     number_of_commands = int(argv[1]) if argv[1] else 100;
     color_heat = (argv[2].lower() != "false") if argv[2] else False;
 
-    if os.path.exists("commandsfreq.csv"):
-        with open('commandsfreq.csv', 'r') as csvfile:
+    if os.path.exists(script_folder+"/commandsfreq.csv"):
+        with open(script_folder+'/commandsfreq.csv', 'r') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
                 commands_freq[row['command']] = int(row['freq'])
-    if os.path.exists("supportedCommands.csv"):
-        with open('supportedCommands.csv', 'r') as csvfile:
+    if os.path.exists(script_folder+"/supportedCommands.csv"):
+        with open(script_folder+'/supportedCommands.csv', 'r') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
                 commands_support.append(row['command'].lower())
 
     df = []
     for cmd in commands_freq:
-        print(cmd.lower(),' in commands_support',cmd.lower() in commands_support)
+        # print(cmd.lower(),' in commands_support',cmd.lower() in commands_support)
         if cmd.lower() not in list(map(lambda x: x['command'], df)):
             df.append({
                 'command': cmd.lower(),
@@ -66,12 +70,31 @@ def main(argv):
     ax.tick_params(axis='x', rotation=90)
     ax.set_yscale('log')
     print("\n---------------------------\n")
+    rank=0
+    startCommand = "cmake_policy"
+    createIssue = False
     for i in range(len(bar_list)):
+        rank += 1
         # print(df.iloc[[i]]['support'].values[0])
         if df.iloc[[i]]['support'].values[0]:
             bar_list[i].set_hatch('//')
         else:
-            print(df.iloc[[i]]['command'].values[0].lower())
+            if createIssue:
+                bashCommand = f"{os.getcwd()}/automatic_issue_report.sh \"Command {df.iloc[[i]]['command'].values[0]} is not supported.\" \"- Command: {df.iloc[[i]]['command'].values[0]}\\n- Number of instances: {df.iloc[[i]]['frequency'].values[0]} times \\n- Rank:{rank}.\" \"[\\\"kde\\\",\\\"automatic\\\"]\""
+                os.system(bashCommand)
+                print(df.iloc[[i]]['command'].values[0])
+                time.sleep(20)
+            if df.iloc[[i]]['command'].values[0] == startCommand:
+                createIssue = True
+            # k+=1
+            #rank + number of uses +KDE tag
+
+            # # sleep(1)
+            # print(bashCommand)
+            # bashCommand = "ls"
+            # process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+            # output, error = process.communicate()
+            # print(output)
     plt.show()
 
 

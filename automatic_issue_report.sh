@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 rawurlencode() {
   local string="${1}"
   local strlen=${#string}
@@ -16,8 +17,8 @@ rawurlencode() {
   REPLY="${encoded}"   #+or echo the result (EASIER)... or both... :p
 }
 token="210aadaa71d6004ccdf76fd77014483098a377d2"
-owner="inspiring71"
-repo="apply_BE"
-
-echo "curl  -H \"Authorization: token $token\" -X POST -i -d \"{'title':'${1}','body':'$2'}\" https://api.github.com/repos/$owner/$repo/issues"
-$(curl  -H "Authorization: token $token" -X POST -i -d "{'title':'${1}','body':'$2'}" https://api.github.com/repos/$owner/$repo/issues)
+owner="software-rebels"
+repo="cmake-inspector"
+curl  -H "Authorization: token $token" -X POST -i -d "{\"title\":\"${1}\",\"body\":\"$2\",\"labels\": $3}" https://api.github.com/repos/${owner}/${repo}/issues
+# echo "curl  -H \"Authorization: token $token\" -X POST -i -d \"{\"title\":\"${1}\",\"body\":\"$2\",\"labels\": $3}\" https://api.github.com/repos/${owner}/${repo}/issues"
+# $(curl  -H "Authorization: token $token" -X POST -i -d "{\"title\":\"${1}\",\"body\":\"$2\",\"labels\": $3}" https://api.github.com/repos/$owner/$repo/issues)

@@ -19,7 +19,7 @@ do
     if [[ $(python KDE_command_analysis/visualizeCommands.py ./$i/ true) ]]; then
 	    echo $i
         trace=$(python KDE_command_analysis/visualizeCommands.py ./$i/ true)
-        ./automatic_issue_report.sh "Repository $i has error" "$trace"
+        ./automatic_issue_report.sh "Repository $i has error" "We still do not analyze the $1 repository well."
     fi
     cd KDE
 done
