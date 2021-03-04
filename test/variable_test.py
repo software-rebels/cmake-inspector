@@ -521,8 +521,8 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertIsInstance(fileCommand, CustomCommandNode)
         self.assertEqual(self.vmodel.findNode('FILE'), fileCommand)
         self.assertEqual("GLOB files_for_test/*.cxx", " ".join(getFlattedArguments(fileCommand.commands[0])))
-        self.assertEqual(['files_for_test/b.cxx', 'files_for_test/c.cxx', 'files_for_test/a.cxx'],
-                         [item[0] for item in flattenCustomCommandNode(fileCommand, {}, [])])
+        self.assertCountEqual(['files_for_test/b.cxx', 'files_for_test/c.cxx', 'files_for_test/a.cxx'],
+                              [item[0] for item in flattenCustomCommandNode(fileCommand, {}, [])])
 
     def test_simple_file_remove(self):
         text = """
@@ -1722,7 +1722,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
         self.assertSetEqual({"files_for_test/b.cxx", "files_for_test/a.cxx"}, a[""])
-        self.assertSetEqual({"another_folder_for_test/b2.cxx","another_folder_for_test/a.cxx"},
+        self.assertSetEqual({"another_folder_for_test/b2.cxx", "another_folder_for_test/a.cxx"},
                             a['foo:False && john:True'])
         self.assertSetEqual({"another_folder_for_test/a.cxx"}, a['foo:False && john:False'])
         self.assertSetEqual({"files_for_test/c.cxx"}, a["foo:True"])
@@ -1937,6 +1937,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertIn(('john/opt2_doe', {'opt1': False, 'opt2': True}), a)
         self.assertIn(('opt1_john/doe', {'opt1': True}), a)
         self.assertIn(('opt1_john/doe', {'opt1': True, 'opt2': False}), a)
+
 
 if __name__ == '__main__':
     unittest.main()

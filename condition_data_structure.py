@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Union
 
 
 class LogicalExpression:
@@ -177,11 +177,32 @@ class ConstantExpression(LogicalExpression):
         return [(self.evaluate(), {})]
 
 
+class VariableAssignment:
+    operator: str
+    value: Union[LocalVariable, ConstantExpression, bool]
+
+    def __eq__(self, other):
+        if self.operator == '==' and isinstance(other, VariableAssignment):
+            return self.value == other.value
+
+
+
 class ComparisonExpression(LogicalExpression):
+    OPERATORS = {
+        'LESS': '<',
+        'GREATER': '>',
+        'EQUAL': '==',
+        'STRLESS': '<',
+        'STRGREATER': '>',
+        'STREQUAL': '==',
+        'MATCHES': '~'
+    }
+
     leftExpression: LogicalExpression = None
     rightExpression: LogicalExpression = None
 
     def __init__(self, left: LogicalExpression, right: LogicalExpression, operator):
+        assert operator in self.OPERATORS
         super(ComparisonExpression, self).__init__(operator)
         self.leftExpression = left
         self.rightExpression = right

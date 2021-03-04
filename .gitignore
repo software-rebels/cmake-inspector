@@ -7,3 +7,4 @@ graph.gv.pdf
 *.log
 .venv
 .idea
+venv

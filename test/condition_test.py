@@ -119,3 +119,7 @@ class TestConditions(unittest.TestCase):
                 (True, {'foo': True}), (True, {'bar': True}), (False, {'foo': False, 'bar': False})
             ], expression.satisfiable({})
         )
+
+    def test_grater_than_expression(self):
+        expression = ComparisonExpression(self.fooVar, self.barVar, 'GREATER')
+
