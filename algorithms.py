@@ -2,7 +2,7 @@ import glob
 import logging
 import os
 import re
-from collections import Set
+from collections import Set, defaultdict
 from typing import Dict, List
 
 from datastructs import Node, LiteralNode, RefNode, CustomCommandNode, SelectNode, ConcatNode, TargetNode
@@ -62,7 +62,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Dict = None, debug=Tr
         raise CycleDetectedException('We have a cycle here!!')
 
     recStack.append(node)
-    logging.debug("++++++ Flatten node with name: " + node.getName())
+    # logging.debug("++++++ Flatten node with name: " + node.getName())
 
     flattedResult = None
     # We return result from memoize variable if available:
@@ -104,9 +104,9 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Dict = None, debug=Tr
             if childSet is None:
                 continue
 
-            logging.debug('ConcatNode {}: Appending child {} {} of {} with {} childset'.format(
-                node.getName(), item.getName(), idx + 1, numberOfChildren, len(childSet)
-            ))
+            # logging.debug('ConcatNode {}: Appending child {} {} of {} with {} childset'.format(
+            #     node.getName(), item.getName(), idx + 1, numberOfChildren, len(childSet)
+            # ))
 
             # There are two types of concat node. One which concat the literal string
             # and other one which make a list of values
@@ -135,7 +135,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Dict = None, debug=Tr
 
 
 def flattenCustomCommandNode(node: CustomCommandNode, conditions, recStack, lookup=None):
-    print("##### Start evaluating custom command " + node.rawName)
+    # print("##### Start evaluating custom command " + node.rawName)
     if conditions is None:
         conditions = set()
     result = None
@@ -163,8 +163,8 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions, recStack, look
             finalFlattenList = []
             for item in flattenedFiles:
                 if isinstance(item[0], Node):
-                    logging.debug('target_link_libraries: calling recursivelyResolveReference to' \
-                                  'resolve node with name: {}'.format(item[0].getName()))
+                    # logging.debug('target_link_libraries: calling recursivelyResolveReference to' \
+                    #               'resolve node with name: {}'.format(item[0].getName()))
                     finalFlattenList += recursivelyResolveReference(item[0], item[1])
                 else:
                     finalFlattenList.append(item)
@@ -215,31 +215,29 @@ def recursivelyResolveReference(item, conditionToAppend):
     return result
 
 
-def mergeFlattedList(flatted: List) -> List:
-    result = []
+def mergeFlattedList(flatted: List) -> Dict:
+    print("Start merging the flatted list")
+    result = defaultdict(list)
     for item in flatted:
-        found = False
-        for result_item in result:
-            if result_item[1] == item[1]:
-                result_item[0].add(item[0])
-                found = True
-        if found is False:
-            result.append((set([item[0]]), item[1]))
+        condition_key = frozenset(item[1].items())
+        result[condition_key].append(item[0])
     return result
 
 
-def removeDuplicatesFromFlattedList(flatted: List) -> List:
+# Remove items with the same value, different conditions, but one of the conditions is a subset of another one
+def removeDuplicatesFromFlattedList(flatted: Dict) -> List:
+    print("Start removing duplicates the flatted list")
     result = []
-    for flatted_item in flatted:
+    for flatted_item in flatted.keys():
         found = False
         for result_index in range(len(result)):
             result_item = result[result_index]
-            if result_item[0] == flatted_item[0] and all(item in result_item[1].items() for item in flatted_item[1].items()):
+            if result_item[0] == flatted.get(flatted_item) and flatted_item.issubset(result_item[1]):
                 found = True
                 result.pop(result_index)
-                result.insert(result_index, flatted_item)
-            elif result_item[0] == flatted_item[0] and all(item in flatted_item[1].items() for item in result_item[1].items()):
+                result.insert(result_index, (flatted.get(flatted_item), flatted_item))
+            elif result_item[0] == flatted.get(flatted_item) and result_item[1].issubset(flatted_item):
                 found = True
         if found is False:
-            result.append(flatted_item)
+            result.append((flatted.get(flatted_item), flatted_item))
     return result

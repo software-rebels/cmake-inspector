@@ -2,6 +2,7 @@
 import logging
 import sys
 import os
+import pickle
 from typing import List, Optional
 # Third-party
 from antlr4 import FileStream, CommonTokenStream, ParseTreeWalker
@@ -1148,7 +1149,6 @@ def main(argv):
     # testNode = vmodel.findNode('${CLIENT_LIBRARIES}_662')
     # flattenAlgorithmWithConditions(testNode)
     a = printFilesForATarget(vmodel, lookupTable, 'etl', True)
-    # print(a)
 
 if __name__ == "__main__":
     main(sys.argv)

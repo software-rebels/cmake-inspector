@@ -89,7 +89,15 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
     for library, conditions in targetNode.linkLibrariesConditions.items():
         flattenedFiles += flattenAlgorithmWithConditions(library, conditions)
 
+    # Save flatten algorithm result
+    with open('flatten_result.pickle', 'wb') as handle:
+        pickle.dump(flattenedFiles, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
     finalFlattenList = mergeFlattedList(flattenedFiles)
+    # Save flatten algorithm result
+    with open('flatten_merged_result.pickle', 'wb') as handle:
+        pickle.dump(finalFlattenList, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
     finalFlattenList = removeDuplicatesFromFlattedList(finalFlattenList)
     # # Now we should expand the cached results (DEPRECATED)
     # finalFlattenList = []
