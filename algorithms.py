@@ -4,6 +4,7 @@ import os
 import re
 from collections import Set, defaultdict
 from typing import Dict, List
+from z3 import *
 
 from datastructs import Node, LiteralNode, RefNode, CustomCommandNode, SelectNode, ConcatNode, TargetNode
 from vmodel import VModel
@@ -50,9 +51,9 @@ class CycleDetectedException(Exception):
     pass
 
 
-def flattenAlgorithmWithConditions(node: Node, conditions: Dict = None, debug=True, recStack=None, useCache=True):
+def flattenAlgorithmWithConditions(node: Node, conditions: List = None, debug=True, recStack=None):
     if conditions is None:
-        conditions = dict()
+        conditions = []
     if recStack is None:
         recStack = list()
 
@@ -76,30 +77,34 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Dict = None, debug=Tr
             flattedResult = [(node.rawName, conditions)]
         else:
             flattedResult = flattenAlgorithmWithConditions(node.getPointTo(), conditions,
-                                                           debug, recStack, useCache=useCache)
+                                                           debug, recStack)
     elif isinstance(node, CustomCommandNode):
         flattedResult = flattenCustomCommandNode(node, conditions, recStack)
     elif isinstance(node, SelectNode):
-        # Check if conditions satisfiable before expanding the tree (Using the new data structure)
-        possible_evaluation = node.rule.getCondition().satisfiable(conditions)
-        true_evaluations = [evaluation for evaluation in possible_evaluation if evaluation[0]]
-        false_evaluations = [evaluation for evaluation in possible_evaluation if evaluation[0] is False]
         flattedResult = []
-        if node.falseNode and false_evaluations:
-            for evaluation in false_evaluations:
-                flattedResult += flattenAlgorithmWithConditions(node.falseNode,
-                                                                {**conditions, **evaluation[1]},
-                                                                debug, recStack, useCache=useCache)
-        if node.trueNode and true_evaluations:
-            for evaluation in true_evaluations:
-                flattedResult += flattenAlgorithmWithConditions(node.trueNode,
-                                                                {**conditions, **evaluation[1]},
-                                                                debug, recStack, useCache=useCache)
+        # Check if conditions satisfiable before expanding the tree (Using Z3)
+        assertion = node.rule.getCondition().getAssertions()
+        s = Solver()
+        s.add(conditions)
+        assert s.check() == sat
+        s.push()
+        s.add(assertion)
+        if s.check() == sat:
+            flattedResult += flattenAlgorithmWithConditions(node.falseNode,
+                                                            conditions + [assertion],
+                                                            debug, recStack)
+        s.pop()
+        s.push()
+        s.add(Not(assertion))
+        if s.check() == sat:
+            flattedResult += flattenAlgorithmWithConditions(node.trueNode,
+                                                            conditions + [Not(assertion)],
+                                                            debug, recStack)
     elif isinstance(node, ConcatNode):
         result = ['']
         numberOfChildren = len(node.getChildren())
         for idx, item in enumerate(node.getChildren()):
-            childSet = flattenAlgorithmWithConditions(item, conditions, debug, recStack, useCache=useCache)
+            childSet = flattenAlgorithmWithConditions(item, conditions, debug, recStack)
             tempSet = []
             if childSet is None:
                 continue
@@ -232,12 +237,29 @@ def removeDuplicatesFromFlattedList(flatted: Dict) -> List:
         found = False
         for result_index in range(len(result)):
             result_item = result[result_index]
-            if result_item[0] == flatted.get(flatted_item) and flatted_item.issubset(result_item[1]):
-                found = True
-                result.pop(result_index)
-                result.insert(result_index, (flatted.get(flatted_item), flatted_item))
-            elif result_item[0] == flatted.get(flatted_item) and result_item[1].issubset(flatted_item):
-                found = True
+            if result_item[0] == flatted.get(flatted_item):
+                if flatted_item.issubset(result_item[1]):
+                    found = True
+                    result.pop(result_index)
+                    result.insert(result_index, (flatted.get(flatted_item), flatted_item))
+                elif result_item[1].issubset(flatted_item):
+                    found = True
+                else:
+                    # Find keys in the current result item
+                    current_keys = {item[0] for item in result_item[1]}
+                    # Find keys in the merged flattened result
+                    new_keys = {item[0] for item in flatted_item}
+
+                    common_keys = current_keys.intersection(new_keys)
+
+                    final_conditions = [item for item in flatted_item if item[0] not in common_keys]
+                    final_conditions += [item for item in result_item[1] if item[0] not in common_keys]
+
+                    print(current_keys)
+                    print(new_keys)
+                    print(common_keys)
+                    print(final_conditions)
+                    raise Exception()
         if found is False:
             result.append((flatted.get(flatted_item), flatted_item))
     return result

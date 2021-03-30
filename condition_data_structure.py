@@ -1,4 +1,5 @@
 from typing import Dict, List
+from z3 import *
 
 
 class LogicalExpression:
@@ -17,6 +18,12 @@ class LogicalExpression:
         pass
 
     def satisfiable(self, condition: Dict) -> List:
+        pass
+
+    def getAssertions(self):
+        pass
+
+    def satModel(self, s: Solver):
         pass
 
 
@@ -47,6 +54,10 @@ class OrExpression(LogicalExpression):
         # We convert OR to AND and use the same function we have for AND to avoid duplicates
         andEquivalent = NotExpression(AndExpression(NotExpression(self.getLeft()), NotExpression(self.getRight())))
         return andEquivalent.satisfiable(condition)
+
+    def getAssertions(self):
+        return Or(self.leftExpression.getAssertions(),
+                  self.rightExpression.getAssertions())
 
 
 class AndExpression(LogicalExpression):
@@ -108,6 +119,13 @@ class AndExpression(LogicalExpression):
 
         return result
 
+    def getAssertions(self):
+        return And(self.leftExpression.getAssertions(),
+                   self.rightExpression.getAssertions())
+
+    def satModel(self, s: Solver):
+        pass
+
 
 class NotExpression(LogicalExpression):
     rightExpression: LogicalExpression = None
@@ -133,13 +151,18 @@ class NotExpression(LogicalExpression):
             result.append((not item[0], item[1]))
         return result
 
+    def getAssertions(self):
+        return Not(self.rightExpression.getAssertions())
+
 
 class LocalVariable(LogicalExpression):
     variableName: str = None
+    variable: Bool
 
     def __init__(self, variableName):
         super(LocalVariable, self).__init__('var')
         self.variableName = variableName
+        self.variable = Bool(variableName)
 
     def getText(self, pretty=False):
         return "${{{}}}".format(self.variableName)
@@ -156,6 +179,25 @@ class LocalVariable(LogicalExpression):
             (True, {self.variableName: True}),
             (False, {self.variableName: False})
         ]
+
+    def getAssertions(self):
+        return self.variable
+
+    def satModel(self, s: Solver):
+        trueSolver = s.translate(s.ctx)
+        result = []
+        if self.variable not in trueSolver.assertions():
+            trueSolver.add(self.variable)
+        if trueSolver.check() == sat:
+            result.append((True, trueSolver))
+
+        falseSolver = s.translate(s.ctx)
+        if Not(self.variable) not in falseSolver.assertions():
+            falseSolver.add(Not(self.variable))
+
+        if falseSolver.check() == sat:
+            result.append((False, falseSolver))
+        return result
 
 
 class ConstantExpression(LogicalExpression):
@@ -207,6 +249,7 @@ class Rule:
     level: int = None
     args: list = None
     condition: LogicalExpression = None
+    solver: Solver
 
     def setCondition(self, condition: LogicalExpression):
         self.condition = condition
@@ -232,3 +275,9 @@ class Rule:
 
     def getText(self):
         return self.condition.getText()
+
+    def getSolver(self) -> Solver:
+        self.solver = Solver()
+        self.solver.add(self.condition.getAssertions())
+        return self.solver
+
