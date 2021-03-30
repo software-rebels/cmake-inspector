@@ -1938,5 +1938,31 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertIn(('opt1_john/doe', {'opt1': True}), a)
         self.assertIn(('opt1_john/doe', {'opt1': True, 'opt2': False}), a)
 
+    def test_z_real_ecm_mark_as_test(self):
+        text = """
+        if (NOT BUILD_TESTING)
+            if(NOT TARGET buildtests)
+                add_custom_target(buildtests)
+            endif()
+        endif()
+
+        function(ecm_mark_as_test)
+            if (NOT BUILD_TESTING)
+                foreach(_target ${ARGN})
+                    set_target_properties(${_target}
+                                            PROPERTIES
+                                            EXCLUDE_FROM_ALL TRUE
+                                        )
+                    add_dependencies(buildtests ${_target})
+                endforeach()
+            endif()
+        endfunction()
+        
+        add_executable(exec files_for_test/a.cxx)
+        ecm_mark_as_test(exec)
+        """
+        self.runTool(text)
+        self.vmodel.export(False, True)
+
 if __name__ == '__main__':
     unittest.main()
