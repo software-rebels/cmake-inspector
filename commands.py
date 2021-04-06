@@ -287,7 +287,7 @@ def addTarget(arguments, isExecutable=True):
 
     # TODO: We have to decide whether keep the experiment to change it
     # EXPERIMENT: We flatten the target name and add all the possible values to the graph as a potential target
-    flattedTargetName = flattenAlgorithmWithConditions(vmodel.expand([targetName]), useCache=False)
+    flattedTargetName = flattenAlgorithmWithConditions(vmodel.expand([targetName]))
     if flattedTargetName:
         for item in flattedTargetName:
             # We already set a key with the name targetNode

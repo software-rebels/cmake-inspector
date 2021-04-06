@@ -51,9 +51,9 @@ class CycleDetectedException(Exception):
     pass
 
 
-def flattenAlgorithmWithConditions(node: Node, conditions: List = None, debug=True, recStack=None):
+def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=True, recStack=None):
     if conditions is None:
-        conditions = []
+        conditions = set()
     if recStack is None:
         recStack = list()
 
@@ -84,22 +84,35 @@ def flattenAlgorithmWithConditions(node: Node, conditions: List = None, debug=Tr
         flattedResult = []
         # Check if conditions satisfiable before expanding the tree (Using Z3)
         assertion = node.rule.getCondition().getAssertions()
-        s = Solver()
-        s.add(conditions)
-        assert s.check() == sat
-        s.push()
-        s.add(assertion)
-        if s.check() == sat:
-            flattedResult += flattenAlgorithmWithConditions(node.falseNode,
-                                                            conditions + [assertion],
-                                                            debug, recStack)
-        s.pop()
-        s.push()
-        s.add(Not(assertion))
-        if s.check() == sat:
-            flattedResult += flattenAlgorithmWithConditions(node.trueNode,
-                                                            conditions + [Not(assertion)],
-                                                            debug, recStack)
+        if node.trueNode:
+            # Add facts about the variables in the condition expression
+            for priorKnowledge in node.rule.flattenedResult:
+                s = Solver()
+                # Variables in the condition
+                s.add(priorKnowledge)
+                # Facts from the starting point to here
+                s.add(conditions)
+                if s.check() == unsat:
+                    continue
+                # As we simplify the assertions, there is a chance that the fact has been already added
+                if assertion not in s.assertions():
+                    s.add(assertion)
+                if s.check() == sat:
+                    flattedResult += flattenAlgorithmWithConditions(node.trueNode,
+                                                                    set(s.assertions()),
+                                                                    debug, recStack)
+        if node.falseNode:
+            for priorKnowledge in node.rule.flattenedResult:
+                s = Solver()
+                s.add(priorKnowledge)
+                s.add(conditions)
+                falseAssertion = simplify(Not(assertion))
+                if falseAssertion not in s.assertions():
+                    s.add(falseAssertion)
+                if s.check() == sat:
+                    flattedResult += flattenAlgorithmWithConditions(node.falseNode,
+                                                                    set(s.assertions()),
+                                                                    debug, recStack)
     elif isinstance(node, ConcatNode):
         result = ['']
         numberOfChildren = len(node.getChildren())
@@ -122,24 +135,27 @@ def flattenAlgorithmWithConditions(node: Node, conditions: List = None, debug=Tr
                     else:
                         # There shouldn't be any contradiction in the returned conditions. If there is, we won't
                         # append the value to the one with contradiction
-                        contradiction = False
-                        for common_key in set(str1[1]).intersection(set(str2[1])):
-                            if str1[1].get(common_key) != str2[1].get(common_key):
-                                contradiction = True
-                        if contradiction:
-                            continue
-                        if node.concatString:
-                            tempSet.append(("{}{}".format(str1[0], str2[0]), {**str1[1], **str2[1]}))
-                        elif (str2[0], {**str1[1], **str2[1]}) not in tempSet:
-                            tempSet.append((str1[0], {**str1[1], **str2[1]}))
-                            tempSet.append((str2[0], {**str1[1], **str2[1]}))
+                        s = Solver()
+                        # We need to simplify the whole expressions
+                        g = Goal()
+                        g.add(str1[1])
+                        g.add(str2[1])
+                        s.add(g.simplify())
+
+                        if s.check() == sat:
+                            newConditions = set(s.assertions())
+                            if node.concatString:
+                                tempSet.append(("{}{}".format(str1[0], str2[0]), newConditions))
+                            elif (str2[0], newConditions) not in tempSet:
+                                tempSet.append((str1[0], newConditions))
+                                tempSet.append((str2[0], newConditions))
             result = tempSet
         flattedResult = result
     recStack.remove(node)
     return flattedResult
 
 
-def flattenCustomCommandNode(node: CustomCommandNode, conditions, recStack, lookup=None):
+def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack, lookup=None):
     # print("##### Start evaluating custom command " + node.rawName)
     if conditions is None:
         conditions = set()
@@ -178,8 +194,15 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions, recStack, look
                 if isinstance(node, TargetNode):
                     result += flattenAlgorithmWithConditions(node.sources, item[1], recStack=recStack)
                     for library, conditions in node.linkLibrariesConditions.items():
-                        result += flattenAlgorithmWithConditions(library, {**conditions, **item[1]},
-                                                                 recStack=recStack)
+                        s = Solver()
+                        # We need to simplify the whole expressions
+                        g = Goal()
+                        g.add(conditions)
+                        g.add(item[1])
+                        s.add(g.simplify())
+                        if s.check() == sat:
+                            result += flattenAlgorithmWithConditions(library, set(s.assertions()),
+                                                                     recStack=recStack)
     elif 'remove_item' in node.getName().lower():
         arguments = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
         result = flattenAlgorithmWithConditions(node.depends[0], conditions, recStack=recStack)
@@ -224,7 +247,7 @@ def mergeFlattedList(flatted: List) -> Dict:
     print("Start merging the flatted list")
     result = defaultdict(list)
     for item in flatted:
-        condition_key = frozenset(item[1].items())
+        condition_key = frozenset(item[1])
         result[condition_key].append(item[0])
     return result
 
@@ -244,22 +267,15 @@ def removeDuplicatesFromFlattedList(flatted: Dict) -> List:
                     result.insert(result_index, (flatted.get(flatted_item), flatted_item))
                 elif result_item[1].issubset(flatted_item):
                     found = True
-                else:
-                    # Find keys in the current result item
-                    current_keys = {item[0] for item in result_item[1]}
-                    # Find keys in the merged flattened result
-                    new_keys = {item[0] for item in flatted_item}
-
-                    common_keys = current_keys.intersection(new_keys)
-
-                    final_conditions = [item for item in flatted_item if item[0] not in common_keys]
-                    final_conditions += [item for item in result_item[1] if item[0] not in common_keys]
-
-                    print(current_keys)
-                    print(new_keys)
-                    print(common_keys)
-                    print(final_conditions)
-                    raise Exception()
         if found is False:
             result.append((flatted.get(flatted_item), flatted_item))
     return result
+
+
+# This function will run simplifier on the facts and cast them to string
+def postprocessZ3Output(flattened: List):
+    for idx, item in enumerate(flattened):
+        g = Goal()
+        t = Tactic('ctx-solver-simplify')
+        g.add(item[1])
+        flattened[idx] = (item[0], t(g)[0])
