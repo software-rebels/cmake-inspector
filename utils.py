@@ -99,4 +99,4 @@ def util_getNegativeOfPrevLogics():
                               NotExpression(prevState.getCondition().getRight()))
     else:
         raise RuntimeError("Previous state of elseif could be if or elseif, but got {}".format(prevState.getType()))
-    return logic
+    return logic, prevState.flattenedResult

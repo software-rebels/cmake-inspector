@@ -1,3 +1,4 @@
+import operator
 from typing import Dict, List
 from z3 import *
 
@@ -56,8 +57,8 @@ class OrExpression(LogicalExpression):
         return andEquivalent.satisfiable(condition)
 
     def getAssertions(self):
-        return Or(self.leftExpression.getAssertions(),
-                  self.rightExpression.getAssertions())
+        return simplify(Or(self.leftExpression.getAssertions(),
+                           self.rightExpression.getAssertions()))
 
 
 class AndExpression(LogicalExpression):
@@ -120,11 +121,8 @@ class AndExpression(LogicalExpression):
         return result
 
     def getAssertions(self):
-        return And(self.leftExpression.getAssertions(),
-                   self.rightExpression.getAssertions())
-
-    def satModel(self, s: Solver):
-        pass
+        return simplify(And(self.leftExpression.getAssertions(),
+                            self.rightExpression.getAssertions()))
 
 
 class NotExpression(LogicalExpression):
@@ -152,20 +150,31 @@ class NotExpression(LogicalExpression):
         return result
 
     def getAssertions(self):
-        return Not(self.rightExpression.getAssertions())
+        return simplify(Not(self.rightExpression.getAssertions()))
 
 
 class LocalVariable(LogicalExpression):
     variableName: str = None
-    variable: Bool
+    variable: [Bool, Int, String] = None
 
-    def __init__(self, variableName):
+    def __init__(self, variableName, varType='bool'):
         super(LocalVariable, self).__init__('var')
         self.variableName = variableName
-        self.variable = Bool(variableName)
+        if varType == 'bool':
+            self.variable = Bool(variableName)
+        elif varType == 'int':
+            self.variable = Int(variableName)
+        elif varType == 'string':
+            self.variable = String(variableName)
 
     def getText(self, pretty=False):
         return "${{{}}}".format(self.variableName)
+
+    def toInt(self):
+        self.variable = Int(self.variableName)
+
+    def toString(self):
+        self.variable = String(self.variableName)
 
     def evaluate(self):
         # TODO: Given the fact, we should evaluate this last piece in the evaluate tree
@@ -182,22 +191,6 @@ class LocalVariable(LogicalExpression):
 
     def getAssertions(self):
         return self.variable
-
-    def satModel(self, s: Solver):
-        trueSolver = s.translate(s.ctx)
-        result = []
-        if self.variable not in trueSolver.assertions():
-            trueSolver.add(self.variable)
-        if trueSolver.check() == sat:
-            result.append((True, trueSolver))
-
-        falseSolver = s.translate(s.ctx)
-        if Not(self.variable) not in falseSolver.assertions():
-            falseSolver.add(Not(self.variable))
-
-        if falseSolver.check() == sat:
-            result.append((False, falseSolver))
-        return result
 
 
 class ConstantExpression(LogicalExpression):
@@ -217,6 +210,9 @@ class ConstantExpression(LogicalExpression):
 
     def satisfiable(self, condition: Dict) -> List:
         return [(self.evaluate(), {})]
+
+    def getAssertions(self):
+        return self.value
 
 
 class ComparisonExpression(LogicalExpression):
@@ -243,13 +239,21 @@ class ComparisonExpression(LogicalExpression):
     def satisfiable(self, condition: Dict) -> List:
         return [(False, {})]
 
+    def returnOperator(self):
+        if self.logicType == 'GREATER':
+            return operator.gt
+
+    def getAssertions(self):
+        return simplify(self.returnOperator()(self.leftExpression.getAssertions(),
+                                              self.rightExpression.getAssertions()))
+
 
 class Rule:
     type: str = None
     level: int = None
     args: list = None
     condition: LogicalExpression = None
-    solver: Solver
+    flattenedResult: list = [set()]
 
     def setCondition(self, condition: LogicalExpression):
         self.condition = condition
@@ -275,9 +279,3 @@ class Rule:
 
     def getText(self):
         return self.condition.getText()
-
-    def getSolver(self) -> Solver:
-        self.solver = Solver()
-        self.solver.add(self.condition.getAssertions())
-        return self.solver
-

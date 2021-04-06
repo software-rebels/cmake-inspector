@@ -5,6 +5,7 @@ import os
 import pickle
 from typing import List, Optional
 # Third-party
+from z3 import *
 from antlr4 import FileStream, CommonTokenStream, ParseTreeWalker
 from antlr4.tree.Tree import TerminalNode
 from neomodel import config
@@ -67,7 +68,11 @@ class CMakeExtractorListener(CMakeListener):
         self.logicalExpressionStack.append(orLogic)
 
     def exitLogicalEntity(self, ctx:CMakeParser.LogicalEntityContext):
+        variableLookedUp = lookupTable.getKey(f'${{{ctx.getText()}}}')
         localVariable = LocalVariable(ctx.getText())
+        if variableLookedUp:
+            # Wherever we create a LocalVariable, we should flat the corresponding variable
+            self.flattenVariableInConditionExpression(localVariable, variableLookedUp)
         self.logicalExpressionStack.append(localVariable)
 
     def exitIfStatement(self, ctx:CMakeParser.IfStatementContext):
@@ -75,13 +80,17 @@ class CMakeExtractorListener(CMakeListener):
         assert len(self.logicalExpressionStack) == 0
 
     def exitComparisonExpression(self, ctx:CMakeParser.ComparisonExpressionContext):
-        if lookupTable.getKey(f'${{{ctx.left.getText()}}}'):
-            leftExpression = LocalVariable(ctx.left.getText())
+        leftVariableLookedUp = lookupTable.getKey(f'${{{ctx.left.getText()}}}')
+        rightVariableLookedUp = lookupTable.getKey(f'${{{ctx.right.getText()}}}')
+        if leftVariableLookedUp:
+            leftExpression = LocalVariable(ctx.left.getText(), 'int')
+            self.flattenVariableInConditionExpression(leftExpression, leftVariableLookedUp)
         else:
             leftExpression = ConstantExpression(ctx.left.getText())
 
-        if lookupTable.getKey(f'${{{ctx.right.getText()}}}'):
-            rightExpression = LocalVariable(ctx.right.getText())
+        if rightVariableLookedUp:
+            rightExpression = LocalVariable(ctx.right.getText(), 'int')
+            self.flattenVariableInConditionExpression(rightExpression, rightVariableLookedUp)
         else:
             rightExpression = ConstantExpression(ctx.right.getText())
 
@@ -89,17 +98,34 @@ class CMakeExtractorListener(CMakeListener):
             ComparisonExpression(leftExpression, rightExpression, ctx.operator.getText().upper())
         )
 
+    def flattenVariableInConditionExpression(self, expression: LocalVariable, variable: Node):
+        # Flattening the variable used inside the condition, like [(True, {bar}), (False, {Not bar, john > 2})]
+        flattened = flattenAlgorithmWithConditions(variable) or []
+        # We need to add an assertion to the solver, like {bar, foo == True} and {Not bar, john > 2, foo == False}
+        temp_result = []
+        for item in flattened:
+            for condition in self.rule.flattenedResult:
+                s = Solver()
+                assertion = condition.union(item[1].union({expression.getAssertions() == item[0]}))
+                s.add(assertion)
+                if s.check() == sat:
+                    temp_result.append(assertion)
+        if not temp_result:
+            temp_result.append(set())
+        self.rule.flattenedResult = temp_result
+
     def exitElseIfStatement(self, ctx:CMakeParser.ElseIfStatementContext):
         # Logical expression for the elseif itself
         rightLogic = self.logicalExpressionStack.pop()
 
         # For the else if, to be evaluated as true, all the previous conditions should be evaluated as false
         # Using bellow algorithm, we need to check the latest condition only.
-        logic = util_getNegativeOfPrevLogics()
+        logic, prevConditionFlattened = util_getNegativeOfPrevLogics()
 
         andLogic = AndExpression(logic, rightLogic)
         assert len(self.logicalExpressionStack) == 0
         self.rule.setCondition(andLogic)
+        self.rule.flattenedResult = list(prevConditionFlattened)
         vmodel.pushSystemState(self.rule)
 
     def enterIfCommand(self, ctx: CMakeParser.IfCommandContext):
@@ -133,7 +159,7 @@ class CMakeExtractorListener(CMakeListener):
 
         # Else statement is true when all the previous conditions are false
         # Same as elseif, we only need to check the previous state
-        logic = util_getNegativeOfPrevLogics()
+        logic, prevConditionFlattened = util_getNegativeOfPrevLogics()
 
         while True:
             systemStateObject = vmodel.getCurrentSystemState()
@@ -149,6 +175,7 @@ class CMakeExtractorListener(CMakeListener):
         self.rule.setType('elseif')
         self.rule.setLevel(vmodel.ifLevel)
         self.rule.setCondition(logic)
+        self.rule.flattenedResult = list(prevConditionFlattened)
         vmodel.pushSystemState(self.rule)
 
     def exitIfCommand(self, ctx: CMakeParser.IfCommandContext):
