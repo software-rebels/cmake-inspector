@@ -1,6 +1,6 @@
 from algorithms import flattenAlgorithmWithConditions
 from condition_data_structure import Rule
-from datastructs import Lookup, CustomCommandNode, TargetNode, ConcatNode, WhileCommandNode
+from datastructs import Lookup, CustomCommandNode, TargetNode, ConcatNode, WhileCommandNode, TestNode
 from utils import *
 
 
@@ -234,6 +234,74 @@ def addLinkDirectories(arguments):
 
     vmodel.DIRECTORY_PROPERTIES.setKey('LINK_DIRECTORIES', newLinkDirectories)
     newLinkDirectories.addNode(targetNode)
+
+
+# This function handles 
+def ECMAddTest(arguments):
+    vmodel = VModel.getInstance()
+    func_keys = ["link_libraries","test_name","name_prefix","gui"]
+    sources = []
+    while len(arguments) and arguments[0].lower() not in func_keys:
+        sources.append(arguments.pop(0))
+
+    target_name = '.'.join(sources[0].split('.')[:-1])
+    libraries = []
+    base_name = target_name 
+    prefix = ""
+
+    while len(arguments):
+        key = arguments.pop(0).lower()
+        values = []
+        if key == "link_libraries":
+            while len(arguments) and arguments[0].lower() not in func_keys:
+                values.append(arguments.pop(0))
+            libraries = values
+        if key == "test_name":      
+            arguments.pop(0) 
+            target_name = arguments.pop(0)  
+        if key == "name_prefix":
+            arguments.pop(0)
+            prefix = arguments.pop(0)
+
+    base_name = prefix + target_name 
+
+    
+    # add executable
+    # add_executable(${_targetname} ${gui_args} ${_sources})
+    execArgs = [target_name]
+    for source in sources:
+        execArgs.append(source)
+    addTarget(execArgs)
+    # Add target link
+    # target_link_libraries(${_targetname} ${ARG_LINK_LIBRARIES})
+    target_link_arguments = [target_name]
+    for library in libraries:
+        target_link_arguments.append(library)
+    
+    customCommand = CustomCommandNode('target_link_libraries')
+    customCommand.commands.append(vmodel.expand(target_link_arguments))
+    finalNode = util_handleConditions(customCommand, customCommand.name, None)
+    # Next variable should have the target nodes itself or the name of targets
+    targetList = flattenAlgorithmWithConditions(customCommand.commands[0].getChildren()[0], useCache=False)
+    for target in targetList:
+        targetNode = target[0]
+        if not isinstance(targetNode, TargetNode):
+            targetNode = vmodel.lookupTable.getKey("t:{}".format(targetNode))
+        # Now we should have a TargetNode
+        assert isinstance(targetNode, TargetNode)
+        assert isinstance(target[1], dict)
+        targetNode.linkLibrariesConditions[finalNode] = target[1]
+
+    vmodel.nodes.append(
+        finalNode
+    )
+
+    # Add_test [first signature]
+    testName = base_name
+    testNode = TestNode(testName)
+    testNode.command = vmodel.expand([target_name])
+    vmodel.nodes.append(testNode)
+
 
 
 # This function handles both add_library and add_executable

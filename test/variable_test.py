@@ -1439,6 +1439,7 @@ class TestVariableDefinitions(unittest.TestCase):
         endif(MSVC)
         """
         self.runTool(text)
+        self.vmodel.export()
 
     def test_target_compile_definition(self):
         text = """
@@ -1937,6 +1938,57 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertIn(('john/opt2_doe', {'opt1': False, 'opt2': True}), a)
         self.assertIn(('opt1_john/doe', {'opt1': True}), a)
         self.assertIn(('opt1_john/doe', {'opt1': True, 'opt2': False}), a)
+
+
+    def test_ecm_add_tests(self):
+        text = """
+        ecm_add_tests(
+            kactioncategorytest.cpp
+            kactioncollectiontest.cpp
+            LINK_LIBRARIES Qt5::Test KF5::XmlGui
+        )
+        """
+        self.runTool(text)
+
+    def test_z_ecm_mark_as_test(self):
+        text = """
+        option(foo "Is bar?" YES)
+        set(libraries files_for_test/a.cxx)
+        if(foo)
+            set(libraries files_for_test/b.cxx)
+        endif()
+        add_executable(exec ${libraries})
+        ecm_mark_as_test(exec)
+        """
+        self.runTool(text)
+        self.vmodel.export()
+
+    def test_z_real_ecm_mark_as_test(self):
+        text = """
+        if (NOT BUILD_TESTING)
+            if(NOT TARGET buildtests)
+                add_custom_target(buildtests)
+            endif()
+        endif()
+
+        function(ecm_mark_as_test)
+        if (NOT BUILD_TESTING)
+            foreach(_target ${ARGN})
+            set_target_properties(${_target}
+                                    PROPERTIES
+                                    EXCLUDE_FROM_ALL TRUE
+                                )
+            add_dependencies(buildtests ${_target})
+            endforeach()
+        endif()
+        endfunction()
+        add_executable(exec files_for_test/a.cxx)
+        ecm_mark_as_test(exec)
+        """
+        self.runTool(text)
+        self.vmodel.export()
+
+
 
 if __name__ == '__main__':
     unittest.main()
