@@ -2028,14 +2028,41 @@ class TestVariableDefinitions(unittest.TestCase):
         text = """
         set(foo mehran)
         set(john no_doe)
-        if(foo MATCHES mehran)
+        if(foo STREQUAL mehran)
             set(john doe)
         endif()
         """
         self.runTool(text)
-        bazVar = self.lookup.getKey('${baz}')
-        a = flattenAlgorithmWithConditions(bazVar)
-        print(a)
+        johnVar = self.lookup.getKey('${john}')
+        a = flattenAlgorithmWithConditions(johnVar)
+        postprocessZ3Output(a)
+        self.assertEqual(1, len(a))
+        self.assertEqual('doe', a[0][0])
+
+    def test_boolean_arithmetic_int_expression(self):
+        text = """
+        option(USE_CURL something 1)
+        if(USE_CURL)
+            set(foo 4)
+        else()
+            set(foo 1)
+        endif()
+        
+        set(john mehran)
+        set(result 1)
+        
+        if(APPLE AND foo GREATER 2)
+            if(MAC OR LINUX AND john STREQUAL mehran)
+                set(result 2)
+            endif()
+        endif()
+        """
+        self.runTool(text)
+        resultVar = self.lookup.getKey('${result}')
+        a = flattenAlgorithmWithConditions(resultVar)
+        postprocessZ3Output(a)
+        self.assertEqual(4, len(a))
+
 
 
 if __name__ == '__main__':
