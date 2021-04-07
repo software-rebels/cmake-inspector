@@ -196,9 +196,13 @@ class LocalVariable(LogicalExpression):
 class ConstantExpression(LogicalExpression):
     value: str = None
 
-    def __init__(self, value):
+    PYTHON_STR = 'pythonSTR'
+    Z3_STR = 'z3STR'
+
+    def __init__(self, value, strType=PYTHON_STR):
         super(ConstantExpression, self).__init__('constant')
         self.value = value
+        self.type = strType
 
     def getText(self, pretty=False):
         return self.value
@@ -212,7 +216,10 @@ class ConstantExpression(LogicalExpression):
         return [(self.evaluate(), {})]
 
     def getAssertions(self):
-        return self.value
+        if self.type == self.PYTHON_STR:
+            return self.value
+        elif self.type == self.Z3_STR:
+            return StringVal(self.value)
 
 
 class ComparisonExpression(LogicalExpression):
@@ -240,8 +247,12 @@ class ComparisonExpression(LogicalExpression):
         return [(False, {})]
 
     def returnOperator(self):
-        if self.logicType == 'GREATER':
+        if self.logicType in ('GREATER', 'STRGREATER'):
             return operator.gt
+        elif self.logicType in ('LESS', 'STRLESS'):
+            return operator.lt
+        elif self.logicType in ('EQUAL', 'STREQUAL', 'MATCHES'):
+            return operator.eq
 
     def getAssertions(self):
         return simplify(self.returnOperator()(self.leftExpression.getAssertions(),

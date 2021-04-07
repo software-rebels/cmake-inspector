@@ -82,20 +82,26 @@ class CMakeExtractorListener(CMakeListener):
     def exitComparisonExpression(self, ctx:CMakeParser.ComparisonExpressionContext):
         leftVariableLookedUp = lookupTable.getKey(f'${{{ctx.left.getText()}}}')
         rightVariableLookedUp = lookupTable.getKey(f'${{{ctx.right.getText()}}}')
+        operator = ctx.operator.getText().upper()
+
+        localVariableType = 'string' if operator in ('STRLESS', 'STREQUAL', 'STRGREATER') else 'int'
+        constantExpressionType = ConstantExpression.Z3_STR if operator in ('STRLESS', 'STREQUAL', 'STRGREATER') \
+            else ConstantExpression.PYTHON_STR
+
         if leftVariableLookedUp:
-            leftExpression = LocalVariable(ctx.left.getText(), 'int')
+            leftExpression = LocalVariable(ctx.left.getText(), localVariableType)
             self.flattenVariableInConditionExpression(leftExpression, leftVariableLookedUp)
         else:
-            leftExpression = ConstantExpression(ctx.left.getText())
+            leftExpression = ConstantExpression(ctx.left.getText(), constantExpressionType)
 
         if rightVariableLookedUp:
-            rightExpression = LocalVariable(ctx.right.getText(), 'int')
+            rightExpression = LocalVariable(ctx.right.getText(), localVariableType)
             self.flattenVariableInConditionExpression(rightExpression, rightVariableLookedUp)
         else:
-            rightExpression = ConstantExpression(ctx.right.getText())
+            rightExpression = ConstantExpression(ctx.right.getText(), constantExpressionType)
 
         self.logicalExpressionStack.append(
-            ComparisonExpression(leftExpression, rightExpression, ctx.operator.getText().upper())
+            ComparisonExpression(leftExpression, rightExpression, operator)
         )
 
     def flattenVariableInConditionExpression(self, expression: LocalVariable, variable: Node):
@@ -106,7 +112,10 @@ class CMakeExtractorListener(CMakeListener):
         for item in flattened:
             for condition in self.rule.flattenedResult:
                 s = Solver()
-                assertion = condition.union(item[1].union({expression.getAssertions() == item[0]}))
+                if isinstance(expression.getAssertions(), SeqRef):
+                    assertion = condition.union(item[1].union({expression.getAssertions() == StringVal(item[0])}))
+                else:
+                    assertion = condition.union(item[1].union({expression.getAssertions() == item[0]}))
                 s.add(assertion)
                 if s.check() == sat:
                     temp_result.append(assertion)
