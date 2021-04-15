@@ -60,6 +60,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
     # We keep nodes in current recursion stack in a set. If current node has been already added
     # to this list, it means we are expanding a node from upper levels which is a cycle.
     if node in recStack:
+        # TODO: Print stack
         raise CycleDetectedException('We have a cycle here!!')
 
     recStack.append(node)
@@ -74,7 +75,8 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
     elif isinstance(node, RefNode):
         # If RefNode is a symbolic node, it may not have point to attribute
         if node.getPointTo() is None:
-            flattedResult = [(node.rawName, conditions)]
+            # flattedResult = [(node.rawName, conditions)]
+            flattedResult = []
         else:
             flattedResult = flattenAlgorithmWithConditions(node.getPointTo(), conditions,
                                                            debug, recStack)

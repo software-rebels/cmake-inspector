@@ -26,39 +26,12 @@ class CMakeListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by CMakeParser#foreachCommand.
-    def enterForeachCommand(self, ctx:CMakeParser.ForeachCommandContext):
+    # Enter a parse tree produced by CMakeParser#functionCommand.
+    def enterFunctionCommand(self, ctx:CMakeParser.FunctionCommandContext):
         pass
 
-    # Exit a parse tree produced by CMakeParser#foreachCommand.
-    def exitForeachCommand(self, ctx:CMakeParser.ForeachCommandContext):
-        pass
-
-
-    # Enter a parse tree produced by CMakeParser#foreachStatement.
-    def enterForeachStatement(self, ctx:CMakeParser.ForeachStatementContext):
-        pass
-
-    # Exit a parse tree produced by CMakeParser#foreachStatement.
-    def exitForeachStatement(self, ctx:CMakeParser.ForeachStatementContext):
-        pass
-
-
-    # Enter a parse tree produced by CMakeParser#foreachExpression.
-    def enterForeachExpression(self, ctx:CMakeParser.ForeachExpressionContext):
-        pass
-
-    # Exit a parse tree produced by CMakeParser#foreachExpression.
-    def exitForeachExpression(self, ctx:CMakeParser.ForeachExpressionContext):
-        pass
-
-
-    # Enter a parse tree produced by CMakeParser#endForeachStatement.
-    def enterEndForeachStatement(self, ctx:CMakeParser.EndForeachStatementContext):
-        pass
-
-    # Exit a parse tree produced by CMakeParser#endForeachStatement.
-    def exitEndForeachStatement(self, ctx:CMakeParser.EndForeachStatementContext):
+    # Exit a parse tree produced by CMakeParser#functionCommand.
+    def exitFunctionCommand(self, ctx:CMakeParser.FunctionCommandContext):
         pass
 
 
@@ -131,6 +104,33 @@ class CMakeListener(ParseTreeListener):
 
     # Exit a parse tree produced by CMakeParser#endIfStatement.
     def exitEndIfStatement(self, ctx:CMakeParser.EndIfStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#functionStatement.
+    def enterFunctionStatement(self, ctx:CMakeParser.FunctionStatementContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#functionStatement.
+    def exitFunctionStatement(self, ctx:CMakeParser.FunctionStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#functionBody.
+    def enterFunctionBody(self, ctx:CMakeParser.FunctionBodyContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#functionBody.
+    def exitFunctionBody(self, ctx:CMakeParser.FunctionBodyContext):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#endFunctionStatement.
+    def enterEndFunctionStatement(self, ctx:CMakeParser.EndFunctionStatementContext):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#endFunctionStatement.
+    def exitEndFunctionStatement(self, ctx:CMakeParser.EndFunctionStatementContext):
         pass
 
 

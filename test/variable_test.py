@@ -2064,6 +2064,5 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual(4, len(a))
 
 
-
 if __name__ == '__main__':
     unittest.main()
