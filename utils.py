@@ -55,7 +55,7 @@ def util_handleConditions(nextNode, newNodeName, prevNode=None):
         level = systemStateObject.level
         systemState = systemStateObject.type
         stateProperty = systemStateObject.args
-        if systemState in ('while',):
+        if systemState in ('while', 'foreach'):
             continue
         if currentIfLevel == level:
             continue

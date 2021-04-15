@@ -1,9 +1,10 @@
 # Bultin Libraries
+import csv
 import logging
 import sys
 import os
 import pickle
-from typing import List, Optional
+from typing import List, Optional, Dict
 # Third-party
 from z3 import *
 from antlr4 import FileStream, CommonTokenStream, ParseTreeWalker
@@ -73,6 +74,11 @@ class CMakeExtractorListener(CMakeListener):
         if variableLookedUp:
             # Wherever we create a LocalVariable, we should flat the corresponding variable
             self.flattenVariableInConditionExpression(localVariable, variableLookedUp)
+        else:
+            # We create an empty RefNode, perhaps it's a env variable
+            variable_name = "${{{}}}".format(ctx.getText())
+            variableNode = RefNode("{}".format(variable_name), None)
+            lookupTable.setKey(variable_name, variableNode)
         self.logicalExpressionStack.append(localVariable)
 
     def exitIfStatement(self, ctx:CMakeParser.IfStatementContext):
@@ -115,7 +121,11 @@ class CMakeExtractorListener(CMakeListener):
                 if isinstance(expression.getAssertions(), SeqRef):
                     assertion = condition.union(item[1].union({expression.getAssertions() == StringVal(item[0])}))
                 else:
-                    assertion = condition.union(item[1].union({expression.getAssertions() == item[0]}))
+                    try:
+                        assertion = condition.union(item[1].union({expression.getAssertions() == item[0]}))
+                    except Exception as e:
+                        print(f"Variable name: {expression.variableName} and item[0]: {item[0]}")
+                        raise e
                 s.add(assertion)
                 if s.check() == sat:
                     temp_result.append(assertion)
@@ -223,6 +233,17 @@ class CMakeExtractorListener(CMakeListener):
 
     def exitWhileCommand(self, ctx:CMakeParser.WhileCommandContext):
         endwhileCommand()
+
+    def enterFunctionCommand(self, ctx:CMakeParser.FunctionCommandContext):
+        startIdx = ctx.functionBody().start.start
+        endIdx = ctx.functionBody().stop.stop
+        inputStream = ctx.start.getInputStream()
+        bodyText = inputStream.getText(startIdx, endIdx)
+
+        arguments = [child.getText() for child in ctx.functionStatement().argument().getChildren() if
+                     not isinstance(child, TerminalNode)]
+        functionName = arguments.pop(0)
+        vmodel.functions[functionName] = {'arguments': arguments, 'commands': bodyText, 'isMacro': False}
 
     def enterCommand_invocation(self, ctx: CMakeParser.Command_invocationContext):
         global project_dir
@@ -494,7 +515,7 @@ class CMakeExtractorListener(CMakeListener):
                 for i in range(dependsIndex, nextArgIndex):
                     arguments.pop(dependsIndex)
 
-            targetNode = TargetNode("{}_{}".format(targetName, vmodel.getNextCounter()), vmodel.expand(arguments))
+            targetNode = TargetNode("{}".format(targetName), vmodel.expand(arguments))
             targetNode.isCustomTarget = True
             targetNode.defaultBuildTarget = defaultBuildTarget
             targetNode.sources.listOfNodes += dependedElement
@@ -589,7 +610,8 @@ class CMakeExtractorListener(CMakeListener):
                            'set_target_properties', 'set_tests_properties'):
             commandNode = CustomCommandNode("{}".format(commandId))
             commandNode.commands.append(vmodel.expand(arguments))
-            vmodel.nodes.append(commandNode)
+            finalNode = util_handleConditions(commandNode, commandNode.name, None)
+            vmodel.nodes.append(finalNode)
 
         # define_property(<GLOBAL | DIRECTORY | TARGET | SOURCE |
         #          TEST | VARIABLE | CACHED_VARIABLE>
@@ -974,8 +996,10 @@ class CMakeExtractorListener(CMakeListener):
 
         elif commandId == 'endforeach':
             lastPushedLookup = vmodel.getLastPushedLookupTable()
-            state, command, level = vmodel.popSystemState()
-            forEachVariableName = command.commands[0].getChildren()[0].getValue()
+            rule = vmodel.popSystemState()
+            assert rule.getType() == 'foreach'
+            command = rule.command
+            # forEachVariableName = command.commands[0].getChildren()[0].getValue()
             prevNodeStack = vmodel.nodeStack.pop()
             for item in vmodel.nodes:
                 if item not in prevNodeStack:
@@ -984,11 +1008,13 @@ class CMakeExtractorListener(CMakeListener):
                 if key not in lastPushedLookup.items[-1].keys() or \
                         lookupTable.getKey(key) != lastPushedLookup.getKey(key):
                     # We don't want to create a ref node for the variable that is the argument of foreach command
-                    if key == "${{{}}}".format(forEachVariableName):
-                        continue
+                    # if key == "${{{}}}".format(forEachVariableName):
+                    #     continue
                     refNode = RefNode("{}_{}".format(key, vmodel.getNextCounter()), command)
                     lookupTable.setKey(key, refNode)
                     vmodel.nodes.append(refNode)
+            if command not in vmodel.nodes:
+                vmodel.nodes.append(command)
 
         elif commandId == 'add_subdirectory':
             tempProjectDir = project_dir
@@ -1094,19 +1120,19 @@ class CMakeExtractorListener(CMakeListener):
             # vmodel.addNode(nextNode)
             targetNode.setDefinition(util_handleConditions(nextNode, nextNode, targetNode.getDefinition()))
 
-        elif commandId == 'target_link_libraries':
-            customCommand = CustomCommandNode('target_link_libraries')
+        elif commandId in ('target_link_libraries', 'add_dependencies'):
+            customCommand = CustomCommandNode(commandId)
             customCommand.commands.append(vmodel.expand(arguments))
             finalNode = util_handleConditions(customCommand, customCommand.name, None)
             # Next variable should have the target nodes itself or the name of targets
-            targetList = flattenAlgorithmWithConditions(customCommand.commands[0].getChildren()[0], useCache=False)
+            targetList = flattenAlgorithmWithConditions(customCommand.commands[0].getChildren()[0])
             for target in targetList:
                 targetNode = target[0]
                 if not isinstance(targetNode, TargetNode):
                     targetNode = lookupTable.getKey("t:{}".format(targetNode))
                 # Now we should have a TargetNode
                 assert isinstance(targetNode, TargetNode)
-                assert isinstance(target[1], dict)
+                assert isinstance(target[1], set)
                 targetNode.linkLibrariesConditions[finalNode] = target[1]
 
             vmodel.nodes.append(
@@ -1151,11 +1177,27 @@ class CMakeExtractorListener(CMakeListener):
             if not customFunction.get('isMacro'):
                 vmodel.lookupTable.newScope()
             functionArguments = customFunction.get('arguments')
-            for commandType, commandArgs in customFunction.get('commands'):
-                for arg in functionArguments:
-                    newArgs = [args.replace("${{{}}}".format(arg), arguments[functionArguments.index(arg)])
-                               for args in commandArgs]
-                    processCommand(commandType, newArgs)
+
+            # Set the value of argc
+            vmodel.lookupTable.setKey('${ARGC}', vmodel.expand([str(len(arguments))]))
+            # Set the values for ARGV0 ARGV1 ...
+            for idx, value in enumerate(arguments):
+                vmodel.lookupTable.setKey('${ARGV' + str(idx) + '}', vmodel.expand([value]))
+            # Set the values for ARGV, ARGN
+            vmodel.lookupTable.setKey('${ARGV}', vmodel.expand(arguments))
+            vmodel.lookupTable.setKey('${ARGN}', vmodel.expand(arguments[len(functionArguments):]))
+            functionBody:str = customFunction.get('commands')
+
+            for arg in functionArguments:
+                functionBody = functionBody.replace("${{{}}}".format(arg), arguments[functionArguments.index(arg)])
+
+            lexer = CMakeLexer(InputStream(functionBody))
+            stream = CommonTokenStream(lexer)
+            parser = CMakeParser(stream)
+            tree = parser.cmakefile()
+            extractor = self
+            walker = ParseTreeWalker()
+            walker.walk(extractor, tree)
             if not customFunction.get('isMacro'):
                 vmodel.lookupTable.dropScope()
 
@@ -1171,10 +1213,33 @@ def parseFile(filePath):
     walker.walk(extractor, tree)
 
 
-def main(argv):
+def getGraph(directory):
     global project_dir
-    project_dir = argv[1]
+    project_dir = directory
     parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
+    vmodel.findAndSetTargets()
+    return vmodel, lookupTable
+
+
+def getFlattenedFilesForTarget(target: str):
+    return printFilesForATarget(vmodel, lookupTable, target)
+
+
+def exportFlattenedListToCSV(flattened: Dict, fileName: str):
+    CSV_HEADERS = ['file', 'condition']
+    with open(fileName, 'w') as csv_out:
+        writer = csv.DictWriter(csv_out, fieldnames=CSV_HEADERS)
+        writer.writeheader()
+        for key in flattened.keys():
+            writer.writerow({
+                'file': flattened[key],
+                'condition': key
+            })
+
+
+
+def main(argv):
+    getGraph(argv[1])
     # vmodel.export()
     # vmodel.checkIntegrity()
     # vmodel.findAndSetTargets()

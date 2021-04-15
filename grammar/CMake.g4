@@ -10,26 +10,15 @@ grammar CMake;
 cmakefile
 	: commands* EOF
 	;
-commands: ifCommand
+commands:   functionCommand
+          | ifCommand
           | whileCommand
           | optionCommand
-          | foreachCommand
           | command_invocation
           ;
 
-foreachCommand
-	: foreachStatement (ifBody=commands)* endForeachStatement
-	;
-
-foreachStatement
-	: FOREACH LPAREN foreachExpression RPAREN
-	;
-foreachExpression
-    : single_argument (IN|RANGE)? single_argument*
-    ;
-endForeachStatement
-	: ENDFOREACH LPAREN (logical_expr)* RPAREN
-	;
+functionCommand
+    : functionStatement functionBody endFunctionStatement;
 
 whileCommand
 	: whileStatement (ifBody=commands)* endWhileStatement
@@ -52,7 +41,7 @@ ifStatement
 	;
 
 elseIfStatement
-	: ELSEIF LPAREN (logical_expr)* RPAREN
+	: ELSEIF LPAREN logical_expr RPAREN
 	;
 
 elseStatement
@@ -62,6 +51,18 @@ elseStatement
 endIfStatement
 	: ENDIF LPAREN .*? RPAREN
 	;
+
+functionStatement
+    : FUNCTION argument
+    ;
+
+functionBody
+    : (body=.*)
+    ;
+
+endFunctionStatement
+    : ENDFUNCTION LPAREN .*? RPAREN
+    ;
 
 logical_expr
  : NOT logical_expr                                         # LogicalExpressionNot
@@ -120,10 +121,10 @@ STRGREATER: S T R G R E A T E R;
 STRLESS: S T R L E S S;
 COMMAND: C O M M A N D;
 MATCHES: M A T C H E S;
-FOREACH: F O R E A C H;
-ENDFOREACH: E N D F O R E A C H;
 WHILE: W H I L E;
 ENDWHILE: E N D W H I L E;
+FUNCTION: F U N C T I O N;
+ENDFUNCTION: E N D F U N C T I O N;
 
 OR : O R;
 IF: I F;

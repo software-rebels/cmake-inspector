@@ -1,13 +1,15 @@
 from algorithms import flattenAlgorithmWithConditions
 from condition_data_structure import Rule
 from datastructs import Lookup, CustomCommandNode, TargetNode, ConcatNode, WhileCommandNode
+from grammar.CMakeLexer import CMakeLexer, CommonTokenStream, InputStream
+from grammar.CMakeParser import CMakeParser
 from utils import *
 
 
 def setCommand(arguments):
     vmodel = VModel.getInstance()
     lookupTable = Lookup.getInstance()
-    # TODO: @Farshad: Why you added this line?
+    # TODO: @Farshad: Why did you add this line?
     if len(arguments) == 1:
         arguments.append('')
     rawVarName = arguments.pop(0)
@@ -309,19 +311,25 @@ def addTarget(arguments, isExecutable=True):
 def forEachCommand(arguments):
     vmodel = VModel.getInstance()
 
-    customCommand = CustomCommandNode("foreach_{}".format(vmodel.getNextCounter()))
-    customCommand.commands.append(vmodel.expand(arguments))
-    vmodel.pushSystemState('foreach', customCommand)
+    customCommand = CustomCommandNode("foreach")
+    foreachVariable = util_create_and_add_refNode_for_variable(arguments.pop(0), vmodel.expand(arguments))
+    customCommand.commands.append(foreachVariable)
+    rule = Rule()
+    rule.command = customCommand
+    rule.setType('foreach')
+    vmodel.pushSystemState(rule)
     vmodel.pushCurrentLookupTable()
     # We want to show the dependency between foreach command and newly created nodes. We compare nodes before and after
-    # while loop and connect while command node to them.
+    # foreach loop and connect foreach command node to them.
     vmodel.nodeStack.append(list(vmodel.nodes))
 
 
 def processCommand(commandId, args):
-    possibles = globals().copy()
-    possibles.update(locals())
-    method = possibles.get("{}Command".format(commandId))
-    if not method:
-        raise NotImplementedError("Method %s not implemented" % commandId)
-    method(args)
+    pass
+    # possibles = globals().copy()
+    # possibles.update(locals())
+    # method = possibles.get("{}Command".format(commandId))
+    # if not method:
+    #     raise NotImplementedError("Method %s not implemented" % commandId)
+    # method(args)
+

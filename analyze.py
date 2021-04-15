@@ -12,6 +12,7 @@ import pprint
 import json
 import csv
 from vmodel import VModel
+from datetime import datetime
 # import matplotlib.pyplot as plt
 
 def printInputVariablesAndOptions(vmodel: VModel, lookup: Lookup):
@@ -82,7 +83,7 @@ def checkForCyclesAndPrint(vmodel: VModel, lookup: Lookup, node: Node, visited=[
 
 
 def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=False):
-    logging.info("##### Start printing files for target " + target)
+    logging.info("[FLATTEN] Start flattening target " + target)
     targetNode = lookup.getKey("t:{}".format(target))
     assert isinstance(targetNode, TargetNode)
     flattenedFiles = flattenAlgorithmWithConditions(targetNode.sources)
@@ -95,8 +96,7 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
 
     # finalFlattenList = mergeFlattedList(flattenedFiles)
     # Save flatten algorithm result
-    # with open('flatten_merged_result.pickle', 'wb') as handle:
-    #     pickle.dump(finalFlattenList, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    logging.info("[FLATTEN] Done " + target)
 
     # finalFlattenList = removeDuplicatesFromFlattedList(finalFlattenList)
     # # Now we should expand the cached results (DEPRECATED)
@@ -106,11 +106,17 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
     #         finalFlattenList += recursivelyResolveReference(item[0], item[1])
     #     else:
     #         finalFlattenList.append(item)
+    logging.info("[FLATTEN] Start postprocessing 1 " + target)
     postprocessZ3Output(flattenedFiles)
+
     result = defaultdict(set)
     for item in flattenedFiles:
         result[str(item[1])].add(item[0])
 
+    with open(f'flatten_merged_result_{str(datetime.timestamp(datetime.utcnow()))[:-7]}.pickle', 'wb') as handle:
+        pickle.dump(result, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    logging.info("[FLATTEN] Start postprocessing 2 " + target)
     # Post-processing
     # 1. Resolve wildcard path
     for key in list(result):
