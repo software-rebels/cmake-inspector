@@ -1,4 +1,6 @@
+import operator
 from typing import Dict, List
+from z3 import *
 
 
 class LogicalExpression:
@@ -17,6 +19,12 @@ class LogicalExpression:
         pass
 
     def satisfiable(self, condition: Dict) -> List:
+        pass
+
+    def getAssertions(self):
+        pass
+
+    def satModel(self, s: Solver):
         pass
 
 
@@ -47,6 +55,10 @@ class OrExpression(LogicalExpression):
         # We convert OR to AND and use the same function we have for AND to avoid duplicates
         andEquivalent = NotExpression(AndExpression(NotExpression(self.getLeft()), NotExpression(self.getRight())))
         return andEquivalent.satisfiable(condition)
+
+    def getAssertions(self):
+        return simplify(Or(self.leftExpression.getAssertions(),
+                           self.rightExpression.getAssertions()))
 
 
 class AndExpression(LogicalExpression):
@@ -108,6 +120,10 @@ class AndExpression(LogicalExpression):
 
         return result
 
+    def getAssertions(self):
+        return simplify(And(self.leftExpression.getAssertions(),
+                            self.rightExpression.getAssertions()))
+
 
 class NotExpression(LogicalExpression):
     rightExpression: LogicalExpression = None
@@ -133,16 +149,32 @@ class NotExpression(LogicalExpression):
             result.append((not item[0], item[1]))
         return result
 
+    def getAssertions(self):
+        return simplify(Not(self.rightExpression.getAssertions()))
+
 
 class LocalVariable(LogicalExpression):
     variableName: str = None
+    variable: [Bool, Int, String] = None
 
-    def __init__(self, variableName):
+    def __init__(self, variableName, varType='bool'):
         super(LocalVariable, self).__init__('var')
         self.variableName = variableName
+        if varType == 'bool':
+            self.variable = Bool(variableName)
+        elif varType == 'int':
+            self.variable = Int(variableName)
+        elif varType == 'string':
+            self.variable = String(variableName)
 
     def getText(self, pretty=False):
         return "${{{}}}".format(self.variableName)
+
+    def toInt(self):
+        self.variable = Int(self.variableName)
+
+    def toString(self):
+        self.variable = String(self.variableName)
 
     def evaluate(self):
         # TODO: Given the fact, we should evaluate this last piece in the evaluate tree
@@ -157,13 +189,20 @@ class LocalVariable(LogicalExpression):
             (False, {self.variableName: False})
         ]
 
+    def getAssertions(self):
+        return self.variable
+
 
 class ConstantExpression(LogicalExpression):
     value: str = None
 
-    def __init__(self, value):
+    PYTHON_STR = 'pythonSTR'
+    Z3_STR = 'z3STR'
+
+    def __init__(self, value, strType=PYTHON_STR):
         super(ConstantExpression, self).__init__('constant')
         self.value = value
+        self.type = strType
 
     def getText(self, pretty=False):
         return self.value
@@ -175,6 +214,12 @@ class ConstantExpression(LogicalExpression):
 
     def satisfiable(self, condition: Dict) -> List:
         return [(self.evaluate(), {})]
+
+    def getAssertions(self):
+        if self.type == self.PYTHON_STR:
+            return self.value
+        elif self.type == self.Z3_STR:
+            return StringVal(self.value)
 
 
 class ComparisonExpression(LogicalExpression):
@@ -201,12 +246,25 @@ class ComparisonExpression(LogicalExpression):
     def satisfiable(self, condition: Dict) -> List:
         return [(False, {})]
 
+    def returnOperator(self):
+        if self.logicType in ('GREATER', 'STRGREATER'):
+            return operator.gt
+        elif self.logicType in ('LESS', 'STRLESS'):
+            return operator.lt
+        elif self.logicType in ('EQUAL', 'STREQUAL', 'MATCHES'):
+            return operator.eq
+
+    def getAssertions(self):
+        return simplify(self.returnOperator()(self.leftExpression.getAssertions(),
+                                              self.rightExpression.getAssertions()))
+
 
 class Rule:
     type: str = None
     level: int = None
     args: list = None
     condition: LogicalExpression = None
+    flattenedResult: list = [set()]
 
     def setCondition(self, condition: LogicalExpression):
         self.condition = condition

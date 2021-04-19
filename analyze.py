@@ -2,7 +2,7 @@ import logging
 import pickle
 
 from algorithms import flattenAlgorithmWithConditions, recursivelyResolveReference, mergeFlattedList, \
-    removeDuplicatesFromFlattedList
+    removeDuplicatesFromFlattedList, postprocessZ3Output
 from datastructs import Lookup, RefNode, TargetNode, LiteralNode, CustomCommandNode, Node
 from pydriller import RepositoryMining
 import itertools
@@ -12,6 +12,7 @@ import pprint
 import json
 import csv
 from vmodel import VModel
+from datetime import datetime
 # import matplotlib.pyplot as plt
 
 def printInputVariablesAndOptions(vmodel: VModel, lookup: Lookup):
@@ -82,23 +83,22 @@ def checkForCyclesAndPrint(vmodel: VModel, lookup: Lookup, node: Node, visited=[
 
 
 def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=False):
-    logging.info("##### Start printing files for target " + target)
+    logging.info("[FLATTEN] Start flattening target " + target)
     targetNode = lookup.getKey("t:{}".format(target))
     assert isinstance(targetNode, TargetNode)
     flattenedFiles = flattenAlgorithmWithConditions(targetNode.sources)
     for library, conditions in targetNode.linkLibrariesConditions.items():
         flattenedFiles += flattenAlgorithmWithConditions(library, conditions)
 
-    # Save flatten algorithm result
-    with open('flatten_result.pickle', 'wb') as handle:
-        pickle.dump(flattenedFiles, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    # # Save flatten algorithm result
+    # with open('flatten_result.pickle', 'wb') as handle:
+    #     pickle.dump(flattenedFiles, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    finalFlattenList = mergeFlattedList(flattenedFiles)
+    # finalFlattenList = mergeFlattedList(flattenedFiles)
     # Save flatten algorithm result
-    with open('flatten_merged_result.pickle', 'wb') as handle:
-        pickle.dump(finalFlattenList, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    logging.info("[FLATTEN] Done " + target)
 
-    finalFlattenList = removeDuplicatesFromFlattedList(finalFlattenList)
+    # finalFlattenList = removeDuplicatesFromFlattedList(finalFlattenList)
     # # Now we should expand the cached results (DEPRECATED)
     # finalFlattenList = []
     # for item in flattenedFiles:
@@ -106,17 +106,17 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
     #         finalFlattenList += recursivelyResolveReference(item[0], item[1])
     #     else:
     #         finalFlattenList.append(item)
+    logging.info("[FLATTEN] Start postprocessing 1 " + target)
+    postprocessZ3Output(flattenedFiles)
 
     result = defaultdict(set)
-    for item in finalFlattenList:
-        test_cond = set()
-        for cond in item[1]:
-            test_cond.add("{}:{}".format(cond, str(item[1].get(cond))))
-        if test_cond:
-            result[" && ".join(sorted(test_cond))].update(item[0])
-        elif item[0]:
-            result[""].update(item[0])
+    for item in flattenedFiles:
+        result[str(item[1])].add(item[0])
 
+    with open(f'flatten_merged_result_{str(datetime.timestamp(datetime.utcnow()))[:-7]}.pickle', 'wb') as handle:
+        pickle.dump(result, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    logging.info("[FLATTEN] Start postprocessing 2 " + target)
     # Post-processing
     # 1. Resolve wildcard path
     for key in list(result):
@@ -125,13 +125,13 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
                 result[key].update(set(glob.glob(item)))
                 result[key].remove(item)
     # 2. Find a file which appears in all the paths
-    files = set.intersection(*list(result.values()))
-    if files:
-        for key in list(result):
-            result[key] = result[key] - files
-            if not result[key]:
-                del result[key]
-        result['NO_MATTER_WHAT'].update(files)
+    # files = set.intersection(*list(result.values()))
+    # if files:
+    #     for key in list(result):
+    #         result[key] = result[key] - files
+    #         if not result[key]:
+    #             del result[key]
+    #     result['NO_MATTER_WHAT'].update(files)
 
     # json.dumps does not work on set. Using this function, we convert set to a list.
     def set_default(obj):
