@@ -1,0 +1,32 @@
+option(BUILD_SERVER "des1" YES)
+option(FEATURE_IRC_SERVER "des2" YES)
+
+option(foo "Is bar?" YES)
+option(john "Is john?" YES)
+
+set(SERVER_SRC files_for_test/a.cxx)
+if(APPLE)
+    set(APP_VERSION 2)
+else()
+    set(APP_VERSION 1)
+endif()
+
+if(BUILD_SERVER)
+    if(FEATURE_IRC_SERVER)
+        list(APPEND SERVER_SRC files_for_test/b.cxx)
+    else()
+        list(APPEND SERVER_SRC files_for_test/c.cxx)
+    endif(FEATURE_IRC_SERVER)
+endif(BUILD_SERVER)
+
+if(APP_VERSION GREATER 1 OR LINUX)
+    list(APPEND SERVER_SRC unix/new.cxx)
+endif()
+
+add_executable(exec ${SERVER_SRC})
+add_library(lib test/another_folder_for_test/*.cxx)
+if(foo)
+    if(john)
+        target_link_libraries(exec lib)
+    endif()
+endif()

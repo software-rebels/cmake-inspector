@@ -55,7 +55,7 @@ def util_handleConditions(nextNode, newNodeName, prevNode=None):
         level = systemStateObject.level
         systemState = systemStateObject.type
         stateProperty = systemStateObject.args
-        if systemState in ('while',):
+        if systemState in ('while', 'foreach'):
             continue
         if currentIfLevel == level:
             continue
@@ -99,4 +99,4 @@ def util_getNegativeOfPrevLogics():
                               NotExpression(prevState.getCondition().getRight()))
     else:
         raise RuntimeError("Previous state of elseif could be if or elseif, but got {}".format(prevState.getType()))
-    return logic
+    return logic, prevState.flattenedResult

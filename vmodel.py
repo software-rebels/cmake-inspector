@@ -203,8 +203,8 @@ class VModel:
                 if not node:
                     node = RefNode("{}_{}".format(variableName[0], self.getNextCounter()), None)
                     self.lookupTable.setKey("${{{}}}".format(variableName[0]), node)
-                if not isinstance(node, RefNode):
-                    raise Exception("NOT_IMPLEMENTED")
+                # if not isinstance(node, RefNode):
+                    # raise Exception("NOT_IMPLEMENTED")
                 result.append(node)
             else:
                 node = self.findNode(item)
@@ -388,6 +388,10 @@ class VModel:
                 self.targets.add(node)
             if isinstance(node, TestNode):
                 self.testTargets.add(node)
+
+    def getLibrariesForTarget(self):
+        pass
+
 
     def pathWithCondition(self, startNode, endNode, **kwargs):
         nodeToVisit = [startNode]

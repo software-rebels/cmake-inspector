@@ -119,3 +119,43 @@ class TestConditions(unittest.TestCase):
                 (True, {'foo': True}), (True, {'bar': True}), (False, {'foo': False, 'bar': False})
             ], expression.satisfiable({})
         )
+
+    def test_sat_basic_or(self):
+        fooVar = LocalVariable('foo')
+        barVar = LocalVariable('bar')
+        orExp = OrExpression(fooVar, barVar)
+        s = Solver()
+        s.add(orExp.getAssertions())
+        self.assertEqual(sat, s.check())
+        s.add(Not(fooVar.getAssertions()))
+        s.add(Not(barVar.getAssertions()))
+        self.assertEqual(unsat, s.check())
+
+    def test_sat_basic_and_or_unsat(self):
+        orExp = OrExpression(self.fooVar, self.barVar)
+        andExp = AndExpression(orExp, self.johnVar)
+        s = Solver()
+        s.add(Not(orExp.getAssertions()))
+        s.add(andExp.getAssertions())
+        self.assertEqual(unsat, s.check())
+
+    def test_greater(self):
+        fooInt = LocalVariable('foo', 'int')
+        barInt = LocalVariable('bar', 'int')
+        greaterExp = ComparisonExpression(fooInt, barInt, 'GREATER')
+        s = Solver()
+        s.add(greaterExp.getAssertions())
+        self.assertEqual(sat, s.check())
+        s.add(fooInt == 10)
+        s.add(barInt == 20)
+        self.assertEqual(unsat, s.check())
+
+    def test_greater_var_constant(self):
+        fooInt = LocalVariable('foo', 'int')
+        constant = ConstantExpression('20')
+        greaterExp = ComparisonExpression(fooInt, constant, 'GREATER')
+        s = Solver()
+        s.add(greaterExp.getAssertions())
+        self.assertEqual(sat, s.check())
+        s.add(fooInt == 10)
+        self.assertEqual(unsat, s.check())

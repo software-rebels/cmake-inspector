@@ -1,10 +1,12 @@
 # Bultin Libraries
+import csv
 import logging
 import sys
 import os
 import pickle
-from typing import List, Optional
+from typing import List, Optional, Dict
 # Third-party
+from z3 import *
 from antlr4 import FileStream, CommonTokenStream, ParseTreeWalker
 from antlr4.tree.Tree import TerminalNode
 from neomodel import config
@@ -67,7 +69,21 @@ class CMakeExtractorListener(CMakeListener):
         self.logicalExpressionStack.append(orLogic)
 
     def exitLogicalEntity(self, ctx:CMakeParser.LogicalEntityContext):
+        variableLookedUp = lookupTable.getKey(f'${{{ctx.getText()}}}')
         localVariable = LocalVariable(ctx.getText())
+        if variableLookedUp:
+            try:
+                # Wherever we create a LocalVariable, we should flat the corresponding variable
+                self.flattenVariableInConditionExpression(localVariable, variableLookedUp)
+            except Z3Exception as e:
+                print(localVariable)
+                raise e
+
+        else:
+            # We create an empty RefNode, perhaps it's a env variable
+            variable_name = "${{{}}}".format(ctx.getText())
+            variableNode = RefNode("{}".format(variable_name), None)
+            lookupTable.setKey(variable_name, variableNode)
         self.logicalExpressionStack.append(localVariable)
 
     def exitIfStatement(self, ctx:CMakeParser.IfStatementContext):
@@ -75,19 +91,85 @@ class CMakeExtractorListener(CMakeListener):
         assert len(self.logicalExpressionStack) == 0
 
     def exitComparisonExpression(self, ctx:CMakeParser.ComparisonExpressionContext):
-        if lookupTable.getKey(f'${{{ctx.left.getText()}}}'):
-            leftExpression = LocalVariable(ctx.left.getText())
-        else:
-            leftExpression = ConstantExpression(ctx.left.getText())
+        ctx_left_get_text: str = ctx.left.getText()
+        ctx_right_get_text: str = ctx.right.getText()
 
-        if lookupTable.getKey(f'${{{ctx.right.getText()}}}'):
-            rightExpression = LocalVariable(ctx.right.getText())
+        leftVariableLookedUp = lookupTable.getKey(f'${{{ctx_left_get_text}}}')
+        rightVariableLookedUp = lookupTable.getKey(f'${{{ctx_right_get_text}}}')
+        operator = ctx.operator.getText().upper()
+
+        localVariableType = 'string' if operator in ('STRLESS', 'STREQUAL', 'STRGREATER', 'MATCHES') else 'int'
+        constantExpressionType = ConstantExpression.Z3_STR if operator in ('STRLESS', 'STREQUAL',
+                                                                           'STRGREATER', 'MATCHES') \
+            else ConstantExpression.PYTHON_STR
+
+        if leftVariableLookedUp:
+            leftExpression = LocalVariable(ctx_left_get_text, localVariableType)
+            self.flattenVariableInConditionExpression(leftExpression, leftVariableLookedUp)
         else:
-            rightExpression = ConstantExpression(ctx.right.getText())
+            if ctx_left_get_text.upper().startswith('CMAKE_'):
+                # Reserved variable for CMake
+                variable_name = "${{{}}}".format(ctx_left_get_text)
+                variableNode = RefNode("{}".format(variable_name), None)
+                lookupTable.setKey(variable_name, variableNode)
+                leftExpression = LocalVariable(ctx_left_get_text, localVariableType)
+            else:
+                leftExpression = ConstantExpression(ctx_left_get_text, constantExpressionType)
+
+        if rightVariableLookedUp:
+            rightExpression = LocalVariable(ctx_right_get_text, localVariableType)
+            self.flattenVariableInConditionExpression(rightExpression, rightVariableLookedUp)
+        else:
+            if ctx_right_get_text.upper().startswith('CMAKE_'):
+                # Reserved variable for CMake
+                variable_name = "${{{}}}".format(ctx_right_get_text)
+                variableNode = RefNode("{}".format(variable_name), None)
+                lookupTable.setKey(variable_name, variableNode)
+                rightExpression = LocalVariable(ctx_right_get_text, localVariableType)
+            else:
+                rightExpression = ConstantExpression(ctx_right_get_text, constantExpressionType)
 
         self.logicalExpressionStack.append(
-            ComparisonExpression(leftExpression, rightExpression, ctx.operator.getText().upper())
+            ComparisonExpression(leftExpression, rightExpression, operator)
         )
+
+    def flattenVariableInConditionExpression(self, expression: LocalVariable, variable: Node):
+        # Flattening the variable used inside the condition, like [(True, {bar}), (False, {Not bar, john > 2})]
+        flattened = flattenAlgorithmWithConditions(variable) or []
+        # We need to add an assertion to the solver, like {bar, foo == True} and {Not bar, john > 2, foo == False}
+        temp_result = []
+        for item in flattened:
+            for condition in self.rule.flattenedResult:
+                s = Solver()
+                if isinstance(expression.getAssertions(), SeqRef):
+                    assertion = condition.union(item[1].union({expression.getAssertions() == StringVal(item[0])}))
+                else:
+                    try:
+                        rightHandSide = item[0]
+                        if isinstance(expression.getAssertions(), BoolRef):
+                            # To convert float (3.14) to (314) and also support ("3.14")
+                            if item[0].replace('.','', 1).replace('"', '').isdigit():
+                                rightHandSide = bool(int(item[0].replace('.','', 1).replace('"', '')))
+
+                            if rightHandSide == '""':
+                                rightHandSide = False
+                            elif not isinstance(rightHandSide, bool):
+                                # TODO: needs more investigation, I think we are missing some problems
+                                # Like 'INSTALL_DEFAULT_BASEDIR' in ET: Legacy project
+                                rightHandSide = bool(rightHandSide)
+
+                        if isinstance(expression.getAssertions(), ArithRef) and isinstance(rightHandSide, str):
+                            rightHandSide = int(item[0].replace('.','', 1).replace('"', ''))
+                        assertion = condition.union(item[1].union({expression.getAssertions() == rightHandSide}))
+                    except Exception as e:
+                        print(f"Variable name: {expression.variableName} and item[0]: {item[0]}")
+                        raise e
+                s.add(assertion)
+                if s.check() == sat:
+                    temp_result.append(assertion)
+        if not temp_result:
+            temp_result.append(set())
+        self.rule.flattenedResult = temp_result
 
     def exitElseIfStatement(self, ctx:CMakeParser.ElseIfStatementContext):
         # Logical expression for the elseif itself
@@ -95,11 +177,12 @@ class CMakeExtractorListener(CMakeListener):
 
         # For the else if, to be evaluated as true, all the previous conditions should be evaluated as false
         # Using bellow algorithm, we need to check the latest condition only.
-        logic = util_getNegativeOfPrevLogics()
+        logic, prevConditionFlattened = util_getNegativeOfPrevLogics()
 
         andLogic = AndExpression(logic, rightLogic)
         assert len(self.logicalExpressionStack) == 0
         self.rule.setCondition(andLogic)
+        self.rule.flattenedResult = list(prevConditionFlattened)
         vmodel.pushSystemState(self.rule)
 
     def enterIfCommand(self, ctx: CMakeParser.IfCommandContext):
@@ -133,7 +216,7 @@ class CMakeExtractorListener(CMakeListener):
 
         # Else statement is true when all the previous conditions are false
         # Same as elseif, we only need to check the previous state
-        logic = util_getNegativeOfPrevLogics()
+        logic, prevConditionFlattened = util_getNegativeOfPrevLogics()
 
         while True:
             systemStateObject = vmodel.getCurrentSystemState()
@@ -149,6 +232,7 @@ class CMakeExtractorListener(CMakeListener):
         self.rule.setType('elseif')
         self.rule.setLevel(vmodel.ifLevel)
         self.rule.setCondition(logic)
+        self.rule.flattenedResult = list(prevConditionFlattened)
         vmodel.pushSystemState(self.rule)
 
     def exitIfCommand(self, ctx: CMakeParser.IfCommandContext):
@@ -187,6 +271,17 @@ class CMakeExtractorListener(CMakeListener):
 
     def exitWhileCommand(self, ctx:CMakeParser.WhileCommandContext):
         endwhileCommand()
+
+    def enterFunctionCommand(self, ctx:CMakeParser.FunctionCommandContext):
+        startIdx = ctx.functionBody().start.start
+        endIdx = ctx.functionBody().stop.stop
+        inputStream = ctx.start.getInputStream()
+        bodyText = inputStream.getText(startIdx, endIdx)
+
+        arguments = [child.getText() for child in ctx.functionStatement().argument().getChildren() if
+                     not isinstance(child, TerminalNode)]
+        functionName = arguments.pop(0)
+        vmodel.functions[functionName] = {'arguments': arguments, 'commands': bodyText, 'isMacro': False}
 
     def enterCommand_invocation(self, ctx: CMakeParser.Command_invocationContext):
         global project_dir
@@ -266,15 +361,15 @@ class CMakeExtractorListener(CMakeListener):
             args = vmodel.expand(arguments)
             commandNode.depends.append(args)
 
-            prevNodeStack = list(vmodel.nodes)
+            # prevNodeStack = list(vmodel.nodes)
             # We execute the command if we can find the CMake file and there is no condition to execute it
             if os.path.exists(os.path.join(project_dir, args.getValue())):
                 parseFile(os.path.join(project_dir, args.getValue()))
-                for item in vmodel.nodes:
-                    if item not in prevNodeStack:
-                        commandNode.commands.append(item)
+                # for item in vmodel.nodes:
+                #     if item not in prevNodeStack:
+                #         commandNode.commands.append(item)
             else:
-                print("No! : {}".format(arguments))
+                print("Cannot Find : {} to include".format(arguments))
                 vmodel.nodes.append(util_handleConditions(commandNode, commandNode.getName()))
 
         elif commandId == 'find_file':
@@ -458,7 +553,7 @@ class CMakeExtractorListener(CMakeListener):
                 for i in range(dependsIndex, nextArgIndex):
                     arguments.pop(dependsIndex)
 
-            targetNode = TargetNode("{}_{}".format(targetName, vmodel.getNextCounter()), vmodel.expand(arguments))
+            targetNode = TargetNode("{}".format(targetName), vmodel.expand(arguments))
             targetNode.isCustomTarget = True
             targetNode.defaultBuildTarget = defaultBuildTarget
             targetNode.sources.listOfNodes += dependedElement
@@ -553,7 +648,8 @@ class CMakeExtractorListener(CMakeListener):
                            'set_target_properties', 'set_tests_properties'):
             commandNode = CustomCommandNode("{}".format(commandId))
             commandNode.commands.append(vmodel.expand(arguments))
-            vmodel.nodes.append(commandNode)
+            finalNode = util_handleConditions(commandNode, commandNode.name, None)
+            vmodel.nodes.append(finalNode)
 
         # define_property(<GLOBAL | DIRECTORY | TARGET | SOURCE |
         #          TEST | VARIABLE | CACHED_VARIABLE>
@@ -938,8 +1034,10 @@ class CMakeExtractorListener(CMakeListener):
 
         elif commandId == 'endforeach':
             lastPushedLookup = vmodel.getLastPushedLookupTable()
-            state, command, level = vmodel.popSystemState()
-            forEachVariableName = command.commands[0].getChildren()[0].getValue()
+            rule = vmodel.popSystemState()
+            assert rule.getType() == 'foreach'
+            command = rule.command
+            # forEachVariableName = command.commands[0].getChildren()[0].getValue()
             prevNodeStack = vmodel.nodeStack.pop()
             for item in vmodel.nodes:
                 if item not in prevNodeStack:
@@ -948,11 +1046,13 @@ class CMakeExtractorListener(CMakeListener):
                 if key not in lastPushedLookup.items[-1].keys() or \
                         lookupTable.getKey(key) != lastPushedLookup.getKey(key):
                     # We don't want to create a ref node for the variable that is the argument of foreach command
-                    if key == "${{{}}}".format(forEachVariableName):
-                        continue
+                    # if key == "${{{}}}".format(forEachVariableName):
+                    #     continue
                     refNode = RefNode("{}_{}".format(key, vmodel.getNextCounter()), command)
                     lookupTable.setKey(key, refNode)
                     vmodel.nodes.append(refNode)
+            if command not in vmodel.nodes:
+                vmodel.nodes.append(command)
 
         elif commandId == 'add_subdirectory':
             tempProjectDir = project_dir
@@ -1058,19 +1158,23 @@ class CMakeExtractorListener(CMakeListener):
             # vmodel.addNode(nextNode)
             targetNode.setDefinition(util_handleConditions(nextNode, nextNode, targetNode.getDefinition()))
 
-        elif commandId == 'target_link_libraries':
-            customCommand = CustomCommandNode('target_link_libraries')
+        elif commandId in ('target_link_libraries', 'add_dependencies'):
+            customCommand = CustomCommandNode(commandId)
             customCommand.commands.append(vmodel.expand(arguments))
             finalNode = util_handleConditions(customCommand, customCommand.name, None)
             # Next variable should have the target nodes itself or the name of targets
-            targetList = flattenAlgorithmWithConditions(customCommand.commands[0].getChildren()[0], useCache=False)
+            targetList = flattenAlgorithmWithConditions(customCommand.commands[0].getChildren()[0])
             for target in targetList:
                 targetNode = target[0]
                 if not isinstance(targetNode, TargetNode):
                     targetNode = lookupTable.getKey("t:{}".format(targetNode))
                 # Now we should have a TargetNode
-                assert isinstance(targetNode, TargetNode)
-                assert isinstance(target[1], dict)
+                # assert isinstance(targetNode, TargetNode)
+                # TODO: In some cases like find_package there could be an target in another package
+                #  and we are not able to find it, for now, we just continue
+                if not isinstance(targetNode, TargetNode):
+                    continue
+                assert isinstance(target[1], set)
                 targetNode.linkLibrariesConditions[finalNode] = target[1]
 
             vmodel.nodes.append(
@@ -1115,11 +1219,27 @@ class CMakeExtractorListener(CMakeListener):
             if not customFunction.get('isMacro'):
                 vmodel.lookupTable.newScope()
             functionArguments = customFunction.get('arguments')
-            for commandType, commandArgs in customFunction.get('commands'):
-                for arg in functionArguments:
-                    newArgs = [args.replace("${{{}}}".format(arg), arguments[functionArguments.index(arg)])
-                               for args in commandArgs]
-                    processCommand(commandType, newArgs)
+
+            # Set the value of argc
+            vmodel.lookupTable.setKey('${ARGC}', vmodel.expand([str(len(arguments))]))
+            # Set the values for ARGV0 ARGV1 ...
+            for idx, value in enumerate(arguments):
+                vmodel.lookupTable.setKey('${ARGV' + str(idx) + '}', vmodel.expand([value]))
+            # Set the values for ARGV, ARGN
+            vmodel.lookupTable.setKey('${ARGV}', vmodel.expand(arguments))
+            vmodel.lookupTable.setKey('${ARGN}', vmodel.expand(arguments[len(functionArguments):]))
+            functionBody:str = customFunction.get('commands')
+
+            for arg in functionArguments:
+                functionBody = functionBody.replace("${{{}}}".format(arg), arguments[functionArguments.index(arg)])
+
+            lexer = CMakeLexer(InputStream(functionBody))
+            stream = CommonTokenStream(lexer)
+            parser = CMakeParser(stream)
+            tree = parser.cmakefile()
+            extractor = self
+            walker = ParseTreeWalker()
+            walker.walk(extractor, tree)
             if not customFunction.get('isMacro'):
                 vmodel.lookupTable.dropScope()
 
@@ -1135,11 +1255,34 @@ def parseFile(filePath):
     walker.walk(extractor, tree)
 
 
-def main(argv):
+def getGraph(directory):
     global project_dir
-    project_dir = argv[1]
+    project_dir = directory
     parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
-    # vmodel.export()
+    vmodel.findAndSetTargets()
+    return vmodel, lookupTable
+
+
+def getFlattenedFilesForTarget(target: str):
+    return printFilesForATarget(vmodel, lookupTable, target)
+
+
+def exportFlattenedListToCSV(flattened: Dict, fileName: str):
+    CSV_HEADERS = ['file', 'condition']
+    with open(fileName, 'w') as csv_out:
+        writer = csv.DictWriter(csv_out, fieldnames=CSV_HEADERS)
+        writer.writeheader()
+        for key in flattened.keys():
+            writer.writerow({
+                'file': flattened[key],
+                'condition': key
+            })
+
+
+
+def main(argv):
+    getGraph(argv[1])
+    vmodel.export()
     # vmodel.checkIntegrity()
     # vmodel.findAndSetTargets()
     # doGitAnalysis(project_dir)
@@ -1148,7 +1291,7 @@ def main(argv):
     # printSourceFiles(vmodel, lookupTable)
     # testNode = vmodel.findNode('${CLIENT_LIBRARIES}_662')
     # flattenAlgorithmWithConditions(testNode)
-    a = printFilesForATarget(vmodel, lookupTable, 'etl', True)
+    a = printFilesForATarget(vmodel, lookupTable, argv[2], True)
 
 if __name__ == "__main__":
     main(sys.argv)

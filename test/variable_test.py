@@ -11,7 +11,7 @@ from grammar.CMakeParser import CMakeParser
 from datastructs import Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, \
     CustomCommandNode, TargetNode, TestNode, OptionNode, Node
 from algorithms import flattenAlgorithm, flattenAlgorithmWithConditions, getFlattedArguments, flattenCustomCommandNode, \
-    CycleDetectedException
+    CycleDetectedException, postprocessZ3Output
 from vmodel import VModel
 
 
@@ -1928,15 +1928,141 @@ class TestVariableDefinitions(unittest.TestCase):
         endif()
 
         set(baz ${foo}/${bar})
+        add_executable(exec ${baz})
         """
         self.runTool(text)
-        bazVar = self.lookup.getKey('${baz}')
-        a = flattenAlgorithmWithConditions(bazVar)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec')
+        self.assertEqual(3, len(a))
+        self.assertIn('john/doe', a['[Not(opt2), Not(opt1)]'])
+        self.assertIn('john/opt2_doe', a['[opt2, Not(opt1)]'])
+        self.assertIn('opt1_john/doe', a['[opt1]'])
+
+    def test_z_real_ecm_mark_as_test(self):
+        text = """
+        if (NOT BUILD_TESTING)
+            if(NOT TARGET buildtests)
+                add_custom_target(buildtests)
+            endif()
+        endif()
+
+        function(ecm_mark_as_test)
+            if (NOT BUILD_TESTING)
+                foreach(_target ${ARGN})
+                    set_target_properties(${_target}
+                                            PROPERTIES
+                                            EXCLUDE_FROM_ALL TRUE
+                                        )
+                    add_dependencies(buildtests ${_target})
+                endforeach()
+            endif()
+        endfunction()
+        
+        add_executable(exec files_for_test/a.cxx)
+        ecm_mark_as_test(exec)
+        """
+        self.runTool(text)
+        self.vmodel.export(False, True)
+
+    def test_GREATER_2_if_condition(self):
+        text = """
+        set(doe 1)
+        if (doe GREATER 3)
+            set(foo bar.cpp)
+        else()
+            if(doe GREATER 5)
+                set(foo john.cpp)
+            else()
+                set(foo doe.cpp)
+            endif()
+        endif()
+        add_executable(exec ${foo})
+        """
+        self.runTool(text)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec')
+        self.assertEqual(1, len(a.keys()))
+        self.assertIn('doe.cpp', a['[doe == 1]'])
+
+    def test_GREATER_3_if_condition(self):
+        text = """
+        if(APPLE)
+            set(doe 5)
+        else()
+            set(doe 2)
+        endif()
+        
+        if (doe GREATER 3)
+            set(foo bar.cpp)
+        else()
+            if(doe GREATER 1)
+                set(foo john.cpp)
+            else()
+                set(foo doe.cpp)
+            endif()
+        endif()
+        add_executable(exec ${foo})
+        """
+        self.runTool(text)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec')
+
+        self.assertEqual(2, len(a.keys()))
+        self.assertIn('john.cpp', a['[doe == 2, Not(APPLE)]'])
+        self.assertIn('bar.cpp', a['[doe == 5, APPLE]'])
+
+    def test_GREATER_variable_if_condition(self):
+        text = """
+        set(doe 1)
+        set(three 3)
+        if (doe GREATER three)
+            set(foo bar.cpp)
+        else()
+            set(foo john.cpp)
+        endif()
+        add_executable(exec ${foo})
+        """
+        self.runTool(text)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec')
+        self.assertEqual(1, len(a.keys()))
+        self.assertIn('john.cpp', a['[doe == 1, three == 3]'])
+
+    def test_string_match(self):
+        text = """
+        set(foo mehran)
+        set(john no_doe)
+        if(foo STREQUAL mehran)
+            set(john doe)
+        endif()
+        """
+        self.runTool(text)
+        johnVar = self.lookup.getKey('${john}')
+        a = flattenAlgorithmWithConditions(johnVar)
+        postprocessZ3Output(a)
+        self.assertEqual(1, len(a))
+        self.assertEqual('doe', a[0][0])
+
+    def test_boolean_arithmetic_int_expression(self):
+        text = """
+        option(USE_CURL something 1)
+        if(USE_CURL)
+            set(foo 4)
+        else()
+            set(foo 1)
+        endif()
+        
+        set(john mehran)
+        set(result 1)
+        
+        if(APPLE AND foo GREATER 2)
+            if(MAC OR LINUX AND john STREQUAL mehran)
+                set(result 2)
+            endif()
+        endif()
+        """
+        self.runTool(text)
+        resultVar = self.lookup.getKey('${result}')
+        a = flattenAlgorithmWithConditions(resultVar)
+        postprocessZ3Output(a)
         self.assertEqual(4, len(a))
-        self.assertIn(('john/doe', {'opt1': False, 'opt2': False}), a)
-        self.assertIn(('john/opt2_doe', {'opt1': False, 'opt2': True}), a)
-        self.assertIn(('opt1_john/doe', {'opt1': True}), a)
-        self.assertIn(('opt1_john/doe', {'opt1': True, 'opt2': False}), a)
+
 
 if __name__ == '__main__':
     unittest.main()
