@@ -72,8 +72,13 @@ class CMakeExtractorListener(CMakeListener):
         variableLookedUp = lookupTable.getKey(f'${{{ctx.getText()}}}')
         localVariable = LocalVariable(ctx.getText())
         if variableLookedUp:
-            # Wherever we create a LocalVariable, we should flat the corresponding variable
-            self.flattenVariableInConditionExpression(localVariable, variableLookedUp)
+            try:
+                # Wherever we create a LocalVariable, we should flat the corresponding variable
+                self.flattenVariableInConditionExpression(localVariable, variableLookedUp)
+            except Z3Exception as e:
+                print(localVariable)
+                raise e
+
         else:
             # We create an empty RefNode, perhaps it's a env variable
             variable_name = "${{{}}}".format(ctx.getText())
@@ -86,25 +91,43 @@ class CMakeExtractorListener(CMakeListener):
         assert len(self.logicalExpressionStack) == 0
 
     def exitComparisonExpression(self, ctx:CMakeParser.ComparisonExpressionContext):
-        leftVariableLookedUp = lookupTable.getKey(f'${{{ctx.left.getText()}}}')
-        rightVariableLookedUp = lookupTable.getKey(f'${{{ctx.right.getText()}}}')
+        ctx_left_get_text: str = ctx.left.getText()
+        ctx_right_get_text: str = ctx.right.getText()
+
+        leftVariableLookedUp = lookupTable.getKey(f'${{{ctx_left_get_text}}}')
+        rightVariableLookedUp = lookupTable.getKey(f'${{{ctx_right_get_text}}}')
         operator = ctx.operator.getText().upper()
 
-        localVariableType = 'string' if operator in ('STRLESS', 'STREQUAL', 'STRGREATER') else 'int'
-        constantExpressionType = ConstantExpression.Z3_STR if operator in ('STRLESS', 'STREQUAL', 'STRGREATER') \
+        localVariableType = 'string' if operator in ('STRLESS', 'STREQUAL', 'STRGREATER', 'MATCHES') else 'int'
+        constantExpressionType = ConstantExpression.Z3_STR if operator in ('STRLESS', 'STREQUAL',
+                                                                           'STRGREATER', 'MATCHES') \
             else ConstantExpression.PYTHON_STR
 
         if leftVariableLookedUp:
-            leftExpression = LocalVariable(ctx.left.getText(), localVariableType)
+            leftExpression = LocalVariable(ctx_left_get_text, localVariableType)
             self.flattenVariableInConditionExpression(leftExpression, leftVariableLookedUp)
         else:
-            leftExpression = ConstantExpression(ctx.left.getText(), constantExpressionType)
+            if ctx_left_get_text.upper().startswith('CMAKE_'):
+                # Reserved variable for CMake
+                variable_name = "${{{}}}".format(ctx_left_get_text)
+                variableNode = RefNode("{}".format(variable_name), None)
+                lookupTable.setKey(variable_name, variableNode)
+                leftExpression = LocalVariable(ctx_left_get_text, localVariableType)
+            else:
+                leftExpression = ConstantExpression(ctx_left_get_text, constantExpressionType)
 
         if rightVariableLookedUp:
-            rightExpression = LocalVariable(ctx.right.getText(), localVariableType)
+            rightExpression = LocalVariable(ctx_right_get_text, localVariableType)
             self.flattenVariableInConditionExpression(rightExpression, rightVariableLookedUp)
         else:
-            rightExpression = ConstantExpression(ctx.right.getText(), constantExpressionType)
+            if ctx_right_get_text.upper().startswith('CMAKE_'):
+                # Reserved variable for CMake
+                variable_name = "${{{}}}".format(ctx_right_get_text)
+                variableNode = RefNode("{}".format(variable_name), None)
+                lookupTable.setKey(variable_name, variableNode)
+                rightExpression = LocalVariable(ctx_right_get_text, localVariableType)
+            else:
+                rightExpression = ConstantExpression(ctx_right_get_text, constantExpressionType)
 
         self.logicalExpressionStack.append(
             ComparisonExpression(leftExpression, rightExpression, operator)
@@ -122,7 +145,22 @@ class CMakeExtractorListener(CMakeListener):
                     assertion = condition.union(item[1].union({expression.getAssertions() == StringVal(item[0])}))
                 else:
                     try:
-                        assertion = condition.union(item[1].union({expression.getAssertions() == item[0]}))
+                        rightHandSide = item[0]
+                        if isinstance(expression.getAssertions(), BoolRef):
+                            # To convert float (3.14) to (314) and also support ("3.14")
+                            if item[0].replace('.','', 1).replace('"', '').isdigit():
+                                rightHandSide = bool(int(item[0].replace('.','', 1).replace('"', '')))
+
+                            if rightHandSide == '""':
+                                rightHandSide = False
+                            elif not isinstance(rightHandSide, bool):
+                                # TODO: needs more investigation, I think we are missing some problems
+                                # Like 'INSTALL_DEFAULT_BASEDIR' in ET: Legacy project
+                                rightHandSide = bool(rightHandSide)
+
+                        if isinstance(expression.getAssertions(), ArithRef) and isinstance(rightHandSide, str):
+                            rightHandSide = int(item[0].replace('.','', 1).replace('"', ''))
+                        assertion = condition.union(item[1].union({expression.getAssertions() == rightHandSide}))
                     except Exception as e:
                         print(f"Variable name: {expression.variableName} and item[0]: {item[0]}")
                         raise e
@@ -323,15 +361,15 @@ class CMakeExtractorListener(CMakeListener):
             args = vmodel.expand(arguments)
             commandNode.depends.append(args)
 
-            prevNodeStack = list(vmodel.nodes)
+            # prevNodeStack = list(vmodel.nodes)
             # We execute the command if we can find the CMake file and there is no condition to execute it
             if os.path.exists(os.path.join(project_dir, args.getValue())):
                 parseFile(os.path.join(project_dir, args.getValue()))
-                for item in vmodel.nodes:
-                    if item not in prevNodeStack:
-                        commandNode.commands.append(item)
+                # for item in vmodel.nodes:
+                #     if item not in prevNodeStack:
+                #         commandNode.commands.append(item)
             else:
-                print("No! : {}".format(arguments))
+                print("Cannot Find : {} to include".format(arguments))
                 vmodel.nodes.append(util_handleConditions(commandNode, commandNode.getName()))
 
         elif commandId == 'find_file':
@@ -1131,7 +1169,11 @@ class CMakeExtractorListener(CMakeListener):
                 if not isinstance(targetNode, TargetNode):
                     targetNode = lookupTable.getKey("t:{}".format(targetNode))
                 # Now we should have a TargetNode
-                assert isinstance(targetNode, TargetNode)
+                # assert isinstance(targetNode, TargetNode)
+                # TODO: In some cases like find_package there could be an target in another package
+                #  and we are not able to find it, for now, we just continue
+                if not isinstance(targetNode, TargetNode):
+                    continue
                 assert isinstance(target[1], set)
                 targetNode.linkLibrariesConditions[finalNode] = target[1]
 
@@ -1240,7 +1282,7 @@ def exportFlattenedListToCSV(flattened: Dict, fileName: str):
 
 def main(argv):
     getGraph(argv[1])
-    # vmodel.export()
+    vmodel.export()
     # vmodel.checkIntegrity()
     # vmodel.findAndSetTargets()
     # doGitAnalysis(project_dir)
@@ -1249,7 +1291,7 @@ def main(argv):
     # printSourceFiles(vmodel, lookupTable)
     # testNode = vmodel.findNode('${CLIENT_LIBRARIES}_662')
     # flattenAlgorithmWithConditions(testNode)
-    a = printFilesForATarget(vmodel, lookupTable, 'etl', True)
+    a = printFilesForATarget(vmodel, lookupTable, argv[2], True)
 
 if __name__ == "__main__":
     main(sys.argv)

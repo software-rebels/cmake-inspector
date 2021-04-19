@@ -82,6 +82,8 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                                                            debug, recStack)
     elif isinstance(node, CustomCommandNode):
         flattedResult = flattenCustomCommandNode(node, conditions, recStack)
+        if flattedResult is None:
+            flattedResult = []
     elif isinstance(node, SelectNode):
         flattedResult = []
         # Check if conditions satisfiable before expanding the tree (Using Z3)
