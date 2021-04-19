@@ -18,6 +18,12 @@ def setCommand(arguments):
     if 'PARENT_SCOPE' in arguments:
         parentScope = True
         arguments.pop()
+    # Remove arguments related to cache
+    if 'CACHE' in arguments:
+        idx = arguments.index('CACHE')
+        arguments = arguments[:idx] + arguments[idx+3:]
+        if 'FORCE' in arguments:
+            arguments.pop(arguments.index('FORCE'))
     if arguments:
         # Retrieve or create node for each argument
         node = vmodel.expand(arguments)
@@ -289,12 +295,12 @@ def addTarget(arguments, isExecutable=True):
 
     # TODO: We have to decide whether keep the experiment to change it
     # EXPERIMENT: We flatten the target name and add all the possible values to the graph as a potential target
-    flattedTargetName = flattenAlgorithmWithConditions(vmodel.expand([targetName]))
-    if flattedTargetName:
-        for item in flattedTargetName:
-            # We already set a key with the name targetNode
-            if item[0] != targetName:
-                lookupTable.setKey("t:{}".format(item[0]), targetNode)
+    # flattedTargetName = flattenAlgorithmWithConditions(vmodel.expand([targetName]))
+    # if flattedTargetName:
+    #     for item in flattedTargetName:
+    #         # We already set a key with the name targetNode
+    #         if item[0] != targetName:
+    #             lookupTable.setKey("t:{}".format(item[0]), targetNode)
 
     if 'IMPORTED' in arguments:
         targetNode.imported = True
@@ -303,7 +309,9 @@ def addTarget(arguments, isExecutable=True):
         aliasTarget = lookupTable.getKey('t:{}'.format(arguments[1]))
         nextNode = aliasTarget
 
-    nextNode = util_handleConditions(nextNode, targetName, targetNode.sources)
+    # TODO: Why we pass the prevNode? I remove it for now!
+    # nextNode = util_handleConditions(nextNode, targetName, targetNode.sources)
+    nextNode = util_handleConditions(nextNode, targetName)
     targetNode.sources = nextNode
 
 
