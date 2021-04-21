@@ -1,5 +1,6 @@
 # Bultin Libraries
 import csv
+import glob
 import logging
 import sys
 import os
@@ -1059,11 +1060,30 @@ class CMakeExtractorListener(CMakeListener):
             project_dir = os.path.join(project_dir, ctx.argument().single_argument()[0].getText())
             # TODO check if we need to bring anything from the new state
             lookupTable.newScope()
+
             print('start new file',os.path.join(project_dir, 'CMakeLists.txt'))
-            parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
+            possible_paths = flattenAlgorithmWithConditions(vmodel.expand([project_dir]))
+            project_dir = possible_paths[0][0]
+            util_create_and_add_refNode_for_variable('CMAKE_CURRENT_SOURCE_DIR',
+                                                     LiteralNode(possible_paths[0][0], possible_paths[0][0]))
+            parseFile(os.path.join(possible_paths[0][0], 'CMakeLists.txt'))
             print('finished new file',os.path.join(project_dir, 'CMakeLists.txt'))
             lookupTable.dropScope()
             project_dir = tempProjectDir
+
+        elif commandId == 'aux_source_directory':
+            directory = arguments.pop(0)
+            variable_name = arguments.pop()
+            try: # TODO: Some CMake variables like CMAKE_BINARY_DIR are not implemented
+                flatted_directory = flattenAlgorithmWithConditions(vmodel.expand([directory]))[0][0]
+                files = glob.glob(os.path.join(flatted_directory, '*.c')) + \
+                    glob.glob(os.path.join(flatted_directory, '*.h')) + \
+                    glob.glob(os.path.join(flatted_directory, '*.cpp'))
+            except IndexError:
+                files = []
+            node = util_create_and_add_refNode_for_variable(variable_name, vmodel.expand(files))
+            vmodel.nodes.append(node)
+
 
         elif commandId == 'add_library':
             addTarget(arguments, False)
@@ -1082,6 +1102,7 @@ class CMakeExtractorListener(CMakeListener):
         #       [ < INTERFACE | PUBLIC | PRIVATE > [items2...]...])
         elif commandId == 'target_include_directories':
             targetName = arguments.pop(0)
+            targetName = flattenAlgorithmWithConditions(vmodel.expand([targetName]))[0][0]
             targetNode = lookupTable.getKey("t:{}".format(targetName))
             assert isinstance(targetNode, TargetNode)
             includeDirectories = []
@@ -1149,6 +1170,7 @@ class CMakeExtractorListener(CMakeListener):
         elif commandId == 'target_compile_definitions':
             # This command add a definition to the current ones. So we should add it in all the possible paths
             targetName = arguments.pop(0)
+            targetName = flattenAlgorithmWithConditions(vmodel.expand([targetName]))[0][0]
             scope = None
             targetNode = lookupTable.getKey('t:{}'.format(targetName))
             assert isinstance(targetNode, TargetNode)
@@ -1212,7 +1234,7 @@ class CMakeExtractorListener(CMakeListener):
         else:
             customFunction = vmodel.functions.get(commandId)
             if customFunction is None:
-                customCommand = CustomCommandNode("{}_{}".format(commandId, vmodel.getNextCounter()))
+                customCommand = CustomCommandNode("{}".format(commandId))
                 customCommand.commands.append(vmodel.expand(arguments))
                 vmodel.nodes.append(util_handleConditions(customCommand, customCommand.getName()))
                 return
@@ -1258,6 +1280,8 @@ def parseFile(filePath):
 def getGraph(directory):
     global project_dir
     project_dir = directory
+    util_create_and_add_refNode_for_variable('CMAKE_CURRENT_SOURCE_DIR', LiteralNode(project_dir, project_dir))
+    util_create_and_add_refNode_for_variable('CMAKE_SOURCE_DIR', LiteralNode(project_dir, project_dir))
     parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
     vmodel.findAndSetTargets()
     return vmodel, lookupTable
@@ -1265,6 +1289,12 @@ def getGraph(directory):
 
 def getFlattenedFilesForTarget(target: str):
     return printFilesForATarget(vmodel, lookupTable, target)
+
+
+def getTargets():
+    vmodel.findAndSetTargets()
+    for idx, item in enumerate(vmodel.targets):
+        print(f'{idx}. {item.getValue()}')
 
 
 def exportFlattenedListToCSV(flattened: Dict, fileName: str):
@@ -1279,7 +1309,6 @@ def exportFlattenedListToCSV(flattened: Dict, fileName: str):
             })
 
 
-
 def main(argv):
     getGraph(argv[1])
     vmodel.export()
@@ -1292,6 +1321,7 @@ def main(argv):
     # testNode = vmodel.findNode('${CLIENT_LIBRARIES}_662')
     # flattenAlgorithmWithConditions(testNode)
     a = printFilesForATarget(vmodel, lookupTable, argv[2], True)
+
 
 if __name__ == "__main__":
     main(sys.argv)

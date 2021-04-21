@@ -85,6 +85,8 @@ def checkForCyclesAndPrint(vmodel: VModel, lookup: Lookup, node: Node, visited=[
 def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=False):
     logging.info("[FLATTEN] Start flattening target " + target)
     targetNode = lookup.getKey("t:{}".format(target))
+    if targetNode is None:
+        targetNode = vmodel.findNode(target)
     assert isinstance(targetNode, TargetNode)
     flattenedFiles = flattenAlgorithmWithConditions(targetNode.sources)
     for library, conditions in targetNode.linkLibrariesConditions.items():
@@ -142,10 +144,10 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
     if output:
         print(json.dumps(result, default=set_default, sort_keys=True, indent=4))
 
-        with open('result.pkl', 'wb') as f:
-            pickle.dump(result, f, pickle.HIGHEST_PROTOCOL)
-        with open('result.json', 'w') as f:
-            json.dump(result, f, default=set_default, sort_keys=True, indent=4)
+        # with open('result.pkl', 'wb') as f:
+        #     pickle.dump(result, f, pickle.HIGHEST_PROTOCOL)
+        # with open('result.json', 'w') as f:
+        #     json.dump(result, f, default=set_default, sort_keys=True, indent=4)
     return result
 
 
