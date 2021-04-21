@@ -6,7 +6,7 @@ from collections import Set, defaultdict
 from typing import Dict, List
 from z3 import *
 
-from datastructs import Node, LiteralNode, RefNode, CustomCommandNode, SelectNode, ConcatNode, TargetNode
+from datastructs import Node, LiteralNode, RefNode, CustomCommandNode, SelectNode, ConcatNode, TargetNode, OptionNode
 from vmodel import VModel
 
 
@@ -60,7 +60,9 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
     # We keep nodes in current recursion stack in a set. If current node has been already added
     # to this list, it means we are expanding a node from upper levels which is a cycle.
     if node in recStack:
-        # TODO: Print stack
+        print(f'Conditions:', conditions)
+        for idx, item in enumerate(recStack):
+            print(f'{idx}: {item.getValue()}')
         raise CycleDetectedException('We have a cycle here!!')
 
     recStack.append(node)
@@ -72,6 +74,9 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
         flattedResult = [(node.getValue(), conditions)]
     elif isinstance(node, TargetNode):
         flattedResult = [(node.rawName, conditions)]
+    elif isinstance(node, OptionNode):
+        # TODO: We may want to consider the default value for option
+        flattedResult = []
     elif isinstance(node, RefNode):
         # If RefNode is a symbolic node, it may not have point to attribute
         if node.getPointTo() is None:

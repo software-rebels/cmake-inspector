@@ -250,6 +250,7 @@ def addTarget(arguments, isExecutable=True):
     lookupTable = Lookup.getInstance()
 
     targetName = arguments.pop(0)
+    targetName = flattenAlgorithmWithConditions(vmodel.expand([targetName]))[0][0]
     lookupTableName = 't:{}'.format(targetName)
     nextNode = None
     libraryType = None

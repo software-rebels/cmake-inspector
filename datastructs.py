@@ -133,6 +133,9 @@ class TargetNode(Node):
     def getDefinition(self):
         return self.definitions
 
+    def getValue(self):
+        return self.name
+
 
 class TestNode(Node):
     def __init__(self, name: str):
@@ -209,6 +212,10 @@ class CustomCommandNode(Node):
         if result:
             return result
         return None
+
+    def getValue(self):
+        commandsValue = [item.getValue() for item in self.commands]
+        return f'{self.rawName}({" ".join(commandsValue)})'
 
     def evaluate(self, conditions, recStack, lookup=None):
         raise Exception('Deprecated')
@@ -297,6 +304,9 @@ class SelectNode(Node):
 
     def getCondition(self):
         return self.rule.getCondition()
+
+    def getValue(self):
+        return f'if({self.rule.getCondition().getText(pretty=True)})'
 
 
 class Lookup:

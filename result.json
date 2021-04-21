@@ -1,0 +1,5 @@
+{
+    "[FEATURE_RENDERER2, BUILD_CLIENT]": [
+        "somefile.cpp"
+    ]
+}
