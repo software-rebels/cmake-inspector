@@ -861,7 +861,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         foo = self.vmodel.findNode('foo')
         customCommand = foo.pointTo
-        self.assertEqual(self.vmodel.findNode('exec'), customCommand.depends[0])
+        self.assertEqual(self.lookup.getKey('t:exec'), customCommand.depends[0])
 
     def test_add_custom_command_with_main_dependency_and_depends(self):
         text = """
@@ -916,7 +916,7 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         command = self.vmodel.findNode('custom_command')
-        lib = self.vmodel.findNode('foo')
+        lib = self.lookup.getKey('t:foo')
         self.assertEqual(lib, command.depends[0])
 
     def test_build_command_with_variable(self):
@@ -1550,9 +1550,9 @@ class TestVariableDefinitions(unittest.TestCase):
         a = printFilesForATarget(self.vmodel, self.lookup, 'test_exec', False)
         self.assertEqual(4, len(a))
         self.assertSetEqual({"another_folder_for_test/b2.cxx",
-                             "another_folder_for_test/a.cxx"}, a['foo:False && source_file:False'])
+                             "another_folder_for_test/a.cxx"}, a['[Not(source_file), Not(foo)]'])
         self.assertSetEqual({"files_for_test/a.cxx",
-                             "files_for_test/b.cxx", "files_for_test/c.cxx"}, a['foo:True && source_file:False'])
+                             "files_for_test/b.cxx", "files_for_test/c.cxx"}, a['[Not(source_file), foo]'])
 
     def test_runtime_graph_with_file_command(self):
         text = """
@@ -1576,8 +1576,8 @@ class TestVariableDefinitions(unittest.TestCase):
 
         # buildRuntimeGraph(self.vmodel, self.lookup)
         a = printFilesForATarget(self.vmodel, self.lookup, 'test_exec')
-        self.assertIn('files_for_test/a.cxx', a['NO_MATTER_WHAT'])
-        self.assertSetEqual({"files_for_test/c.cxx", "files_for_test/b.cxx"}, a['foo:True'])
+        self.assertIn('files_for_test/a.cxx', a['[Not(foo)]'])
+        self.assertSetEqual({'files_for_test/a.cxx', "files_for_test/c.cxx", "files_for_test/b.cxx"}, a['[foo]'])
 
     def test_get_files_for_a_target_with_dependency_to_other_target(self):
         text = """
@@ -1605,11 +1605,11 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'test_exec_john')
-        self.assertSetEqual({"another_folder_for_test/a.cxx"}, a[""])
-        self.assertSetEqual({"files_for_test/a.cxx"}, a["foo:False && john:False"])
+        self.assertSetEqual({"another_folder_for_test/a.cxx"}, a["[]"])
+        self.assertSetEqual({"files_for_test/a.cxx"}, a['[Not(foo), Not(john)]'])
         self.assertSetEqual({"files_for_test/c.cxx",
                              "files_for_test/b.cxx",
-                             "files_for_test/a.cxx"}, a["foo:True && john:False"])
+                             "files_for_test/a.cxx"}, a['[Not(john), foo]'])
 
     def test_get_files_for_a_target_with_dependency_to_other_target_concatinated_target_name(self):
         text = """
@@ -1637,11 +1637,11 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'test_exec_john')
-        self.assertSetEqual({"another_folder_for_test/a.cxx"}, a[""])
-        self.assertSetEqual({"files_for_test/a.cxx"}, a["foo:False && john:False"])
+        self.assertSetEqual({"another_folder_for_test/a.cxx"}, a["[]"])
+        self.assertSetEqual({"files_for_test/a.cxx"}, a['[Not(foo), Not(john)]'])
         self.assertSetEqual({"files_for_test/c.cxx",
                              "files_for_test/b.cxx",
-                             "files_for_test/a.cxx"}, a["foo:True && john:False"])
+                             "files_for_test/a.cxx"}, a['[Not(john), foo]'])
 
     def test_cycle_detection_system_works(self):
         text = """
@@ -1665,7 +1665,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'john', False)
         self.assertSetEqual({"files_for_test/a.cxx", "another_folder_for_test/a.cxx",
-                             "files_for_test/b.cxx", "another_folder_for_test/b2.cxx"}, a['NO_MATTER_WHAT'])
+                             "files_for_test/b.cxx", "another_folder_for_test/b2.cxx"}, a['[]'])
 
     def test_flatten_file_for_a_target_from_a_list_with_literal_concat(self):
         text = """
@@ -1679,7 +1679,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'john', False)
         self.assertSetEqual({"files_for_test/a.cxx", "another_folder_for_test/a.cxx",
-                             "files_for_test/b.cxx", "another_folder_for_test/b2.cxx"}, a['NO_MATTER_WHAT'])
+                             "files_for_test/b.cxx", "another_folder_for_test/b2.cxx"}, a['[]'])
 
     def test_flatten_file_with_else_if_condition(self):
         text = """
@@ -1697,11 +1697,11 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
         self.assertSetEqual({"another_folder_for_test/b2.cxx", "another_folder_for_test/a.cxx"},
-                            a['foo:False && john:True'])
+                            a['[Not(foo), john]'])
         self.assertSetEqual({"files_for_test/a.cxx", "files_for_test/b.cxx"},
-                            a['foo:True'])
+                            a['[foo]'])
         self.assertSetEqual({"files_for_test/c.cxx"},
-                            a['foo:False && john:False'])
+                            a['[Not(foo), Not(john)]'])
 
     def test_flatten_target_with_link_libraries_and_else_if(self):
         text = """
@@ -1721,11 +1721,11 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
-        self.assertSetEqual({"files_for_test/b.cxx", "files_for_test/a.cxx"}, a[""])
+        self.assertSetEqual({"files_for_test/b.cxx", "files_for_test/a.cxx"}, a["[]"])
         self.assertSetEqual({"another_folder_for_test/b2.cxx","another_folder_for_test/a.cxx"},
-                            a['foo:False && john:True'])
-        self.assertSetEqual({"another_folder_for_test/a.cxx"}, a['foo:False && john:False'])
-        self.assertSetEqual({"files_for_test/c.cxx"}, a["foo:True"])
+                            a['[Not(foo), john]'])
+        self.assertSetEqual({"another_folder_for_test/a.cxx"}, a['[Not(foo), Not(john)]'])
+        self.assertSetEqual({"files_for_test/c.cxx"}, a['[foo]'])
 
     def test_flatten_target_with_nested_if_statements(self):
         text = """
@@ -1742,10 +1742,10 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
         self.assertSetEqual({"files_for_test/a.cxx", "files_for_test/b.cxx"},
-                            a[""])
+                            a["[]"])
 
         self.assertSetEqual({"another_folder_for_test/b2.cxx", "another_folder_for_test/a.cxx"},
-                            a["foo:True && john:True"])
+                            a['[john, foo]'])
 
     def test_flatten_target_with_variable_inside_nested_if_statements(self):
         text = """
@@ -1764,11 +1764,11 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
-        self.assertSetEqual({"files_for_test/a.cxx"}, a["foo:False"])
+        self.assertSetEqual({"files_for_test/a.cxx"}, a['[Not(foo)]'])
         self.assertSetEqual({"another_folder_for_test/a.cxx",
-                             "another_folder_for_test/b2.cxx"}, a["foo:True && john:False"])
+                             "another_folder_for_test/b2.cxx"}, a['[Not(john), foo]'])
         self.assertSetEqual({"files_for_test/b.cxx",
-                             "files_for_test/a.cxx"}, a["foo:True && john:True"])
+                             "files_for_test/a.cxx"}, a['[foo, john]'])
 
     def test_simple_if_assignment_outside_if(self):
         text = """
@@ -1781,8 +1781,8 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
-        self.assertSetEqual({"files_for_test/a.cxx"}, a["foo:False"])
-        self.assertSetEqual({"files_for_test/b.cxx"}, a["foo:True"])
+        self.assertSetEqual({"files_for_test/a.cxx"}, a["[Not(foo)]"])
+        self.assertSetEqual({"files_for_test/b.cxx"}, a["[foo]"])
 
     def test_nested_if_statement_append_list(self):
         text = """
@@ -1798,10 +1798,11 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
-        self.assertSetEqual({"files_for_test/b.cxx"}, a["BUILD_SERVER:True && FEATURE_IRC_SERVER:True"])
-        self.assertSetEqual({"files_for_test/a.cxx"}, a["NO_MATTER_WHAT"])
+        self.assertSetEqual({"files_for_test/b.cxx", "files_for_test/a.cxx"}, a['[BUILD_SERVER, FEATURE_IRC_SERVER]'])
+        self.assertIn('files_for_test/a.cxx', a['[BUILD_SERVER, Not(FEATURE_IRC_SERVER)]'])
+        self.assertIn('files_for_test/a.cxx', a['[Not(BUILD_SERVER)]'])
 
-    def test_nested_if_statement_with_esle_append_list(self):
+    def test_nested_if_statement_with_else_append_list(self):
         text = """
         option(BUILD_SERVER "des1" YES)
         option(FEATURE_IRC_SERVER "des2" YES)
@@ -1819,10 +1820,12 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
-        self.assertSetEqual({"files_for_test/a.cxx"}, a["NO_MATTER_WHAT"])
-        self.assertSetEqual({"files_for_test/b.cxx"}, a["BUILD_SERVER:True && FEATURE_IRC_SERVER:True"])
-        self.assertSetEqual({"files_for_test/c.cxx"}, a["BUILD_SERVER:True && FEATURE_IRC_SERVER:False"])
-        self.assertSetEqual({"another_folder_for_test/a.cxx"}, a["BUILD_SERVER:False"])
+        self.assertSetEqual({"files_for_test/a.cxx", "another_folder_for_test/a.cxx"}, a['[Not(BUILD_SERVER)]'])
+        self.assertIn("files_for_test/a.cxx", a['[BUILD_SERVER, Not(FEATURE_IRC_SERVER)]'])
+        self.assertIn("files_for_test/a.cxx", a['[BUILD_SERVER, FEATURE_IRC_SERVER]'])
+
+        self.assertIn("files_for_test/b.cxx", a['[BUILD_SERVER, FEATURE_IRC_SERVER]'])
+        self.assertIn("files_for_test/c.cxx", a['[BUILD_SERVER, Not(FEATURE_IRC_SERVER)]'])
 
     def test_list_remove_variable(self):
         text = """
@@ -1832,7 +1835,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         listVar = self.lookup.getKey('${foo}')
         a = flattenAlgorithmWithConditions(listVar)
-        self.assertListEqual([('a', {}), ('c', {})], a)
+        self.assertListEqual([('a', set()), ('c', set())], a)
 
     def test_variable_growth(self):
         text = """
@@ -1877,16 +1880,15 @@ class TestVariableDefinitions(unittest.TestCase):
             set(bar opt2_doe)
         endif()
         
-        set(baz ${foo} ${bar})
+        add_executable(exec ${foo} ${bar})
         """
         self.runTool(text)
-        bazVar = self.lookup.getKey('${baz}')
-        a = flattenAlgorithmWithConditions(bazVar)
-        self.assertIn(('john', {'opt1': False, 'opt2': True}), a)
-        self.assertIn(('john', {'opt1': False, 'opt2': False}), a)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec')
+        self.assertIn('john', a['[opt2, Not(opt1)]'])
+        self.assertIn('john', a['[Not(opt2), Not(opt1)]'])
 
-        self.assertIn(('opt2_doe', {'opt1': False, 'opt2': True}), a)
-        self.assertIn(('opt2_doe', {'opt1': True, 'opt2': True}), a)
+        self.assertIn('opt2_doe', a['[opt2, Not(opt1)]'])
+        self.assertIn('opt2_doe', a['[opt2, opt1]'])
 
     def test_string_concat_node_with_multiple_condition(self):
         text = """
@@ -1907,11 +1909,15 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         bazVar = self.lookup.getKey('${baz}')
         a = flattenAlgorithmWithConditions(bazVar)
-        self.assertEqual(4, len(a))
-        self.assertIn(('john/doe', {'opt1': False, 'opt2': False}), a)
-        self.assertIn(('john/opt2_doe', {'opt1': False, 'opt2': True}), a)
-        self.assertIn(('opt1_john/doe', {'opt1': True, 'opt2': False}), a)
-        self.assertIn(('opt1_john/opt2_doe', {'opt1': True, 'opt2': True}), a)
+        postprocessZ3Output(a)
+        result = []
+        for item in a:
+            result.append((item[0], str(item[1])))
+        self.assertEqual(4, len(result))
+        self.assertIn(('john/doe', '[Not(opt2), Not(opt1)]'), result)
+        self.assertIn(('john/opt2_doe', '[opt2, Not(opt1)]'), result)
+        self.assertIn(('opt1_john/doe', '[Not(opt2), opt1]'), result)
+        self.assertIn(('opt1_john/opt2_doe', '[opt2, opt1]'), result)
 
     def test_string_concat_node_with_multiple_condition_not_first_condition(self):
         text = """
@@ -1961,7 +1967,7 @@ class TestVariableDefinitions(unittest.TestCase):
         ecm_mark_as_test(exec)
         """
         self.runTool(text)
-        self.vmodel.export(False, True)
+        # self.vmodel.export(False, True)
 
     def test_GREATER_2_if_condition(self):
         text = """
@@ -2062,6 +2068,17 @@ class TestVariableDefinitions(unittest.TestCase):
         a = flattenAlgorithmWithConditions(resultVar)
         postprocessZ3Output(a)
         self.assertEqual(4, len(a))
+
+    def test_symbolic_evaluation(self):
+        text = """
+        SET(GRPC_OUT_PRE_PATH ${CMAKE_BINARY_DIR}/grpc)
+        SET(CONTAINER_PROTOS_OUT_PATH ${GRPC_OUT_PRE_PATH}/src/api/services/containers)
+        """
+        self.runTool(text)
+        var = self.lookup.getKey('${CONTAINER_PROTOS_OUT_PATH}')
+        a = flattenAlgorithmWithConditions(var)
+        postprocessZ3Output(a)
+        self.assertEqual('CMAKE_BINARY_DIR/grpc/src/api/services/containers', a[0][0])
 
 
 if __name__ == '__main__':

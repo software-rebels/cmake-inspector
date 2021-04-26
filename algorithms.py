@@ -80,8 +80,8 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
     elif isinstance(node, RefNode):
         # If RefNode is a symbolic node, it may not have point to attribute
         if node.getPointTo() is None:
-            # flattedResult = [(node.rawName, conditions)]
-            flattedResult = []
+            flattedResult = [(node.rawName, conditions)]
+            # flattedResult = []
         else:
             flattedResult = flattenAlgorithmWithConditions(node.getPointTo(), conditions,
                                                            debug, recStack)
@@ -158,8 +158,8 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                             elif (str2[0], newConditions) not in tempSet:
                                 tempSet.append((str1[0], newConditions))
                                 tempSet.append((str2[0], newConditions))
-            result = tempSet
-        flattedResult = result
+            result = tempSet or result
+        flattedResult = result if result != [''] else []
     recStack.remove(node)
     return flattedResult
 

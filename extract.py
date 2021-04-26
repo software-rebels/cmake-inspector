@@ -278,11 +278,12 @@ class CMakeExtractorListener(CMakeListener):
         endIdx = ctx.functionBody().stop.stop
         inputStream = ctx.start.getInputStream()
         bodyText = inputStream.getText(startIdx, endIdx)
+        isMacro = ctx.functionStatement().children[0].getText().lower() == 'macro'
 
         arguments = [child.getText() for child in ctx.functionStatement().argument().getChildren() if
                      not isinstance(child, TerminalNode)]
         functionName = arguments.pop(0)
-        vmodel.functions[functionName] = {'arguments': arguments, 'commands': bodyText, 'isMacro': False}
+        vmodel.functions[functionName] = {'arguments': arguments, 'commands': bodyText, 'isMacro': isMacro}
 
     def enterCommand_invocation(self, ctx: CMakeParser.Command_invocationContext):
         global project_dir
@@ -1067,7 +1068,6 @@ class CMakeExtractorListener(CMakeListener):
             util_create_and_add_refNode_for_variable('CMAKE_CURRENT_SOURCE_DIR',
                                                      LiteralNode(possible_paths[0][0], possible_paths[0][0]))
             parseFile(os.path.join(possible_paths[0][0], 'CMakeLists.txt'))
-            print('finished new file',os.path.join(project_dir, 'CMakeLists.txt'))
             lookupTable.dropScope()
             project_dir = tempProjectDir
 

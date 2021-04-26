@@ -115,8 +115,8 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
     for item in flattenedFiles:
         result[str(item[1])].add(item[0])
 
-    with open(f'flatten_merged_result_{str(datetime.timestamp(datetime.utcnow()))[:-7]}.pickle', 'wb') as handle:
-        pickle.dump(result, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    # with open(f'flatten_merged_result_{str(datetime.timestamp(datetime.utcnow()))[:-7]}.pickle', 'wb') as handle:
+    #     pickle.dump(result, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     logging.info("[FLATTEN] Start postprocessing 2 " + target)
     # Post-processing
