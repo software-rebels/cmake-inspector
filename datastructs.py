@@ -3,17 +3,19 @@ import copy
 
 from condition_data_structure import Rule
 
+created_commands = dict()
+
 
 class Node:
-    created_commands = dict()
 
     def __init__(self, name: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if name in self.created_commands:
-            self.created_commands[name] += 1
-            self.name = "{}_{}".format(name, self.created_commands[name])
+        global created_commands
+        if name in created_commands:
+            created_commands[name] += 1
+            self.name = "{}_{}".format(name, created_commands[name])
         else:
-            self.created_commands[name] = 1
+            created_commands[name] = 1
             self.name = name
         self.rawName = name
         self.parent: List[Optional[Node]] = []

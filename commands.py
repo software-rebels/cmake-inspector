@@ -279,6 +279,7 @@ def addTarget(arguments, isExecutable=True):
         nextNode = vmodel.expand(arguments, True)
 
     targetNode = lookupTable.getKey(lookupTableName)
+    prevNode = None
     if targetNode is None:
         targetNode = TargetNode(targetName, nextNode)
         targetNode.setDefinition(vmodel.DIRECTORY_PROPERTIES.getKey('COMPILE_OPTIONS'))
@@ -286,6 +287,8 @@ def addTarget(arguments, isExecutable=True):
         targetNode.includeDirectories = vmodel.DIRECTORY_PROPERTIES.getKey('INCLUDE_DIRECTORIES')
         lookupTable.setKey(lookupTableName, targetNode)
         vmodel.nodes.append(targetNode)
+    else:
+        prevNode = targetNode.sources
 
     if libraryType:
         targetNode.libraryType = libraryType
@@ -311,8 +314,7 @@ def addTarget(arguments, isExecutable=True):
         nextNode = aliasTarget
 
     # TODO: Why we pass the prevNode? I remove it for now!
-    # nextNode = util_handleConditions(nextNode, targetName, targetNode.sources)
-    nextNode = util_handleConditions(nextNode, targetName)
+    nextNode = util_handleConditions(nextNode, targetName, prevNode)
     targetNode.sources = nextNode
 
 

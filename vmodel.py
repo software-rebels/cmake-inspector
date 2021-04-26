@@ -4,6 +4,7 @@ from typing import Optional, List, Set
 
 from graphviz import Digraph
 
+import datastructs
 from condition_data_structure import Rule
 from datalayer import Literal, Reference, Target, Concat, Select, CustomCommand
 from datastructs import LiteralNode, Node, Lookup, RefNode, SelectNode, TargetNode, TestNode, ConcatNode, \
@@ -201,13 +202,16 @@ class VModel:
                 node = self.lookupTable.getKey("${{{}}}".format(variableName[0]))
                 # Create an empty RefNode for variables which are not defined like ${CMAKE_CURRENT_BINARY_DIR}
                 if not node:
-                    node = RefNode("{}_{}".format(variableName[0], self.getNextCounter()), None)
+                    node = RefNode("{}".format(variableName[0]), None)
                     self.lookupTable.setKey("${{{}}}".format(variableName[0]), node)
                 # if not isinstance(node, RefNode):
                     # raise Exception("NOT_IMPLEMENTED")
                 result.append(node)
             else:
-                node = self.findNode(item)
+                # We might have a target with the same name
+                node = self.lookupTable.getKey(f't:{item}')
+                if not node:
+                    node = self.findNode(item)
                 if not node:
                     node = LiteralNode(item, item)
                 result.append(node)
@@ -434,4 +438,5 @@ class VModel:
 
     @classmethod
     def clearInstance(cls):
+        datastructs.created_commands = dict()
         cls._instance = None
