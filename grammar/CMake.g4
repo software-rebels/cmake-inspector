@@ -53,7 +53,7 @@ endIfStatement
 	;
 
 functionStatement
-    : FUNCTION argument
+    : (FUNCTION | MACRO) argument
     ;
 
 functionBody
@@ -61,7 +61,7 @@ functionBody
     ;
 
 endFunctionStatement
-    : ENDFUNCTION LPAREN .*? RPAREN
+    : (ENDFUNCTION | ENDMACRO) LPAREN .*? RPAREN
     ;
 
 logical_expr
@@ -100,7 +100,7 @@ constant_value: CONSTANTS | DECIMAL;
 single_argument
 	: Identifier | Unquoted_argument | Bracket_argument
 	| Quoted_argument | DECIMAL | TARGET | EQ | OR | EXISTS
-	| AND | COMMAND| POLICY//TODO: fix the placement from Target onward
+	| AND | COMMAND| POLICY | FUNCTION //TODO: fix the placement from Target onward
 	;
 
 compound_argument
@@ -124,7 +124,9 @@ MATCHES: M A T C H E S;
 WHILE: W H I L E;
 ENDWHILE: E N D W H I L E;
 FUNCTION: F U N C T I O N;
+MACRO: M A C R O;
 ENDFUNCTION: E N D F U N C T I O N;
+ENDMACRO: E N D M A C R O;
 
 OR : O R;
 IF: I F;
