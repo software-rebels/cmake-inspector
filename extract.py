@@ -1079,6 +1079,8 @@ class CMakeExtractorListener(CMakeListener):
                 files = glob.glob(os.path.join(flatted_directory, '*.c')) + \
                     glob.glob(os.path.join(flatted_directory, '*.h')) + \
                     glob.glob(os.path.join(flatted_directory, '*.cpp'))
+                if not files:
+                    files.append(flatted_directory)
             except IndexError:
                 files = []
             node = util_create_and_add_refNode_for_variable(variable_name, vmodel.expand(files))
