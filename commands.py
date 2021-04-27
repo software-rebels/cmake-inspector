@@ -170,6 +170,7 @@ def fileCommand(arguments, project_dir):
         fileCommandNode.commands.append(vmodel.expand([action] + arguments))
         refNode = RefNode("{}".format(variableName), fileCommandNode)
         lookupTable.setKey("${{{}}}".format(variableName), refNode)
+        refNode.pointTo = util_handleConditions(refNode.pointTo, refNode.name)
         vmodel.nodes.append(refNode)
 
     elif action in ('REMOVE', 'REMOVE_RECURSE', 'MAKE_DIRECTORY'):

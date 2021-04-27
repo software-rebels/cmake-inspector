@@ -123,12 +123,16 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                                                                     set(s.assertions()),
                                                                     debug, recStack)
     elif isinstance(node, ConcatNode):
-        result = ['']
-        numberOfChildren = len(node.getChildren())
+        result = list()
         for idx, item in enumerate(node.getChildren()):
             childSet = flattenAlgorithmWithConditions(item, conditions, debug, recStack)
-            tempSet = []
-            if childSet is None:
+            tempSet = list()
+            # The flattened values for a child could be empty, skipping ...
+            if not childSet:
+                continue
+            # Initially, the result should be equal of the first child that has a value
+            if not result:
+                result = list(childSet)
                 continue
 
             # logging.debug('ConcatNode {}: Appending child {} {} of {} with {} childset'.format(
@@ -136,29 +140,34 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
             # ))
 
             # There are two types of concat node. One which concat the literal string
-            # and other one which make a list of values
+            # and other one which make a list of values; Note that result and childSet are guaranteed to have values
             for str1 in result:
                 for str2 in childSet:
-                    if str1 == '':
-                        tempSet.append(str2)
-                    else:
-                        # There shouldn't be any contradiction in the returned conditions. If there is, we won't
-                        # append the value to the one with contradiction
-                        s = Solver()
-                        # We need to simplify the whole expressions
-                        g = Goal()
-                        g.add(str1[1])
-                        g.add(str2[1])
-                        s.add(g.simplify())
+                    # There shouldn't be any contradiction in the returned conditions.
+                    s = Solver()
+                    # We need to simplify the whole expressions
+                    g = Goal()
+                    g.add(str1[1])
+                    g.add(str2[1])
+                    s.add(g.simplify())
 
-                        if s.check() == sat:
-                            newConditions = set(s.assertions())
-                            if node.concatString:
-                                tempSet.append(("{}{}".format(str1[0], str2[0]), newConditions))
-                            elif (str2[0], newConditions) not in tempSet:
-                                tempSet.append((str1[0], newConditions))
+                    if s.check() == sat:
+                        newConditions = set(s.assertions())
+                        if node.concatString:
+                            tempSet.append(("{}{}".format(str1[0], str2[0]), newConditions))
+                        else:
+                            if (str2[0], newConditions) not in tempSet:
                                 tempSet.append((str2[0], newConditions))
-            result = tempSet or result
+                            if (str1[0], newConditions) not in tempSet:
+                                tempSet.append((str1[0], newConditions))
+
+                    if not node.concatString:
+                        if (str2[0], str2[1]) not in tempSet:
+                            tempSet.append((str2[0], str2[1]))
+                        if (str1[0], str1[1]) not in tempSet:
+                            tempSet.append((str1[0], str1[1]))
+
+            result = list(tempSet)
         flattedResult = result if result != [''] else []
     recStack.remove(node)
     return flattedResult

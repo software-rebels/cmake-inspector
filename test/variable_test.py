@@ -1722,7 +1722,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec', False)
         self.assertSetEqual({"files_for_test/b.cxx", "files_for_test/a.cxx"}, a["[]"])
-        self.assertSetEqual({"another_folder_for_test/b2.cxx","another_folder_for_test/a.cxx"},
+        self.assertSetEqual({"another_folder_for_test/b2.cxx", "another_folder_for_test/a.cxx"},
                             a['[Not(foo), john]'])
         self.assertSetEqual({"another_folder_for_test/a.cxx"}, a['[Not(foo), Not(john)]'])
         self.assertSetEqual({"files_for_test/c.cxx"}, a['[foo]'])
@@ -1835,7 +1835,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         listVar = self.lookup.getKey('${foo}')
         a = flattenAlgorithmWithConditions(listVar)
-        self.assertListEqual([('a', set()), ('c', set())], a)
+        self.assertCountEqual([('a', set()), ('c', set())], a)
 
     def test_variable_growth(self):
         text = """
@@ -2071,14 +2071,62 @@ class TestVariableDefinitions(unittest.TestCase):
 
     def test_symbolic_evaluation(self):
         text = """
-        SET(GRPC_OUT_PRE_PATH ${CMAKE_BINARY_DIR}/grpc)
-        SET(CONTAINER_PROTOS_OUT_PATH ${GRPC_OUT_PRE_PATH}/src/api/services/containers)
+        set(GRPC_OUT_PRE_PATH ${CMAKE_BINARY_DIR}/grpc)
+        set(CONTAINER_PROTOS_OUT_PATH ${GRPC_OUT_PRE_PATH}/src/api/services/containers)
         """
         self.runTool(text)
         var = self.lookup.getKey('${CONTAINER_PROTOS_OUT_PATH}')
         a = flattenAlgorithmWithConditions(var)
         postprocessZ3Output(a)
         self.assertEqual('CMAKE_BINARY_DIR/grpc/src/api/services/containers', a[0][0])
+
+    def test_flatten_symbolic_concat_node(self):
+        text = """
+        aux_source_directory(${CMAKE_BINARY_DIR}/grpc/src/api/services/containers baz)
+        set(foo bar.cpp)
+        file(GLOB john files_for_test/*.cxx)
+        add_executable(exec ${baz} ${foo} ${john})
+        add_executable(exec2 ${baz} ${john} ${foo})
+        
+        add_executable(exec3 ${john} ${foo} ${baz})
+        add_executable(exec4 ${john} ${baz} ${foo})
+        
+        add_executable(exec5 ${foo} ${john} ${baz})
+        add_executable(exec6 ${foo} ${baz} ${john})
+        """
+        self.runTool(text)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec')
+        b = printFilesForATarget(self.vmodel, self.lookup, 'exec2')
+        c = printFilesForATarget(self.vmodel, self.lookup, 'exec3')
+        d = printFilesForATarget(self.vmodel, self.lookup, 'exec4')
+        e = printFilesForATarget(self.vmodel, self.lookup, 'exec5')
+        f = printFilesForATarget(self.vmodel, self.lookup, 'exec6')
+        self.assertTrue(a == b == c == d == e == f)
+
+    def test_flatten_symbolic_conditional_concat_node(self):
+        text = """    
+        set(foo bar.cpp)
+        
+        option(build_client "" yes)
+        option(build_server "" yes)
+        if(build_server)
+            aux_source_directory(${CMAKE_BINARY_DIR}/grpc/src/api/services/containers server_src)
+        endif()
+        
+        if(build_client)
+            file(GLOB client_src files_for_test/*.cxx)
+        endif()
+        
+        add_executable(exec ${foo} ${server_src} ${client_src})
+        """
+        self.runTool(text)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'exec')
+        self.assertSetEqual({'bar.cpp'}, a['[]'])
+        self.assertSetEqual({'files_for_test/a.cxx',
+                             'bar.cpp',
+                             'CMAKE_BINARY_DIR/grpc/src/api/services/containers',
+                             'files_for_test/b.cxx',
+                             'files_for_test/c.cxx'}, a['[build_client, build_server]'])
 
 
 if __name__ == '__main__':
