@@ -39,5 +39,8 @@ class Literal(AbstractNode):
 class Select(AbstractNode):
     trueNode = RelationshipTo(AbstractNode, "TRUE")
     falseNode = RelationshipTo(AbstractNode, "FALSE")
-    condition = StringProperty()
+    condition = RelationshipTo(AbstractNode, 'CONDITION')
 
+
+class Option(AbstractNode):
+    value = StringProperty()
