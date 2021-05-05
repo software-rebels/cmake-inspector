@@ -6,9 +6,9 @@ from graphviz import Digraph
 
 import datastructs
 from condition_data_structure import Rule
-from datalayer import Literal, Reference, Target, Concat, Select, CustomCommand
+from datalayer import Literal, Reference, Target, Concat, Select, CustomCommand, Option
 from datastructs import LiteralNode, Node, Lookup, RefNode, SelectNode, TargetNode, TestNode, ConcatNode, \
-    CustomCommandNode
+    CustomCommandNode, OptionNode
 from graph_illustration import getNodeShape, getEdgeLabel
 
 VARIABLE_REGEX = r"\${(\S*)}"
@@ -311,6 +311,11 @@ class VModel:
             node.dbNode = dbNode
             return dbNode
 
+        if isinstance(node, OptionNode):
+            dbNode = Option(name=node.getName()).save()
+            node.dbNode = dbNode
+            return dbNode
+
         if isinstance(node, RefNode):
             dbNode = Reference(name=node.getName()).save()
             if node.getPointTo():
@@ -320,7 +325,7 @@ class VModel:
             return dbNode
 
         if isinstance(node, TargetNode):
-            dbNode = Target(name=node.getName(), scope=node.scope).save()
+            dbNode = Target(name=node.rawName, scope=node.scope).save()
             pointToDBNode = None
             definitionDBNode = None
             librariesDBNode = None
@@ -358,11 +363,12 @@ class VModel:
             return dbNode
 
         if isinstance(node, SelectNode):
-            dbNode = Select(name=node.getName(), condition=node.condition).save()
+            dbNode = Select(name=node.getName()).save()
             if node.trueNode:
                 dbNode.trueNode.connect(self.exportToNeo(node.trueNode))
             if node.falseNode:
                 dbNode.falseNode.connect(self.exportToNeo(node.falseNode))
+            dbNode.condition.connect(self.exportToNeo(node.args))
             node.dbNode = dbNode
             return dbNode
 
@@ -378,6 +384,8 @@ class VModel:
                 dbNode.depends.connect(self.exportToNeo(localNode))
             dbNode.extraInfo = node.extraInfo
             return dbNode
+
+
 
     def checkIntegrity(self):
         nodeNames = []
