@@ -9,3 +9,11 @@ graph.gv.pdf
 .idea
 *.pickle
 .vscode
+
+.env/
+KDE/
+KDE_command_analysis/
+graph_dots/
+graph_dots_final/
+koffice-plugins/
+venv/
