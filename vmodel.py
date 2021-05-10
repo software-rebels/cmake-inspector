@@ -294,7 +294,7 @@ class VModel:
                             newGraph.edge(node.getName(), child.getName(), label=getEdgeLabel(node, child))
                 clusterId += 1
                 dot.subgraph(newGraph)
-            dot.render('graph.gv', view=True)
+            dot.render('graph.gv', view=False,format='pdf')
         # Doing DFS to create nodes in NEO4j
         if writeToNeo:
             for node in self.getNodeSet():

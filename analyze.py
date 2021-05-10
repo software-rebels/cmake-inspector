@@ -144,8 +144,7 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
         raise TypeError
 
     if output:
-        print(json.dumps(result, default=set_default, sort_keys=True, indent=4))
-
+        logging.info("[FLATTEN]",json.dumps(result, default=set_default, sort_keys=True, indent=4))
         # with open('result.pkl', 'wb') as f:
         #     pickle.dump(result, f, pickle.HIGHEST_PROTOCOL)
         # with open('result.json', 'w') as f:

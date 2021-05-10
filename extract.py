@@ -34,6 +34,7 @@ project_dir = ""
 vmodel = VModel.getInstance()
 lookupTable = Lookup.getInstance()
 
+no_op_commands=['cmake_policy','enable_testing','fltk_wrap_ui','install','mark_as_advanced','message','qt_wrap_cpp','source_group','variable_watch']
 
 class CMakeExtractorListener(CMakeListener):
     rule: Optional[Rule] = None
@@ -77,7 +78,7 @@ class CMakeExtractorListener(CMakeListener):
                 # Wherever we create a LocalVariable, we should flat the corresponding variable
                 self.flattenVariableInConditionExpression(localVariable, variableLookedUp)
             except Z3Exception as e:
-                print(localVariable)
+                logging.error("[exitLogicalEntity]",localVariable)
                 raise e
 
         else:
@@ -163,7 +164,7 @@ class CMakeExtractorListener(CMakeListener):
                             rightHandSide = int(item[0].replace('.','', 1).replace('"', ''))
                         assertion = condition.union(item[1].union({expression.getAssertions() == rightHandSide}))
                     except Exception as e:
-                        print(f"Variable name: {expression.variableName} and item[0]: {item[0]}")
+                        logging.error(f"[flattenVariableInConditionExpression] Variable name: {expression.variableName} and item[0]: {item[0]}")
                         raise e
                 s.add(assertion)
                 if s.check() == sat:
@@ -371,7 +372,7 @@ class CMakeExtractorListener(CMakeListener):
                 #     if item not in prevNodeStack:
                 #         commandNode.commands.append(item)
             else:
-                print("Cannot Find : {} to include".format(arguments))
+                logging.error("[enterCommand_invocation] Cannot Find : {} to include".format(arguments))
                 vmodel.nodes.append(util_handleConditions(commandNode, commandNode.getName()))
 
         elif commandId == 'find_file':
@@ -1062,7 +1063,7 @@ class CMakeExtractorListener(CMakeListener):
             # TODO check if we need to bring anything from the new state
             lookupTable.newScope()
 
-            print('start new file',os.path.join(project_dir, 'CMakeLists.txt'))
+            logging.info('start new file',os.path.join(project_dir, 'CMakeLists.txt'))
             possible_paths = flattenAlgorithmWithConditions(vmodel.expand([project_dir]))
             project_dir = possible_paths[0][0]
             util_create_and_add_refNode_for_variable('CMAKE_CURRENT_SOURCE_DIR',
@@ -1230,7 +1231,7 @@ class CMakeExtractorListener(CMakeListener):
 
             util_create_and_add_refNode_for_variable(optionName, optionNode)
 
-        else:
+        elif commandId in no_op_commands:
             customFunction = vmodel.functions.get(commandId)
             if customFunction is None:
                 customCommand = CustomCommandNode("{}".format(commandId))
@@ -1263,6 +1264,8 @@ class CMakeExtractorListener(CMakeListener):
             walker.walk(extractor, tree)
             if not customFunction.get('isMacro'):
                 vmodel.lookupTable.dropScope()
+        else:
+            print("[enterCommand_invocation] Command ignored:",commandId)
 
 
 def parseFile(filePath):

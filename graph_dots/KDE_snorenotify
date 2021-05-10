@@ -1,0 +1,903 @@
+// SDG
+digraph {
+	graph [ordering=out]
+	subgraph cluster_0 {
+		"snore.cpp" [label="snore.cpp" shape=ellipse]
+		"LIST_${SnoreNotify_SRCS}snore.cpp,snore_p.cpp,application.cpp,application_p.cpp,alert.cpp,alert_p.cpp,hint.cpp,lambdahint.cpp,utils.cpp,${SNORENOTIFY_RCS}" [label=CONCAT shape=doubleoctagon]
+		"${SnoreNotify_SRCS}_3" [label="${SnoreNotify_SRCS}_3" shape=cds]
+		"${SnoreNotify_SRCS},${SnoreNotify_QM_LOADER}_2" [label=CONCAT shape=doubleoctagon]
+		"SELECT_libsnore_NOT NOT ${SNORE_STATIC}" [label="SELECT
+(NOT (NOT ${SNORE_STATIC}))" shape=diamond]
+		libsnore_2 [label=libsnore_2 shape=box]
+		"libsnore,PROPERTIES,OUTPUT_NAME,\"snore${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,Libsnore" [label=CONCAT shape=doubleoctagon]
+		set_target_properties [label=set_target_properties shape=parallelogram]
+		Libsnore [label=Libsnore shape=ellipse]
+		"Libsnore${SNORE_CamelCase_SUFFIX}Target" [label=CONCAT shape=doubleoctagon]
+		"TARGETS,libsnore,EXPORT,Libsnore${SNORE_CamelCase_SUFFIX}Target,${KDE_INSTALL_TARGETS_DEFAULT_ARGS}" [label=CONCAT shape=doubleoctagon]
+		install_4 [label=install_4 shape=parallelogram]
+		KDE_INSTALL_TARGETS_DEFAULT_ARGS [label=KDE_INSTALL_TARGETS_DEFAULT_ARGS shape=cds]
+		"TARGETS,libsnoresettings,EXPORT,LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target,${KDE_INSTALL_TARGETS_DEFAULT_ARGS}" [label=CONCAT shape=doubleoctagon]
+		install_9 [label=install_9 shape=parallelogram]
+		"SELECT_install_9_${Qt5Widgets_FOUND}" [label="SELECT
+${Qt5Widgets_FOUND}" shape=diamond]
+		"${Qt5Widgets_FOUND}" [label="${Qt5Widgets_FOUND}" shape=cds]
+		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${Qt5Widgets_FOUND}" [label="SELECT
+${Qt5Widgets_FOUND}" shape=diamond]
+		"${CMAKE_CURRENT_SOURCE_DIR}_7" [label="${CMAKE_CURRENT_SOURCE_DIR}_7" shape=cds]
+		"${CMAKE_CURRENT_SOURCE_DIR}_4" [label="${CMAKE_CURRENT_SOURCE_DIR}_4" shape=cds]
+		"\"${CMAKE_CURRENT_SOURCE_DIR}/version.h.in\"" [label=CONCAT shape=doubleoctagon]
+		"\"${CMAKE_CURRENT_SOURCE_DIR}/version.h.in\",\"${CMAKE_CURRENT_BINARY_DIR}/version.h\"" [label=CONCAT shape=doubleoctagon]
+		configure_file [label=configure_file shape=parallelogram]
+		"\"${CMAKE_CURRENT_BINARY_DIR}/version.h\"" [label=CONCAT shape=doubleoctagon]
+		"/version.h\"" [label="/version.h\"" shape=ellipse]
+		CMAKE_CURRENT_BINARY_DIR [label=CMAKE_CURRENT_BINARY_DIR shape=cds]
+		"${CMAKE_CURRENT_BINARY_DIR}/bin" [label=CONCAT shape=doubleoctagon]
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" [label="${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" shape=cds]
+		"/bin" [label="/bin" shape=ellipse]
+		"${CMAKE_CURRENT_BINARY_DIR}/bin_2" [label=CONCAT shape=doubleoctagon]
+		"${CMAKE_LIBRARY_OUTPUT_DIRECTORY}" [label="${CMAKE_LIBRARY_OUTPUT_DIRECTORY}" shape=cds]
+		"LIST_${SnoreNotify_HDR}snore.h,snore_p.h,application.h,alert.h,hint.h,lambdahint.h,snoreglobals.h,utils.h,${CMAKE_CURRENT_BINARY_DIR}/snore_exports.h,${CMAKE_CURRENT_BINARY_DIR}/version.h,${CMAKE_CURRENT_BINARY_DIR}/snore_static_plugins.h" [label=CONCAT shape=doubleoctagon]
+		"${SnoreNotify_HDR}_3" [label="${SnoreNotify_HDR}_3" shape=cds]
+		"FILES,${SnoreNotify_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}" [label=CONCAT shape=doubleoctagon]
+		install_6 [label=install_6 shape=parallelogram]
+		"${LIBSNORE_INCLUDE_DIR}" [label="${LIBSNORE_INCLUDE_DIR}" shape=cds]
+		"${LIBSNORE_INCLUDE_DIR}/notification" [label=CONCAT shape=doubleoctagon]
+		"FILES,${SnoreNotify_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}/notification" [label=CONCAT shape=doubleoctagon]
+		install [label=install shape=parallelogram]
+		DESTINATION [label=DESTINATION shape=ellipse]
+		"LIBRARY,DESTINATION,${LIBSNORE_PLUGIN_PATH}" [label=CONCAT shape=doubleoctagon]
+		"${SNORE_PLUGIN_INSTALL_PATH}" [label="${SNORE_PLUGIN_INSTALL_PATH}" shape=cds]
+		"${LIBSNORE_PLUGIN_PATH}" [label="${LIBSNORE_PLUGIN_PATH}" shape=cds]
+		"${KDE_INSTALL_PLUGINDIR}/libsnore${SNORE_SUFFIX}" [label=CONCAT shape=doubleoctagon]
+		"${SNORE_SUFFIX}" [label="${SNORE_SUFFIX}" shape=cds]
+		"\"snore${SNORE_SUFFIX}\"" [label=CONCAT shape=doubleoctagon]
+		"\"" [label="\"" shape=ellipse]
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\"" [label=CONCAT shape=doubleoctagon]
+		"${SNORE_VERSION_PATCH}" [label="${SNORE_VERSION_PATCH}" shape=cds]
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\"_2" [label=CONCAT shape=doubleoctagon]
+		"libsnoresettings,PROPERTIES,OUTPUT_NAME,\"snoresettings${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,LibsnoreSettings" [label=CONCAT shape=doubleoctagon]
+		set_target_properties_2 [label=set_target_properties_2 shape=parallelogram]
+		"SELECT_set_target_properties_2_${Qt5Widgets_FOUND}" [label="SELECT
+${Qt5Widgets_FOUND}" shape=diamond]
+		LibsnoreSettings [label=LibsnoreSettings shape=ellipse]
+		"LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target" [label=CONCAT shape=doubleoctagon]
+		Target [label=Target shape=ellipse]
+		"Libsnore${SNORE_CamelCase_SUFFIX}Target_2" [label=CONCAT shape=doubleoctagon]
+		"EXPORT,Libsnore${SNORE_CamelCase_SUFFIX}Target,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX},NAMESPACE,Snore->" [label=CONCAT shape=doubleoctagon]
+		install_5 [label=install_5 shape=parallelogram]
+		"Snore->" [label="Snore->" shape=ellipse]
+		NAMESPACE [label=NAMESPACE shape=ellipse]
+		"EXPORT,LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX},NAMESPACE,Snore->" [label=CONCAT shape=doubleoctagon]
+		install_10 [label=install_10 shape=parallelogram]
+		"SELECT_install_10_${Qt5Widgets_FOUND}" [label="SELECT
+${Qt5Widgets_FOUND}" shape=diamond]
+		"Snore->_2" [label="Snore->_2" shape=ellipse]
+		"${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX}" [label=CONCAT shape=doubleoctagon]
+		"${SNORE_CamelCase_SUFFIX}" [label="${SNORE_CamelCase_SUFFIX}" shape=cds]
+		"${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX}" [label=CONCAT shape=doubleoctagon]
+		"/libsnore" [label="/libsnore" shape=ellipse]
+		"\"${KDE_INSTALL_FULL_PLUGINDIR}/libsnore${SNORE_SUFFIX}\"" [label=CONCAT shape=doubleoctagon]
+		"TARGET,libsnore,APPEND,PROPERTY,COMPILE_DEFINITIONS,LIBSNORE_PLUGIN_PATH=,\"${KDE_INSTALL_FULL_PLUGINDIR}/libsnore${SNORE_SUFFIX}\",SNORE_SUFFIX=,\"${SNORE_SUFFIX}\"" [label=CONCAT shape=doubleoctagon]
+		set_property [label=set_property shape=parallelogram]
+		"\"${SNORE_SUFFIX}\"" [label=CONCAT shape=doubleoctagon]
+		"SNORE_SUFFIX=" [label="SNORE_SUFFIX=" shape=ellipse]
+		"LIBSNORE_PLUGIN_PATH=" [label="LIBSNORE_PLUGIN_PATH=" shape=ellipse]
+		COMPILE_DEFINITIONS [label=COMPILE_DEFINITIONS shape=ellipse]
+		PROPERTY [label=PROPERTY shape=ellipse]
+		APPEND [label=APPEND shape=ellipse]
+		TARGET [label=TARGET shape=ellipse]
+		KDE_INSTALL_FULL_PLUGINDIR [label=KDE_INSTALL_FULL_PLUGINDIR shape=cds]
+		"${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX}_2" [label=CONCAT shape=doubleoctagon]
+		"FILES,SnoreAddPlugin.cmake,${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}Config.cmake,${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX}" [label=CONCAT shape=doubleoctagon]
+		install_7 [label=install_7 shape=parallelogram]
+		"${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake" [label=CONCAT shape=doubleoctagon]
+		"ConfigVersion.cmake" [label="ConfigVersion.cmake" shape=ellipse]
+		"${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake" [label=CONCAT shape=doubleoctagon]
+		"FILES,${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}Config.cmake,${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX}" [label=CONCAT shape=doubleoctagon]
+		install_12 [label=install_12 shape=parallelogram]
+		"SELECT_install_12_${Qt5Widgets_FOUND}" [label="SELECT
+${Qt5Widgets_FOUND}" shape=diamond]
+		"${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX}_2" [label=CONCAT shape=doubleoctagon]
+		"/libsnoresettings" [label="/libsnoresettings" shape=ellipse]
+		KDE_INSTALL_CMAKEPACKAGEDIR [label=KDE_INSTALL_CMAKEPACKAGEDIR shape=cds]
+		"${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}Config.cmake" [label=CONCAT shape=doubleoctagon]
+		"Config.cmake" [label="Config.cmake" shape=ellipse]
+		"${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}Config.cmake" [label=CONCAT shape=doubleoctagon]
+		"/Libsnore" [label="/Libsnore" shape=ellipse]
+		"/LibsnoreSettings" [label="/LibsnoreSettings" shape=ellipse]
+		FILES [label=FILES shape=ellipse]
+		"FILES,${SnoreNotify_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}/plugins" [label=CONCAT shape=doubleoctagon]
+		install_2 [label=install_2 shape=parallelogram]
+		"${LIBSNORE_INCLUDE_DIR}/plugins" [label=CONCAT shape=doubleoctagon]
+		"/plugins" [label="/plugins" shape=ellipse]
+		"${SnoreNotify_HDR}_2" [label="${SnoreNotify_HDR}_2" shape=cds]
+		"plugins.h,snorefrontend.h,snorebackend.h,snoresecondarybackend.h,settingsplugin.h" [label=CONCAT shape=doubleoctagon]
+		"settingsplugin.h" [label="settingsplugin.h" shape=ellipse]
+		"snoresecondarybackend.h" [label="snoresecondarybackend.h" shape=ellipse]
+		"snorebackend.h" [label="snorebackend.h" shape=ellipse]
+		"snorefrontend.h" [label="snorefrontend.h" shape=ellipse]
+		"plugins.h" [label="plugins.h" shape=ellipse]
+		"FILES,${pri_filename},DESTINATION,${ECM_MKSPECS_INSTALL_DIR}" [label=CONCAT shape=doubleoctagon]
+		install_3 [label=install_3 shape=parallelogram]
+		ECM_MKSPECS_INSTALL_DIR [label=ECM_MKSPECS_INSTALL_DIR shape=cds]
+		"FILES,${pri_filename},DESTINATION,${ECM_MKSPECS_INSTALL_DIR}_2" [label=CONCAT shape=doubleoctagon]
+		install_8 [label=install_8 shape=parallelogram]
+		"SELECT_install_8_${Qt5Widgets_FOUND}" [label="SELECT
+${Qt5Widgets_FOUND}" shape=diamond]
+		pri_filename [label=pri_filename shape=cds]
+		"FILES,${snoresettings_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}/settings" [label=CONCAT shape=doubleoctagon]
+		install_11 [label=install_11 shape=parallelogram]
+		"SELECT_install_11_${Qt5Widgets_FOUND}" [label="SELECT
+${Qt5Widgets_FOUND}" shape=diamond]
+		"${LIBSNORE_INCLUDE_DIR}/settings" [label=CONCAT shape=doubleoctagon]
+		"/settings" [label="/settings" shape=ellipse]
+		"${snoresettings_HDR}" [label="${snoresettings_HDR}" shape=cds]
+		"SELECT_${snoresettings_HDR}_${Qt5Widgets_FOUND}" [label="SELECT
+${Qt5Widgets_FOUND}" shape=diamond]
+		"settings.h,settingsdialog.h,pluginsettingswidget.h,${CMAKE_CURRENT_BINARY_DIR}/snore_settings_exports.h" [label=CONCAT shape=doubleoctagon]
+		"${CMAKE_CURRENT_BINARY_DIR}/snore_settings_exports.h" [label=CONCAT shape=doubleoctagon]
+		"/snore_settings_exports.h" [label="/snore_settings_exports.h" shape=ellipse]
+		"pluginsettingswidget.h" [label="pluginsettingswidget.h" shape=ellipse]
+		"settingsdialog.h" [label="settingsdialog.h" shape=ellipse]
+		"settings.h" [label="settings.h" shape=ellipse]
+		"/LibsnoreSettings_2" [label="/LibsnoreSettings_2" shape=ellipse]
+		"/Libsnore_2" [label="/Libsnore_2" shape=ellipse]
+		"SnoreAddPlugin.cmake" [label="SnoreAddPlugin.cmake" shape=ellipse]
+		"${KDE_INSTALL_INCLUDEDIR}/libsnore" [label=CONCAT shape=doubleoctagon]
+		KDE_INSTALL_INCLUDEDIR [label=KDE_INSTALL_INCLUDEDIR shape=cds]
+		"LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target_2" [label=CONCAT shape=doubleoctagon]
+		"\"Qt5\"" [label="\"Qt5\"" shape=ellipse]
+		EXPORT [label=EXPORT shape=ellipse]
+		EXPORT_NAME [label=EXPORT_NAME shape=ellipse]
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\"_2" [label=CONCAT shape=doubleoctagon]
+		"${SNORE_VERSION_MINOR}" [label="${SNORE_VERSION_MINOR}" shape=cds]
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\"" [label=CONCAT shape=doubleoctagon]
+		"._3" [label="._3" shape=ellipse]
+		"${SNORE_VERSION_MAJOR}" [label="${SNORE_VERSION_MAJOR}" shape=cds]
+		0 [label=0 shape=ellipse]
+		7 [label=7 shape=ellipse]
+		"." [label="." shape=ellipse]
+		SOVERSION [label=SOVERSION shape=ellipse]
+		VERSION [label=VERSION shape=ellipse]
+		"\"snoresettings${SNORE_SUFFIX}\"" [label=CONCAT shape=doubleoctagon]
+		"\"snoresettings" [label="\"snoresettings" shape=ellipse]
+		OUTPUT_NAME [label=OUTPUT_NAME shape=ellipse]
+		PROPERTIES [label=PROPERTIES shape=ellipse]
+		libsnoresettings_2 [label=libsnoresettings_2 shape=box]
+		"libsnoresettings,PUBLIC,Qt5->Widgets,Snore->Libsnore" [label=CONCAT shape=doubleoctagon]
+		target_link_libraries_2 [label=target_link_libraries_2 shape=parallelogram]
+		"SELECT_target_link_libraries_2_${Qt5Widgets_FOUND}" [label="SELECT
+${Qt5Widgets_FOUND}" shape=diamond]
+		"Snore->Libsnore_2" [label="Snore->Libsnore_2" shape=box]
+		"Qt5->Widgets" [label="Qt5->Widgets" shape=ellipse]
+		PUBLIC [label=PUBLIC shape=ellipse]
+		"libsnore,PUBLIC,Qt5->Core,Qt5->Gui,Qt5->Network" [label=CONCAT shape=doubleoctagon]
+		target_link_libraries [label=target_link_libraries shape=parallelogram]
+		"Qt5->Network" [label="Qt5->Network" shape=ellipse]
+		"Qt5->Gui" [label="Qt5->Gui" shape=ellipse]
+		"Qt5->Core" [label="Qt5->Core" shape=ellipse]
+		"SELECT_Snore->LibsnoreSettings_${Qt5Widgets_FOUND}" [label="SELECT
+${Qt5Widgets_FOUND}" shape=diamond]
+		"Snore->LibsnoreSettings_2" [label="Snore->LibsnoreSettings_2" shape=box]
+		"SELECT_libsnoresettings_${Qt5Widgets_FOUND}_2" [label="SELECT
+${Qt5Widgets_FOUND}" shape=diamond]
+		"SELECT_libsnoresettings_${Qt5Widgets_FOUND}" [label="SELECT
+${Qt5Widgets_FOUND}" shape=diamond]
+		"SELECT_libsnoresettings_NOT NOT ${SNORE_STATIC}" [label="SELECT
+(NOT (NOT ${SNORE_STATIC}))" shape=diamond]
+		"NOT,NOT,${SNORE_STATIC}_2" [label=CONCAT shape=doubleoctagon]
+		"${SNORE_STATIC}" [label="${SNORE_STATIC}" shape=cds]
+		"NOT,${SNORE_STATIC}" [label=CONCAT shape=doubleoctagon]
+		"SELECT_libsnore_NOT ${SNORE_STATIC}" [label="SELECT
+(NOT ${SNORE_STATIC})" shape=diamond]
+		"${SnoreNotify_SRCS},${SnoreNotify_QM_LOADER}" [label=CONCAT shape=doubleoctagon]
+		SnoreNotify_QM_LOADER [label=SnoreNotify_QM_LOADER shape=cds]
+		NOT [label=NOT shape=ellipse]
+		"NOT,${SNORE_REVISION}" [label=CONCAT shape=doubleoctagon]
+		"SELECT_${SNORE_REVISION}_NOT ${SNORE_REVISION}" [label="SELECT
+(NOT ${SNORE_REVISION})" shape=diamond]
+		"${SNORE_REVISION}_2" [label="${SNORE_REVISION}_2" shape=cds]
+		"\"\"" [label="\"\"" shape=ellipse]
+		"${SNORE_REVISION}" [label="${SNORE_REVISION}" shape=cds]
+		"NOT,NOT,${SNORE_STATIC}" [label=CONCAT shape=doubleoctagon]
+		"NOT,${SNORE_STATIC}_2" [label=CONCAT shape=doubleoctagon]
+		"SELECT_libsnoresettings_NOT ${SNORE_STATIC}" [label="SELECT
+(NOT ${SNORE_STATIC})" shape=diamond]
+		"${snoresettings_SRCS}_2" [label=CONCAT shape=doubleoctagon]
+		"${snoresettings_SRCS}" [label="${snoresettings_SRCS}" shape=cds]
+		"${snoresettings_SRCS}_3" [label=CONCAT shape=doubleoctagon]
+		"SELECT_${snoresettings_SRCS}_${Qt5Widgets_FOUND}" [label="SELECT
+${Qt5Widgets_FOUND}" shape=diamond]
+		"settings.cpp,settingsdialog.cpp,pluginsettingswidget.cpp,${UI}" [label=CONCAT shape=doubleoctagon]
+		UI [label=UI shape=cds]
+		"pluginsettingswidget.cpp" [label="pluginsettingswidget.cpp" shape=ellipse]
+		"settingsdialog.cpp" [label="settingsdialog.cpp" shape=ellipse]
+		"settings.cpp" [label="settings.cpp" shape=ellipse]
+		"NOT,${SNORE_STATIC}_3" [label=CONCAT shape=doubleoctagon]
+		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_NOT ${SNORE_STATIC}" [label="SELECT
+(NOT ${SNORE_STATIC})" shape=diamond]
+		"${CMAKE_CURRENT_SOURCE_DIR}_9" [label="${CMAKE_CURRENT_SOURCE_DIR}_9" shape=cds]
+		"${CMAKE_CURRENT_SOURCE_DIR}" [label="${CMAKE_CURRENT_SOURCE_DIR}" shape=cds]
+		"${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules" [label=CONCAT shape=doubleoctagon]
+		"${ECM_MODULE_PATH},${ECM_KDE_MODULE_DIR},${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules" [label=CONCAT shape=doubleoctagon]
+		"${CMAKE_MODULE_PATH}" [label="${CMAKE_MODULE_PATH}" shape=cds]
+		ECM_KDE_MODULE_DIR [label=ECM_KDE_MODULE_DIR shape=cds]
+		ECM_MODULE_PATH [label=ECM_MODULE_PATH shape=cds]
+		"/cmake/modules" [label="/cmake/modules" shape=ellipse]
+		"./KDE/snorenotify/" [label="./KDE/snorenotify/" shape=ellipse]
+		"./KDE/snorenotify/autotest_2" [label="./KDE/snorenotify/autotest_2" shape=ellipse]
+		"NOT,${SNORE_STATIC}_4" [label=CONCAT shape=doubleoctagon]
+		"SELECT_include_20_NOT ${SNORE_STATIC}" [label="SELECT
+(NOT ${SNORE_STATIC})" shape=diamond]
+		include_20 [label=include_20 shape=parallelogram]
+		ECMAddTests [label=ECMAddTests shape=ellipse]
+		"NOT,${SNORE_STATIC}_5" [label=CONCAT shape=doubleoctagon]
+		"SELECT_${Qt5Test_FOUND}_NOT ${SNORE_STATIC}" [label="SELECT
+(NOT ${SNORE_STATIC})" shape=diamond]
+		"${Qt5Test_FOUND}" [label="${Qt5Test_FOUND}" shape=cds]
+		find_package_8 [label=find_package_8 shape=parallelogram]
+		"Qt5Test,QUIET" [label=CONCAT shape=doubleoctagon]
+		QUIET [label=QUIET shape=ellipse]
+		"Qt5Quick,QUIET" [label=CONCAT shape=doubleoctagon]
+		find_package_5 [label=find_package_5 shape=parallelogram]
+		"${Qt5Quick_FOUND}" [label="${Qt5Quick_FOUND}" shape=cds]
+		Qt5Quick [label=Qt5Quick shape=ellipse]
+		"Qt5Widgets,QUIET" [label=CONCAT shape=doubleoctagon]
+		find_package_4 [label=find_package_4 shape=parallelogram]
+		Qt5Widgets [label=Qt5Widgets shape=ellipse]
+		Qt5Test [label=Qt5Test shape=ellipse]
+		SNORE_STATIC [label=SNORE_STATIC shape=larrow]
+		1 [label=1 shape=ellipse]
+		"._2" [label="._2" shape=ellipse]
+		"\"snore" [label="\"snore" shape=ellipse]
+		"\"-qt5\"" [label="\"-qt5\"" shape=ellipse]
+		KDE_INSTALL_PLUGINDIR [label=KDE_INSTALL_PLUGINDIR shape=cds]
+		LIBRARY [label=LIBRARY shape=ellipse]
+		"${SnoreNotify_HDR}" [label="${SnoreNotify_HDR}" shape=cds]
+		"notification.h,notificationaction.h,icon.h" [label=CONCAT shape=doubleoctagon]
+		"icon.h" [label="icon.h" shape=ellipse]
+		"notificationaction.h" [label="notificationaction.h" shape=ellipse]
+		"notification.h" [label="notification.h" shape=ellipse]
+		"/notification" [label="/notification" shape=ellipse]
+		"/snore_static_plugins.h" [label="/snore_static_plugins.h" shape=ellipse]
+		"/version.h" [label="/version.h" shape=ellipse]
+		"/snore_exports.h" [label="/snore_exports.h" shape=ellipse]
+		"utils.h" [label="utils.h" shape=ellipse]
+		"snoreglobals.h" [label="snoreglobals.h" shape=ellipse]
+		"lambdahint.h" [label="lambdahint.h" shape=ellipse]
+		"hint.h" [label="hint.h" shape=ellipse]
+		"alert.h" [label="alert.h" shape=ellipse]
+		"application.h" [label="application.h" shape=ellipse]
+		"snore_p.h" [label="snore_p.h" shape=ellipse]
+		"snore.h" [label="snore.h" shape=ellipse]
+		"\"_2" [label="\"_2" shape=ellipse]
+		"/version.h.in\"" [label="/version.h.in\"" shape=ellipse]
+		"./KDE/snorenotify/src/libsnore_2" [label="./KDE/snorenotify/src/libsnore_2" shape=ellipse]
+		"./KDE/snorenotify/src/libsnore/settings_2" [label="./KDE/snorenotify/src/libsnore/settings_2" shape=ellipse]
+		TARGETS [label=TARGETS shape=ellipse]
+		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>,$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>_2" [label=CONCAT shape=doubleoctagon]
+		"$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>_2" [label=CONCAT shape=doubleoctagon]
+		"/src>" [label="/src>" shape=ellipse]
+		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>" [label=CONCAT shape=doubleoctagon]
+		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>,$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>" [label=CONCAT shape=doubleoctagon]
+		"$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>" [label=CONCAT shape=doubleoctagon]
+		"/src>_2" [label="/src>_2" shape=ellipse]
+		PROJECT_BINARY_DIR [label=PROJECT_BINARY_DIR shape=cds]
+		"$<BUILD_INTERFACE:_2" [label="$<BUILD_INTERFACE:_2" shape=ellipse]
+		PROJECT_SOURCE_DIR [label=PROJECT_SOURCE_DIR shape=cds]
+		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>_2" [label=CONCAT shape=doubleoctagon]
+		"$<BUILD_INTERFACE:" [label="$<BUILD_INTERFACE:" shape=ellipse]
+		SNORENOTIFY_RCS [label=SNORENOTIFY_RCS shape=cds]
+		"utils.cpp" [label="utils.cpp" shape=ellipse]
+		"lambdahint.cpp" [label="lambdahint.cpp" shape=ellipse]
+		"hint.cpp" [label="hint.cpp" shape=ellipse]
+		"alert_p.cpp" [label="alert_p.cpp" shape=ellipse]
+		"alert.cpp" [label="alert.cpp" shape=ellipse]
+		"application_p.cpp" [label="application_p.cpp" shape=ellipse]
+		"application.cpp" [label="application.cpp" shape=ellipse]
+		"snore_p.cpp" [label="snore_p.cpp" shape=ellipse]
+		"${SnoreNotify_SRCS}_2" [label="${SnoreNotify_SRCS}_2" shape=cds]
+		"${SnoreNotify_SRCS},plugins/plugincontainer.cpp,plugins/plugins.cpp,plugins/snorefrontend.cpp,plugins/snorebackend.cpp,plugins/snoresecondarybackend.cpp,plugins/settingsplugin.cpp" [label=CONCAT shape=doubleoctagon]
+		"plugins/settingsplugin.cpp" [label="plugins/settingsplugin.cpp" shape=ellipse]
+		"plugins/snoresecondarybackend.cpp" [label="plugins/snoresecondarybackend.cpp" shape=ellipse]
+		"plugins/snorebackend.cpp" [label="plugins/snorebackend.cpp" shape=ellipse]
+		"plugins/snorefrontend.cpp" [label="plugins/snorefrontend.cpp" shape=ellipse]
+		"plugins/plugins.cpp" [label="plugins/plugins.cpp" shape=ellipse]
+		"plugins/plugincontainer.cpp" [label="plugins/plugincontainer.cpp" shape=ellipse]
+		"${SnoreNotify_SRCS}" [label="${SnoreNotify_SRCS}" shape=cds]
+		"${SnoreNotify_SRCS},notification/notification.cpp,notification/notification_p.cpp,notification/notificationaction.cpp,notification/icon.cpp" [label=CONCAT shape=doubleoctagon]
+		"notification/icon.cpp" [label="notification/icon.cpp" shape=ellipse]
+		"notification/notificationaction.cpp" [label="notification/notificationaction.cpp" shape=ellipse]
+		"notification/notification_p.cpp" [label="notification/notification_p.cpp" shape=ellipse]
+		"notification/notification.cpp" [label="notification/notification.cpp" shape=ellipse]
+		SnoreNotify_SRCS [label=SnoreNotify_SRCS shape=cds]
+		"LIST_${SnoreNotify_SRCS}snore.cpp,snore_p.cpp,application.cpp,application_p.cpp,alert.cpp,alert_p.cpp,hint.cpp,lambdahint.cpp,utils.cpp,${SNORENOTIFY_RCS}" -> "${SnoreNotify_SRCS}_2"
+		"LIST_${SnoreNotify_SRCS}snore.cpp,snore_p.cpp,application.cpp,application_p.cpp,alert.cpp,alert_p.cpp,hint.cpp,lambdahint.cpp,utils.cpp,${SNORENOTIFY_RCS}" -> "snore.cpp"
+		"LIST_${SnoreNotify_SRCS}snore.cpp,snore_p.cpp,application.cpp,application_p.cpp,alert.cpp,alert_p.cpp,hint.cpp,lambdahint.cpp,utils.cpp,${SNORENOTIFY_RCS}" -> "snore_p.cpp"
+		"LIST_${SnoreNotify_SRCS}snore.cpp,snore_p.cpp,application.cpp,application_p.cpp,alert.cpp,alert_p.cpp,hint.cpp,lambdahint.cpp,utils.cpp,${SNORENOTIFY_RCS}" -> "application.cpp"
+		"LIST_${SnoreNotify_SRCS}snore.cpp,snore_p.cpp,application.cpp,application_p.cpp,alert.cpp,alert_p.cpp,hint.cpp,lambdahint.cpp,utils.cpp,${SNORENOTIFY_RCS}" -> "application_p.cpp"
+		"LIST_${SnoreNotify_SRCS}snore.cpp,snore_p.cpp,application.cpp,application_p.cpp,alert.cpp,alert_p.cpp,hint.cpp,lambdahint.cpp,utils.cpp,${SNORENOTIFY_RCS}" -> "alert.cpp"
+		"LIST_${SnoreNotify_SRCS}snore.cpp,snore_p.cpp,application.cpp,application_p.cpp,alert.cpp,alert_p.cpp,hint.cpp,lambdahint.cpp,utils.cpp,${SNORENOTIFY_RCS}" -> "alert_p.cpp"
+		"LIST_${SnoreNotify_SRCS}snore.cpp,snore_p.cpp,application.cpp,application_p.cpp,alert.cpp,alert_p.cpp,hint.cpp,lambdahint.cpp,utils.cpp,${SNORENOTIFY_RCS}" -> "hint.cpp"
+		"LIST_${SnoreNotify_SRCS}snore.cpp,snore_p.cpp,application.cpp,application_p.cpp,alert.cpp,alert_p.cpp,hint.cpp,lambdahint.cpp,utils.cpp,${SNORENOTIFY_RCS}" -> "lambdahint.cpp"
+		"LIST_${SnoreNotify_SRCS}snore.cpp,snore_p.cpp,application.cpp,application_p.cpp,alert.cpp,alert_p.cpp,hint.cpp,lambdahint.cpp,utils.cpp,${SNORENOTIFY_RCS}" -> "utils.cpp"
+		"LIST_${SnoreNotify_SRCS}snore.cpp,snore_p.cpp,application.cpp,application_p.cpp,alert.cpp,alert_p.cpp,hint.cpp,lambdahint.cpp,utils.cpp,${SNORENOTIFY_RCS}" -> SNORENOTIFY_RCS
+		"${SnoreNotify_SRCS}_3" -> "LIST_${SnoreNotify_SRCS}snore.cpp,snore_p.cpp,application.cpp,application_p.cpp,alert.cpp,alert_p.cpp,hint.cpp,lambdahint.cpp,utils.cpp,${SNORENOTIFY_RCS}"
+		"${SnoreNotify_SRCS},${SnoreNotify_QM_LOADER}_2" -> "${SnoreNotify_SRCS}_3"
+		"${SnoreNotify_SRCS},${SnoreNotify_QM_LOADER}_2" -> SnoreNotify_QM_LOADER
+		"SELECT_libsnore_NOT NOT ${SNORE_STATIC}" -> "${SnoreNotify_SRCS},${SnoreNotify_QM_LOADER}_2" [label=TRUE]
+		"SELECT_libsnore_NOT NOT ${SNORE_STATIC}" -> "SELECT_libsnore_NOT ${SNORE_STATIC}" [label=FALSE]
+		"SELECT_libsnore_NOT NOT ${SNORE_STATIC}" -> "NOT,NOT,${SNORE_STATIC}" [label=CONDITION]
+		libsnore_2 -> "SELECT_libsnore_NOT NOT ${SNORE_STATIC}" [label=Sources]
+		libsnore_2 -> "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>,$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>" [label=INCLUDE_DIRECTORIES]
+		libsnore_2 -> "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>,$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>_2" [label=INTERFACE_INCLUDE_DIRECTORIES]
+		"libsnore,PROPERTIES,OUTPUT_NAME,\"snore${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,Libsnore" -> libsnore_2
+		"libsnore,PROPERTIES,OUTPUT_NAME,\"snore${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,Libsnore" -> PROPERTIES
+		"libsnore,PROPERTIES,OUTPUT_NAME,\"snore${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,Libsnore" -> OUTPUT_NAME
+		"libsnore,PROPERTIES,OUTPUT_NAME,\"snore${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,Libsnore" -> "\"snore${SNORE_SUFFIX}\""
+		"libsnore,PROPERTIES,OUTPUT_NAME,\"snore${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,Libsnore" -> VERSION
+		"libsnore,PROPERTIES,OUTPUT_NAME,\"snore${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,Libsnore" -> "\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\""
+		"libsnore,PROPERTIES,OUTPUT_NAME,\"snore${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,Libsnore" -> SOVERSION
+		"libsnore,PROPERTIES,OUTPUT_NAME,\"snore${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,Libsnore" -> "\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\""
+		"libsnore,PROPERTIES,OUTPUT_NAME,\"snore${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,Libsnore" -> EXPORT_NAME
+		"libsnore,PROPERTIES,OUTPUT_NAME,\"snore${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,Libsnore" -> Libsnore
+		set_target_properties -> "libsnore,PROPERTIES,OUTPUT_NAME,\"snore${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,Libsnore" [label=COMMANDS]
+		"Libsnore${SNORE_CamelCase_SUFFIX}Target" -> Libsnore
+		"Libsnore${SNORE_CamelCase_SUFFIX}Target" -> "${SNORE_CamelCase_SUFFIX}"
+		"Libsnore${SNORE_CamelCase_SUFFIX}Target" -> Target
+		"TARGETS,libsnore,EXPORT,Libsnore${SNORE_CamelCase_SUFFIX}Target,${KDE_INSTALL_TARGETS_DEFAULT_ARGS}" -> TARGETS
+		"TARGETS,libsnore,EXPORT,Libsnore${SNORE_CamelCase_SUFFIX}Target,${KDE_INSTALL_TARGETS_DEFAULT_ARGS}" -> libsnore_2
+		"TARGETS,libsnore,EXPORT,Libsnore${SNORE_CamelCase_SUFFIX}Target,${KDE_INSTALL_TARGETS_DEFAULT_ARGS}" -> EXPORT
+		"TARGETS,libsnore,EXPORT,Libsnore${SNORE_CamelCase_SUFFIX}Target,${KDE_INSTALL_TARGETS_DEFAULT_ARGS}" -> "Libsnore${SNORE_CamelCase_SUFFIX}Target"
+		"TARGETS,libsnore,EXPORT,Libsnore${SNORE_CamelCase_SUFFIX}Target,${KDE_INSTALL_TARGETS_DEFAULT_ARGS}" -> KDE_INSTALL_TARGETS_DEFAULT_ARGS
+		install_4 -> "TARGETS,libsnore,EXPORT,Libsnore${SNORE_CamelCase_SUFFIX}Target,${KDE_INSTALL_TARGETS_DEFAULT_ARGS}" [label=COMMANDS]
+		"TARGETS,libsnoresettings,EXPORT,LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target,${KDE_INSTALL_TARGETS_DEFAULT_ARGS}" -> TARGETS
+		"TARGETS,libsnoresettings,EXPORT,LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target,${KDE_INSTALL_TARGETS_DEFAULT_ARGS}" -> libsnoresettings_2
+		"TARGETS,libsnoresettings,EXPORT,LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target,${KDE_INSTALL_TARGETS_DEFAULT_ARGS}" -> EXPORT
+		"TARGETS,libsnoresettings,EXPORT,LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target,${KDE_INSTALL_TARGETS_DEFAULT_ARGS}" -> "LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target"
+		"TARGETS,libsnoresettings,EXPORT,LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target,${KDE_INSTALL_TARGETS_DEFAULT_ARGS}" -> KDE_INSTALL_TARGETS_DEFAULT_ARGS
+		install_9 -> "TARGETS,libsnoresettings,EXPORT,LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target,${KDE_INSTALL_TARGETS_DEFAULT_ARGS}" [label=COMMANDS]
+		"SELECT_install_9_${Qt5Widgets_FOUND}" -> install_9 [label=TRUE]
+		"SELECT_install_9_${Qt5Widgets_FOUND}" -> "${Qt5Widgets_FOUND}" [label=CONDITION]
+		"${Qt5Widgets_FOUND}" -> find_package_4
+		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${Qt5Widgets_FOUND}" -> "./KDE/snorenotify/src/libsnore/settings_2" [label=TRUE]
+		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${Qt5Widgets_FOUND}" -> "${CMAKE_CURRENT_SOURCE_DIR}_4" [label=FALSE]
+		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${Qt5Widgets_FOUND}" -> "${Qt5Widgets_FOUND}" [label=CONDITION]
+		"${CMAKE_CURRENT_SOURCE_DIR}_7" -> "SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${Qt5Widgets_FOUND}"
+		"${CMAKE_CURRENT_SOURCE_DIR}_4" -> "./KDE/snorenotify/src/libsnore_2"
+		"\"${CMAKE_CURRENT_SOURCE_DIR}/version.h.in\"" -> "\""
+		"\"${CMAKE_CURRENT_SOURCE_DIR}/version.h.in\"" -> "${CMAKE_CURRENT_SOURCE_DIR}_4"
+		"\"${CMAKE_CURRENT_SOURCE_DIR}/version.h.in\"" -> "/version.h.in\""
+		"\"${CMAKE_CURRENT_SOURCE_DIR}/version.h.in\",\"${CMAKE_CURRENT_BINARY_DIR}/version.h\"" -> "\"${CMAKE_CURRENT_SOURCE_DIR}/version.h.in\""
+		"\"${CMAKE_CURRENT_SOURCE_DIR}/version.h.in\",\"${CMAKE_CURRENT_BINARY_DIR}/version.h\"" -> "\"${CMAKE_CURRENT_BINARY_DIR}/version.h\""
+		configure_file -> "\"${CMAKE_CURRENT_SOURCE_DIR}/version.h.in\",\"${CMAKE_CURRENT_BINARY_DIR}/version.h\"" [label=COMMANDS]
+		"\"${CMAKE_CURRENT_BINARY_DIR}/version.h\"" -> "\"_2"
+		"\"${CMAKE_CURRENT_BINARY_DIR}/version.h\"" -> CMAKE_CURRENT_BINARY_DIR
+		"\"${CMAKE_CURRENT_BINARY_DIR}/version.h\"" -> "/version.h\""
+		"${CMAKE_CURRENT_BINARY_DIR}/bin" -> CMAKE_CURRENT_BINARY_DIR
+		"${CMAKE_CURRENT_BINARY_DIR}/bin" -> "/bin"
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" -> "${CMAKE_CURRENT_BINARY_DIR}/bin"
+		"${CMAKE_CURRENT_BINARY_DIR}/bin_2" -> CMAKE_CURRENT_BINARY_DIR
+		"${CMAKE_CURRENT_BINARY_DIR}/bin_2" -> "/bin"
+		"${CMAKE_LIBRARY_OUTPUT_DIRECTORY}" -> "${CMAKE_CURRENT_BINARY_DIR}/bin_2"
+		"LIST_${SnoreNotify_HDR}snore.h,snore_p.h,application.h,alert.h,hint.h,lambdahint.h,snoreglobals.h,utils.h,${CMAKE_CURRENT_BINARY_DIR}/snore_exports.h,${CMAKE_CURRENT_BINARY_DIR}/version.h,${CMAKE_CURRENT_BINARY_DIR}/snore_static_plugins.h" -> "snore.h"
+		"LIST_${SnoreNotify_HDR}snore.h,snore_p.h,application.h,alert.h,hint.h,lambdahint.h,snoreglobals.h,utils.h,${CMAKE_CURRENT_BINARY_DIR}/snore_exports.h,${CMAKE_CURRENT_BINARY_DIR}/version.h,${CMAKE_CURRENT_BINARY_DIR}/snore_static_plugins.h" -> "snore_p.h"
+		"LIST_${SnoreNotify_HDR}snore.h,snore_p.h,application.h,alert.h,hint.h,lambdahint.h,snoreglobals.h,utils.h,${CMAKE_CURRENT_BINARY_DIR}/snore_exports.h,${CMAKE_CURRENT_BINARY_DIR}/version.h,${CMAKE_CURRENT_BINARY_DIR}/snore_static_plugins.h" -> "application.h"
+		"LIST_${SnoreNotify_HDR}snore.h,snore_p.h,application.h,alert.h,hint.h,lambdahint.h,snoreglobals.h,utils.h,${CMAKE_CURRENT_BINARY_DIR}/snore_exports.h,${CMAKE_CURRENT_BINARY_DIR}/version.h,${CMAKE_CURRENT_BINARY_DIR}/snore_static_plugins.h" -> "alert.h"
+		"LIST_${SnoreNotify_HDR}snore.h,snore_p.h,application.h,alert.h,hint.h,lambdahint.h,snoreglobals.h,utils.h,${CMAKE_CURRENT_BINARY_DIR}/snore_exports.h,${CMAKE_CURRENT_BINARY_DIR}/version.h,${CMAKE_CURRENT_BINARY_DIR}/snore_static_plugins.h" -> "hint.h"
+		"LIST_${SnoreNotify_HDR}snore.h,snore_p.h,application.h,alert.h,hint.h,lambdahint.h,snoreglobals.h,utils.h,${CMAKE_CURRENT_BINARY_DIR}/snore_exports.h,${CMAKE_CURRENT_BINARY_DIR}/version.h,${CMAKE_CURRENT_BINARY_DIR}/snore_static_plugins.h" -> "lambdahint.h"
+		"LIST_${SnoreNotify_HDR}snore.h,snore_p.h,application.h,alert.h,hint.h,lambdahint.h,snoreglobals.h,utils.h,${CMAKE_CURRENT_BINARY_DIR}/snore_exports.h,${CMAKE_CURRENT_BINARY_DIR}/version.h,${CMAKE_CURRENT_BINARY_DIR}/snore_static_plugins.h" -> "snoreglobals.h"
+		"LIST_${SnoreNotify_HDR}snore.h,snore_p.h,application.h,alert.h,hint.h,lambdahint.h,snoreglobals.h,utils.h,${CMAKE_CURRENT_BINARY_DIR}/snore_exports.h,${CMAKE_CURRENT_BINARY_DIR}/version.h,${CMAKE_CURRENT_BINARY_DIR}/snore_static_plugins.h" -> "utils.h"
+		"LIST_${SnoreNotify_HDR}snore.h,snore_p.h,application.h,alert.h,hint.h,lambdahint.h,snoreglobals.h,utils.h,${CMAKE_CURRENT_BINARY_DIR}/snore_exports.h,${CMAKE_CURRENT_BINARY_DIR}/version.h,${CMAKE_CURRENT_BINARY_DIR}/snore_static_plugins.h" -> CMAKE_CURRENT_BINARY_DIR
+		"LIST_${SnoreNotify_HDR}snore.h,snore_p.h,application.h,alert.h,hint.h,lambdahint.h,snoreglobals.h,utils.h,${CMAKE_CURRENT_BINARY_DIR}/snore_exports.h,${CMAKE_CURRENT_BINARY_DIR}/version.h,${CMAKE_CURRENT_BINARY_DIR}/snore_static_plugins.h" -> "/snore_exports.h"
+		"LIST_${SnoreNotify_HDR}snore.h,snore_p.h,application.h,alert.h,hint.h,lambdahint.h,snoreglobals.h,utils.h,${CMAKE_CURRENT_BINARY_DIR}/snore_exports.h,${CMAKE_CURRENT_BINARY_DIR}/version.h,${CMAKE_CURRENT_BINARY_DIR}/snore_static_plugins.h" -> CMAKE_CURRENT_BINARY_DIR
+		"LIST_${SnoreNotify_HDR}snore.h,snore_p.h,application.h,alert.h,hint.h,lambdahint.h,snoreglobals.h,utils.h,${CMAKE_CURRENT_BINARY_DIR}/snore_exports.h,${CMAKE_CURRENT_BINARY_DIR}/version.h,${CMAKE_CURRENT_BINARY_DIR}/snore_static_plugins.h" -> "/version.h"
+		"LIST_${SnoreNotify_HDR}snore.h,snore_p.h,application.h,alert.h,hint.h,lambdahint.h,snoreglobals.h,utils.h,${CMAKE_CURRENT_BINARY_DIR}/snore_exports.h,${CMAKE_CURRENT_BINARY_DIR}/version.h,${CMAKE_CURRENT_BINARY_DIR}/snore_static_plugins.h" -> CMAKE_CURRENT_BINARY_DIR
+		"LIST_${SnoreNotify_HDR}snore.h,snore_p.h,application.h,alert.h,hint.h,lambdahint.h,snoreglobals.h,utils.h,${CMAKE_CURRENT_BINARY_DIR}/snore_exports.h,${CMAKE_CURRENT_BINARY_DIR}/version.h,${CMAKE_CURRENT_BINARY_DIR}/snore_static_plugins.h" -> "/snore_static_plugins.h"
+		"${SnoreNotify_HDR}_3" -> "LIST_${SnoreNotify_HDR}snore.h,snore_p.h,application.h,alert.h,hint.h,lambdahint.h,snoreglobals.h,utils.h,${CMAKE_CURRENT_BINARY_DIR}/snore_exports.h,${CMAKE_CURRENT_BINARY_DIR}/version.h,${CMAKE_CURRENT_BINARY_DIR}/snore_static_plugins.h"
+		"FILES,${SnoreNotify_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}" -> FILES
+		"FILES,${SnoreNotify_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}" -> "${SnoreNotify_HDR}_3"
+		"FILES,${SnoreNotify_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}" -> DESTINATION
+		"FILES,${SnoreNotify_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}" -> "${LIBSNORE_INCLUDE_DIR}"
+		install_6 -> "FILES,${SnoreNotify_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}" [label=COMMANDS]
+		"${LIBSNORE_INCLUDE_DIR}" -> "${KDE_INSTALL_INCLUDEDIR}/libsnore"
+		"${LIBSNORE_INCLUDE_DIR}/notification" -> "${LIBSNORE_INCLUDE_DIR}"
+		"${LIBSNORE_INCLUDE_DIR}/notification" -> "/notification"
+		"FILES,${SnoreNotify_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}/notification" -> FILES
+		"FILES,${SnoreNotify_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}/notification" -> "${SnoreNotify_HDR}"
+		"FILES,${SnoreNotify_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}/notification" -> DESTINATION
+		"FILES,${SnoreNotify_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}/notification" -> "${LIBSNORE_INCLUDE_DIR}/notification"
+		install -> "FILES,${SnoreNotify_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}/notification" [label=COMMANDS]
+		"LIBRARY,DESTINATION,${LIBSNORE_PLUGIN_PATH}" -> LIBRARY
+		"LIBRARY,DESTINATION,${LIBSNORE_PLUGIN_PATH}" -> DESTINATION
+		"LIBRARY,DESTINATION,${LIBSNORE_PLUGIN_PATH}" -> "${LIBSNORE_PLUGIN_PATH}"
+		"${SNORE_PLUGIN_INSTALL_PATH}" -> "LIBRARY,DESTINATION,${LIBSNORE_PLUGIN_PATH}"
+		"${LIBSNORE_PLUGIN_PATH}" -> "${KDE_INSTALL_PLUGINDIR}/libsnore${SNORE_SUFFIX}"
+		"${KDE_INSTALL_PLUGINDIR}/libsnore${SNORE_SUFFIX}" -> KDE_INSTALL_PLUGINDIR
+		"${KDE_INSTALL_PLUGINDIR}/libsnore${SNORE_SUFFIX}" -> "/libsnore"
+		"${KDE_INSTALL_PLUGINDIR}/libsnore${SNORE_SUFFIX}" -> "${SNORE_SUFFIX}"
+		"${SNORE_SUFFIX}" -> "\"-qt5\""
+		"\"snore${SNORE_SUFFIX}\"" -> "\"snore"
+		"\"snore${SNORE_SUFFIX}\"" -> "${SNORE_SUFFIX}"
+		"\"snore${SNORE_SUFFIX}\"" -> "\""
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\"" -> "\""
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\"" -> "${SNORE_VERSION_MAJOR}"
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\"" -> "."
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\"" -> "${SNORE_VERSION_MINOR}"
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\"" -> "._2"
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\"" -> "${SNORE_VERSION_PATCH}"
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\"" -> "\""
+		"${SNORE_VERSION_PATCH}" -> 1
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\"_2" -> "\""
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\"_2" -> "${SNORE_VERSION_MAJOR}"
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\"_2" -> "."
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\"_2" -> "${SNORE_VERSION_MINOR}"
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\"_2" -> "."
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\"_2" -> "${SNORE_VERSION_PATCH}"
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\"_2" -> "\""
+		"libsnoresettings,PROPERTIES,OUTPUT_NAME,\"snoresettings${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,LibsnoreSettings" -> libsnoresettings_2
+		"libsnoresettings,PROPERTIES,OUTPUT_NAME,\"snoresettings${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,LibsnoreSettings" -> PROPERTIES
+		"libsnoresettings,PROPERTIES,OUTPUT_NAME,\"snoresettings${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,LibsnoreSettings" -> OUTPUT_NAME
+		"libsnoresettings,PROPERTIES,OUTPUT_NAME,\"snoresettings${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,LibsnoreSettings" -> "\"snoresettings${SNORE_SUFFIX}\""
+		"libsnoresettings,PROPERTIES,OUTPUT_NAME,\"snoresettings${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,LibsnoreSettings" -> VERSION
+		"libsnoresettings,PROPERTIES,OUTPUT_NAME,\"snoresettings${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,LibsnoreSettings" -> "\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\"_2"
+		"libsnoresettings,PROPERTIES,OUTPUT_NAME,\"snoresettings${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,LibsnoreSettings" -> SOVERSION
+		"libsnoresettings,PROPERTIES,OUTPUT_NAME,\"snoresettings${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,LibsnoreSettings" -> "\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\"_2"
+		"libsnoresettings,PROPERTIES,OUTPUT_NAME,\"snoresettings${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,LibsnoreSettings" -> EXPORT_NAME
+		"libsnoresettings,PROPERTIES,OUTPUT_NAME,\"snoresettings${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,LibsnoreSettings" -> LibsnoreSettings
+		set_target_properties_2 -> "libsnoresettings,PROPERTIES,OUTPUT_NAME,\"snoresettings${SNORE_SUFFIX}\",VERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}\",SOVERSION,\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\",EXPORT_NAME,LibsnoreSettings" [label=COMMANDS]
+		"SELECT_set_target_properties_2_${Qt5Widgets_FOUND}" -> set_target_properties_2 [label=TRUE]
+		"SELECT_set_target_properties_2_${Qt5Widgets_FOUND}" -> "${Qt5Widgets_FOUND}" [label=CONDITION]
+		"LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target" -> LibsnoreSettings
+		"LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target" -> "${SNORE_CamelCase_SUFFIX}"
+		"LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target" -> Target
+		"Libsnore${SNORE_CamelCase_SUFFIX}Target_2" -> Libsnore
+		"Libsnore${SNORE_CamelCase_SUFFIX}Target_2" -> "${SNORE_CamelCase_SUFFIX}"
+		"Libsnore${SNORE_CamelCase_SUFFIX}Target_2" -> Target
+		"EXPORT,Libsnore${SNORE_CamelCase_SUFFIX}Target,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX},NAMESPACE,Snore->" -> EXPORT
+		"EXPORT,Libsnore${SNORE_CamelCase_SUFFIX}Target,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX},NAMESPACE,Snore->" -> "Libsnore${SNORE_CamelCase_SUFFIX}Target_2"
+		"EXPORT,Libsnore${SNORE_CamelCase_SUFFIX}Target,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX},NAMESPACE,Snore->" -> DESTINATION
+		"EXPORT,Libsnore${SNORE_CamelCase_SUFFIX}Target,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX},NAMESPACE,Snore->" -> "${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX}"
+		"EXPORT,Libsnore${SNORE_CamelCase_SUFFIX}Target,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX},NAMESPACE,Snore->" -> NAMESPACE
+		"EXPORT,Libsnore${SNORE_CamelCase_SUFFIX}Target,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX},NAMESPACE,Snore->" -> "Snore->"
+		install_5 -> "EXPORT,Libsnore${SNORE_CamelCase_SUFFIX}Target,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX},NAMESPACE,Snore->" [label=COMMANDS]
+		"EXPORT,LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX},NAMESPACE,Snore->" -> EXPORT
+		"EXPORT,LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX},NAMESPACE,Snore->" -> "LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target_2"
+		"EXPORT,LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX},NAMESPACE,Snore->" -> DESTINATION
+		"EXPORT,LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX},NAMESPACE,Snore->" -> "${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX}"
+		"EXPORT,LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX},NAMESPACE,Snore->" -> NAMESPACE
+		"EXPORT,LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX},NAMESPACE,Snore->" -> "Snore->_2"
+		install_10 -> "EXPORT,LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX},NAMESPACE,Snore->" [label=COMMANDS]
+		"SELECT_install_10_${Qt5Widgets_FOUND}" -> install_10 [label=TRUE]
+		"SELECT_install_10_${Qt5Widgets_FOUND}" -> "${Qt5Widgets_FOUND}" [label=CONDITION]
+		"${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX}" -> KDE_INSTALL_CMAKEPACKAGEDIR
+		"${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX}" -> "/libsnoresettings"
+		"${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX}" -> "${SNORE_CamelCase_SUFFIX}"
+		"${SNORE_CamelCase_SUFFIX}" -> "\"Qt5\""
+		"${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX}" -> KDE_INSTALL_CMAKEPACKAGEDIR
+		"${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX}" -> "/libsnore"
+		"${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX}" -> "${SNORE_CamelCase_SUFFIX}"
+		"\"${KDE_INSTALL_FULL_PLUGINDIR}/libsnore${SNORE_SUFFIX}\"" -> "\""
+		"\"${KDE_INSTALL_FULL_PLUGINDIR}/libsnore${SNORE_SUFFIX}\"" -> KDE_INSTALL_FULL_PLUGINDIR
+		"\"${KDE_INSTALL_FULL_PLUGINDIR}/libsnore${SNORE_SUFFIX}\"" -> "/libsnore"
+		"\"${KDE_INSTALL_FULL_PLUGINDIR}/libsnore${SNORE_SUFFIX}\"" -> "${SNORE_SUFFIX}"
+		"\"${KDE_INSTALL_FULL_PLUGINDIR}/libsnore${SNORE_SUFFIX}\"" -> "\""
+		"TARGET,libsnore,APPEND,PROPERTY,COMPILE_DEFINITIONS,LIBSNORE_PLUGIN_PATH=,\"${KDE_INSTALL_FULL_PLUGINDIR}/libsnore${SNORE_SUFFIX}\",SNORE_SUFFIX=,\"${SNORE_SUFFIX}\"" -> TARGET
+		"TARGET,libsnore,APPEND,PROPERTY,COMPILE_DEFINITIONS,LIBSNORE_PLUGIN_PATH=,\"${KDE_INSTALL_FULL_PLUGINDIR}/libsnore${SNORE_SUFFIX}\",SNORE_SUFFIX=,\"${SNORE_SUFFIX}\"" -> libsnore_2
+		"TARGET,libsnore,APPEND,PROPERTY,COMPILE_DEFINITIONS,LIBSNORE_PLUGIN_PATH=,\"${KDE_INSTALL_FULL_PLUGINDIR}/libsnore${SNORE_SUFFIX}\",SNORE_SUFFIX=,\"${SNORE_SUFFIX}\"" -> APPEND
+		"TARGET,libsnore,APPEND,PROPERTY,COMPILE_DEFINITIONS,LIBSNORE_PLUGIN_PATH=,\"${KDE_INSTALL_FULL_PLUGINDIR}/libsnore${SNORE_SUFFIX}\",SNORE_SUFFIX=,\"${SNORE_SUFFIX}\"" -> PROPERTY
+		"TARGET,libsnore,APPEND,PROPERTY,COMPILE_DEFINITIONS,LIBSNORE_PLUGIN_PATH=,\"${KDE_INSTALL_FULL_PLUGINDIR}/libsnore${SNORE_SUFFIX}\",SNORE_SUFFIX=,\"${SNORE_SUFFIX}\"" -> COMPILE_DEFINITIONS
+		"TARGET,libsnore,APPEND,PROPERTY,COMPILE_DEFINITIONS,LIBSNORE_PLUGIN_PATH=,\"${KDE_INSTALL_FULL_PLUGINDIR}/libsnore${SNORE_SUFFIX}\",SNORE_SUFFIX=,\"${SNORE_SUFFIX}\"" -> "LIBSNORE_PLUGIN_PATH="
+		"TARGET,libsnore,APPEND,PROPERTY,COMPILE_DEFINITIONS,LIBSNORE_PLUGIN_PATH=,\"${KDE_INSTALL_FULL_PLUGINDIR}/libsnore${SNORE_SUFFIX}\",SNORE_SUFFIX=,\"${SNORE_SUFFIX}\"" -> "\"${KDE_INSTALL_FULL_PLUGINDIR}/libsnore${SNORE_SUFFIX}\""
+		"TARGET,libsnore,APPEND,PROPERTY,COMPILE_DEFINITIONS,LIBSNORE_PLUGIN_PATH=,\"${KDE_INSTALL_FULL_PLUGINDIR}/libsnore${SNORE_SUFFIX}\",SNORE_SUFFIX=,\"${SNORE_SUFFIX}\"" -> "SNORE_SUFFIX="
+		"TARGET,libsnore,APPEND,PROPERTY,COMPILE_DEFINITIONS,LIBSNORE_PLUGIN_PATH=,\"${KDE_INSTALL_FULL_PLUGINDIR}/libsnore${SNORE_SUFFIX}\",SNORE_SUFFIX=,\"${SNORE_SUFFIX}\"" -> "\"${SNORE_SUFFIX}\""
+		set_property -> "TARGET,libsnore,APPEND,PROPERTY,COMPILE_DEFINITIONS,LIBSNORE_PLUGIN_PATH=,\"${KDE_INSTALL_FULL_PLUGINDIR}/libsnore${SNORE_SUFFIX}\",SNORE_SUFFIX=,\"${SNORE_SUFFIX}\"" [label=COMMANDS]
+		"\"${SNORE_SUFFIX}\"" -> "\""
+		"\"${SNORE_SUFFIX}\"" -> "${SNORE_SUFFIX}"
+		"\"${SNORE_SUFFIX}\"" -> "\""
+		"${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX}_2" -> KDE_INSTALL_CMAKEPACKAGEDIR
+		"${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX}_2" -> "/libsnore"
+		"${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX}_2" -> "${SNORE_CamelCase_SUFFIX}"
+		"FILES,SnoreAddPlugin.cmake,${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}Config.cmake,${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX}" -> FILES
+		"FILES,SnoreAddPlugin.cmake,${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}Config.cmake,${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX}" -> "SnoreAddPlugin.cmake"
+		"FILES,SnoreAddPlugin.cmake,${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}Config.cmake,${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX}" -> "${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}Config.cmake"
+		"FILES,SnoreAddPlugin.cmake,${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}Config.cmake,${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX}" -> "${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake"
+		"FILES,SnoreAddPlugin.cmake,${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}Config.cmake,${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX}" -> DESTINATION
+		"FILES,SnoreAddPlugin.cmake,${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}Config.cmake,${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX}" -> "${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX}_2"
+		install_7 -> "FILES,SnoreAddPlugin.cmake,${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}Config.cmake,${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnore${SNORE_CamelCase_SUFFIX}" [label=COMMANDS]
+		"${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake" -> CMAKE_CURRENT_BINARY_DIR
+		"${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake" -> "/Libsnore_2"
+		"${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake" -> "${SNORE_CamelCase_SUFFIX}"
+		"${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake" -> "ConfigVersion.cmake"
+		"${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake" -> CMAKE_CURRENT_BINARY_DIR
+		"${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake" -> "/LibsnoreSettings_2"
+		"${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake" -> "${SNORE_CamelCase_SUFFIX}"
+		"${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake" -> "ConfigVersion.cmake"
+		"FILES,${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}Config.cmake,${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX}" -> FILES
+		"FILES,${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}Config.cmake,${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX}" -> "${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}Config.cmake"
+		"FILES,${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}Config.cmake,${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX}" -> "${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake"
+		"FILES,${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}Config.cmake,${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX}" -> DESTINATION
+		"FILES,${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}Config.cmake,${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX}" -> "${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX}_2"
+		install_12 -> "FILES,${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}Config.cmake,${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}ConfigVersion.cmake,DESTINATION,${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX}" [label=COMMANDS]
+		"SELECT_install_12_${Qt5Widgets_FOUND}" -> install_12 [label=TRUE]
+		"SELECT_install_12_${Qt5Widgets_FOUND}" -> "${Qt5Widgets_FOUND}" [label=CONDITION]
+		"${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX}_2" -> KDE_INSTALL_CMAKEPACKAGEDIR
+		"${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX}_2" -> "/libsnoresettings"
+		"${KDE_INSTALL_CMAKEPACKAGEDIR}/libsnoresettings${SNORE_CamelCase_SUFFIX}_2" -> "${SNORE_CamelCase_SUFFIX}"
+		"${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}Config.cmake" -> CMAKE_CURRENT_BINARY_DIR
+		"${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}Config.cmake" -> "/LibsnoreSettings"
+		"${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}Config.cmake" -> "${SNORE_CamelCase_SUFFIX}"
+		"${CMAKE_CURRENT_BINARY_DIR}/LibsnoreSettings${SNORE_CamelCase_SUFFIX}Config.cmake" -> "Config.cmake"
+		"${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}Config.cmake" -> CMAKE_CURRENT_BINARY_DIR
+		"${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}Config.cmake" -> "/Libsnore"
+		"${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}Config.cmake" -> "${SNORE_CamelCase_SUFFIX}"
+		"${CMAKE_CURRENT_BINARY_DIR}/Libsnore${SNORE_CamelCase_SUFFIX}Config.cmake" -> "Config.cmake"
+		"FILES,${SnoreNotify_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}/plugins" -> FILES
+		"FILES,${SnoreNotify_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}/plugins" -> "${SnoreNotify_HDR}_2"
+		"FILES,${SnoreNotify_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}/plugins" -> DESTINATION
+		"FILES,${SnoreNotify_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}/plugins" -> "${LIBSNORE_INCLUDE_DIR}/plugins"
+		install_2 -> "FILES,${SnoreNotify_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}/plugins" [label=COMMANDS]
+		"${LIBSNORE_INCLUDE_DIR}/plugins" -> "${LIBSNORE_INCLUDE_DIR}"
+		"${LIBSNORE_INCLUDE_DIR}/plugins" -> "/plugins"
+		"${SnoreNotify_HDR}_2" -> "plugins.h,snorefrontend.h,snorebackend.h,snoresecondarybackend.h,settingsplugin.h"
+		"plugins.h,snorefrontend.h,snorebackend.h,snoresecondarybackend.h,settingsplugin.h" -> "plugins.h"
+		"plugins.h,snorefrontend.h,snorebackend.h,snoresecondarybackend.h,settingsplugin.h" -> "snorefrontend.h"
+		"plugins.h,snorefrontend.h,snorebackend.h,snoresecondarybackend.h,settingsplugin.h" -> "snorebackend.h"
+		"plugins.h,snorefrontend.h,snorebackend.h,snoresecondarybackend.h,settingsplugin.h" -> "snoresecondarybackend.h"
+		"plugins.h,snorefrontend.h,snorebackend.h,snoresecondarybackend.h,settingsplugin.h" -> "settingsplugin.h"
+		"FILES,${pri_filename},DESTINATION,${ECM_MKSPECS_INSTALL_DIR}" -> FILES
+		"FILES,${pri_filename},DESTINATION,${ECM_MKSPECS_INSTALL_DIR}" -> pri_filename
+		"FILES,${pri_filename},DESTINATION,${ECM_MKSPECS_INSTALL_DIR}" -> DESTINATION
+		"FILES,${pri_filename},DESTINATION,${ECM_MKSPECS_INSTALL_DIR}" -> ECM_MKSPECS_INSTALL_DIR
+		install_3 -> "FILES,${pri_filename},DESTINATION,${ECM_MKSPECS_INSTALL_DIR}" [label=COMMANDS]
+		"FILES,${pri_filename},DESTINATION,${ECM_MKSPECS_INSTALL_DIR}_2" -> FILES
+		"FILES,${pri_filename},DESTINATION,${ECM_MKSPECS_INSTALL_DIR}_2" -> pri_filename
+		"FILES,${pri_filename},DESTINATION,${ECM_MKSPECS_INSTALL_DIR}_2" -> DESTINATION
+		"FILES,${pri_filename},DESTINATION,${ECM_MKSPECS_INSTALL_DIR}_2" -> ECM_MKSPECS_INSTALL_DIR
+		install_8 -> "FILES,${pri_filename},DESTINATION,${ECM_MKSPECS_INSTALL_DIR}_2" [label=COMMANDS]
+		"SELECT_install_8_${Qt5Widgets_FOUND}" -> install_8 [label=TRUE]
+		"SELECT_install_8_${Qt5Widgets_FOUND}" -> "${Qt5Widgets_FOUND}" [label=CONDITION]
+		"FILES,${snoresettings_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}/settings" -> FILES
+		"FILES,${snoresettings_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}/settings" -> "${snoresettings_HDR}"
+		"FILES,${snoresettings_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}/settings" -> DESTINATION
+		"FILES,${snoresettings_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}/settings" -> "${LIBSNORE_INCLUDE_DIR}/settings"
+		install_11 -> "FILES,${snoresettings_HDR},DESTINATION,${LIBSNORE_INCLUDE_DIR}/settings" [label=COMMANDS]
+		"SELECT_install_11_${Qt5Widgets_FOUND}" -> install_11 [label=TRUE]
+		"SELECT_install_11_${Qt5Widgets_FOUND}" -> "${Qt5Widgets_FOUND}" [label=CONDITION]
+		"${LIBSNORE_INCLUDE_DIR}/settings" -> "${LIBSNORE_INCLUDE_DIR}"
+		"${LIBSNORE_INCLUDE_DIR}/settings" -> "/settings"
+		"${snoresettings_HDR}" -> "SELECT_${snoresettings_HDR}_${Qt5Widgets_FOUND}"
+		"SELECT_${snoresettings_HDR}_${Qt5Widgets_FOUND}" -> "settings.h,settingsdialog.h,pluginsettingswidget.h,${CMAKE_CURRENT_BINARY_DIR}/snore_settings_exports.h" [label=TRUE]
+		"SELECT_${snoresettings_HDR}_${Qt5Widgets_FOUND}" -> "${Qt5Widgets_FOUND}" [label=CONDITION]
+		"settings.h,settingsdialog.h,pluginsettingswidget.h,${CMAKE_CURRENT_BINARY_DIR}/snore_settings_exports.h" -> "settings.h"
+		"settings.h,settingsdialog.h,pluginsettingswidget.h,${CMAKE_CURRENT_BINARY_DIR}/snore_settings_exports.h" -> "settingsdialog.h"
+		"settings.h,settingsdialog.h,pluginsettingswidget.h,${CMAKE_CURRENT_BINARY_DIR}/snore_settings_exports.h" -> "pluginsettingswidget.h"
+		"settings.h,settingsdialog.h,pluginsettingswidget.h,${CMAKE_CURRENT_BINARY_DIR}/snore_settings_exports.h" -> "${CMAKE_CURRENT_BINARY_DIR}/snore_settings_exports.h"
+		"${CMAKE_CURRENT_BINARY_DIR}/snore_settings_exports.h" -> CMAKE_CURRENT_BINARY_DIR
+		"${CMAKE_CURRENT_BINARY_DIR}/snore_settings_exports.h" -> "/snore_settings_exports.h"
+		"${KDE_INSTALL_INCLUDEDIR}/libsnore" -> KDE_INSTALL_INCLUDEDIR
+		"${KDE_INSTALL_INCLUDEDIR}/libsnore" -> "/libsnore"
+		"LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target_2" -> LibsnoreSettings
+		"LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target_2" -> "${SNORE_CamelCase_SUFFIX}"
+		"LibsnoreSettings${SNORE_CamelCase_SUFFIX}Target_2" -> Target
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\"_2" -> "\""
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\"_2" -> "${SNORE_VERSION_MAJOR}"
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\"_2" -> "."
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\"_2" -> "${SNORE_VERSION_MINOR}"
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\"_2" -> "\""
+		"${SNORE_VERSION_MINOR}" -> 7
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\"" -> "\""
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\"" -> "${SNORE_VERSION_MAJOR}"
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\"" -> "._3"
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\"" -> "${SNORE_VERSION_MINOR}"
+		"\"${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}\"" -> "\""
+		"${SNORE_VERSION_MAJOR}" -> 0
+		"\"snoresettings${SNORE_SUFFIX}\"" -> "\"snoresettings"
+		"\"snoresettings${SNORE_SUFFIX}\"" -> "${SNORE_SUFFIX}"
+		"\"snoresettings${SNORE_SUFFIX}\"" -> "\""
+		libsnoresettings_2 -> "SELECT_libsnoresettings_${Qt5Widgets_FOUND}_2" [label=Sources]
+		"libsnoresettings,PUBLIC,Qt5->Widgets,Snore->Libsnore" -> libsnoresettings_2
+		"libsnoresettings,PUBLIC,Qt5->Widgets,Snore->Libsnore" -> PUBLIC
+		"libsnoresettings,PUBLIC,Qt5->Widgets,Snore->Libsnore" -> "Qt5->Widgets"
+		"libsnoresettings,PUBLIC,Qt5->Widgets,Snore->Libsnore" -> "Snore->Libsnore_2"
+		target_link_libraries_2 -> "libsnoresettings,PUBLIC,Qt5->Widgets,Snore->Libsnore" [label=COMMANDS]
+		"SELECT_target_link_libraries_2_${Qt5Widgets_FOUND}" -> target_link_libraries_2 [label=TRUE]
+		"SELECT_target_link_libraries_2_${Qt5Widgets_FOUND}" -> "${Qt5Widgets_FOUND}" [label=CONDITION]
+		"Snore->Libsnore_2" -> libsnore_2 [label=Sources]
+		"libsnore,PUBLIC,Qt5->Core,Qt5->Gui,Qt5->Network" -> libsnore_2
+		"libsnore,PUBLIC,Qt5->Core,Qt5->Gui,Qt5->Network" -> PUBLIC
+		"libsnore,PUBLIC,Qt5->Core,Qt5->Gui,Qt5->Network" -> "Qt5->Core"
+		"libsnore,PUBLIC,Qt5->Core,Qt5->Gui,Qt5->Network" -> "Qt5->Gui"
+		"libsnore,PUBLIC,Qt5->Core,Qt5->Gui,Qt5->Network" -> "Qt5->Network"
+		target_link_libraries -> "libsnore,PUBLIC,Qt5->Core,Qt5->Gui,Qt5->Network" [label=COMMANDS]
+		"SELECT_Snore->LibsnoreSettings_${Qt5Widgets_FOUND}" -> libsnoresettings_2 [label=TRUE]
+		"SELECT_Snore->LibsnoreSettings_${Qt5Widgets_FOUND}" -> "${Qt5Widgets_FOUND}" [label=CONDITION]
+		"Snore->LibsnoreSettings_2" -> "SELECT_Snore->LibsnoreSettings_${Qt5Widgets_FOUND}" [label=Sources]
+		"SELECT_libsnoresettings_${Qt5Widgets_FOUND}_2" -> "SELECT_libsnoresettings_NOT NOT ${SNORE_STATIC}" [label=TRUE]
+		"SELECT_libsnoresettings_${Qt5Widgets_FOUND}_2" -> "SELECT_libsnoresettings_${Qt5Widgets_FOUND}" [label=FALSE]
+		"SELECT_libsnoresettings_${Qt5Widgets_FOUND}_2" -> "${Qt5Widgets_FOUND}" [label=CONDITION]
+		"SELECT_libsnoresettings_${Qt5Widgets_FOUND}" -> "SELECT_libsnoresettings_NOT ${SNORE_STATIC}" [label=TRUE]
+		"SELECT_libsnoresettings_${Qt5Widgets_FOUND}" -> "${Qt5Widgets_FOUND}" [label=CONDITION]
+		"SELECT_libsnoresettings_NOT NOT ${SNORE_STATIC}" -> "${snoresettings_SRCS}_3" [label=TRUE]
+		"SELECT_libsnoresettings_NOT NOT ${SNORE_STATIC}" -> "SELECT_libsnoresettings_${Qt5Widgets_FOUND}" [label=FALSE]
+		"SELECT_libsnoresettings_NOT NOT ${SNORE_STATIC}" -> "NOT,NOT,${SNORE_STATIC}_2" [label=CONDITION]
+		"NOT,NOT,${SNORE_STATIC}_2" -> NOT
+		"NOT,NOT,${SNORE_STATIC}_2" -> NOT
+		"NOT,NOT,${SNORE_STATIC}_2" -> "${SNORE_STATIC}"
+		"${SNORE_STATIC}" -> SNORE_STATIC
+		"NOT,${SNORE_STATIC}" -> NOT
+		"NOT,${SNORE_STATIC}" -> "${SNORE_STATIC}"
+		"SELECT_libsnore_NOT ${SNORE_STATIC}" -> "${SnoreNotify_SRCS},${SnoreNotify_QM_LOADER}" [label=TRUE]
+		"SELECT_libsnore_NOT ${SNORE_STATIC}" -> "NOT,${SNORE_STATIC}" [label=CONDITION]
+		"${SnoreNotify_SRCS},${SnoreNotify_QM_LOADER}" -> "${SnoreNotify_SRCS}_3"
+		"${SnoreNotify_SRCS},${SnoreNotify_QM_LOADER}" -> SnoreNotify_QM_LOADER
+		"NOT,${SNORE_REVISION}" -> NOT
+		"NOT,${SNORE_REVISION}" -> "${SNORE_REVISION}"
+		"SELECT_${SNORE_REVISION}_NOT ${SNORE_REVISION}" -> "\"\"" [label=TRUE]
+		"SELECT_${SNORE_REVISION}_NOT ${SNORE_REVISION}" -> "NOT,${SNORE_REVISION}" [label=CONDITION]
+		"${SNORE_REVISION}_2" -> "SELECT_${SNORE_REVISION}_NOT ${SNORE_REVISION}"
+		"NOT,NOT,${SNORE_STATIC}" -> NOT
+		"NOT,NOT,${SNORE_STATIC}" -> NOT
+		"NOT,NOT,${SNORE_STATIC}" -> "${SNORE_STATIC}"
+		"NOT,${SNORE_STATIC}_2" -> NOT
+		"NOT,${SNORE_STATIC}_2" -> "${SNORE_STATIC}"
+		"SELECT_libsnoresettings_NOT ${SNORE_STATIC}" -> "${snoresettings_SRCS}_2" [label=TRUE]
+		"SELECT_libsnoresettings_NOT ${SNORE_STATIC}" -> "NOT,${SNORE_STATIC}_2" [label=CONDITION]
+		"${snoresettings_SRCS}_2" -> "${snoresettings_SRCS}"
+		"${snoresettings_SRCS}" -> "SELECT_${snoresettings_SRCS}_${Qt5Widgets_FOUND}"
+		"${snoresettings_SRCS}_3" -> "${snoresettings_SRCS}"
+		"SELECT_${snoresettings_SRCS}_${Qt5Widgets_FOUND}" -> "settings.cpp,settingsdialog.cpp,pluginsettingswidget.cpp,${UI}" [label=TRUE]
+		"SELECT_${snoresettings_SRCS}_${Qt5Widgets_FOUND}" -> "${Qt5Widgets_FOUND}" [label=CONDITION]
+		"settings.cpp,settingsdialog.cpp,pluginsettingswidget.cpp,${UI}" -> "settings.cpp"
+		"settings.cpp,settingsdialog.cpp,pluginsettingswidget.cpp,${UI}" -> "settingsdialog.cpp"
+		"settings.cpp,settingsdialog.cpp,pluginsettingswidget.cpp,${UI}" -> "pluginsettingswidget.cpp"
+		"settings.cpp,settingsdialog.cpp,pluginsettingswidget.cpp,${UI}" -> UI
+		"NOT,${SNORE_STATIC}_3" -> NOT
+		"NOT,${SNORE_STATIC}_3" -> "${SNORE_STATIC}"
+		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_NOT ${SNORE_STATIC}" -> "./KDE/snorenotify/autotest_2" [label=TRUE]
+		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_NOT ${SNORE_STATIC}" -> "${CMAKE_CURRENT_SOURCE_DIR}" [label=FALSE]
+		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_NOT ${SNORE_STATIC}" -> "NOT,${SNORE_STATIC}_3" [label=CONDITION]
+		"${CMAKE_CURRENT_SOURCE_DIR}_9" -> "SELECT_${CMAKE_CURRENT_SOURCE_DIR}_NOT ${SNORE_STATIC}"
+		"${CMAKE_CURRENT_SOURCE_DIR}" -> "./KDE/snorenotify/"
+		"${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules" -> "${CMAKE_CURRENT_SOURCE_DIR}"
+		"${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules" -> "/cmake/modules"
+		"${ECM_MODULE_PATH},${ECM_KDE_MODULE_DIR},${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules" -> ECM_MODULE_PATH
+		"${ECM_MODULE_PATH},${ECM_KDE_MODULE_DIR},${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules" -> ECM_KDE_MODULE_DIR
+		"${ECM_MODULE_PATH},${ECM_KDE_MODULE_DIR},${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules" -> "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules"
+		"${CMAKE_MODULE_PATH}" -> "${ECM_MODULE_PATH},${ECM_KDE_MODULE_DIR},${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules"
+		"NOT,${SNORE_STATIC}_4" -> NOT
+		"NOT,${SNORE_STATIC}_4" -> "${SNORE_STATIC}"
+		"SELECT_include_20_NOT ${SNORE_STATIC}" -> include_20 [label=TRUE]
+		"SELECT_include_20_NOT ${SNORE_STATIC}" -> "NOT,${SNORE_STATIC}_4" [label=CONDITION]
+		include_20 -> ECMAddTests [label=DEPENDS]
+		"NOT,${SNORE_STATIC}_5" -> NOT
+		"NOT,${SNORE_STATIC}_5" -> "${SNORE_STATIC}"
+		"SELECT_${Qt5Test_FOUND}_NOT ${SNORE_STATIC}" -> find_package_8 [label=TRUE]
+		"SELECT_${Qt5Test_FOUND}_NOT ${SNORE_STATIC}" -> "NOT,${SNORE_STATIC}_5" [label=CONDITION]
+		"${Qt5Test_FOUND}" -> "SELECT_${Qt5Test_FOUND}_NOT ${SNORE_STATIC}"
+		find_package_8 -> "Qt5Test,QUIET" [label=COMMANDS]
+		"Qt5Test,QUIET" -> Qt5Test
+		"Qt5Test,QUIET" -> QUIET
+		"Qt5Quick,QUIET" -> Qt5Quick
+		"Qt5Quick,QUIET" -> QUIET
+		find_package_5 -> "Qt5Quick,QUIET" [label=COMMANDS]
+		"${Qt5Quick_FOUND}" -> find_package_5
+		"Qt5Widgets,QUIET" -> Qt5Widgets
+		"Qt5Widgets,QUIET" -> QUIET
+		find_package_4 -> "Qt5Widgets,QUIET" [label=COMMANDS]
+		"${SnoreNotify_HDR}" -> "notification.h,notificationaction.h,icon.h"
+		"notification.h,notificationaction.h,icon.h" -> "notification.h"
+		"notification.h,notificationaction.h,icon.h" -> "notificationaction.h"
+		"notification.h,notificationaction.h,icon.h" -> "icon.h"
+		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>,$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>_2" -> "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>_2"
+		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>,$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>_2" -> "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>_2"
+		"$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>_2" -> "$<BUILD_INTERFACE:"
+		"$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>_2" -> PROJECT_BINARY_DIR
+		"$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>_2" -> "/src>"
+		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>" -> "$<BUILD_INTERFACE:"
+		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>" -> PROJECT_SOURCE_DIR
+		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>" -> "/src>"
+		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>,$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>" -> "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>"
+		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>,$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>" -> "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>"
+		"$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>" -> "$<BUILD_INTERFACE:_2"
+		"$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>" -> PROJECT_BINARY_DIR
+		"$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>" -> "/src>_2"
+		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>_2" -> "$<BUILD_INTERFACE:"
+		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>_2" -> PROJECT_SOURCE_DIR
+		"$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>_2" -> "/src>"
+		"${SnoreNotify_SRCS}_2" -> "${SnoreNotify_SRCS},plugins/plugincontainer.cpp,plugins/plugins.cpp,plugins/snorefrontend.cpp,plugins/snorebackend.cpp,plugins/snoresecondarybackend.cpp,plugins/settingsplugin.cpp"
+		"${SnoreNotify_SRCS},plugins/plugincontainer.cpp,plugins/plugins.cpp,plugins/snorefrontend.cpp,plugins/snorebackend.cpp,plugins/snoresecondarybackend.cpp,plugins/settingsplugin.cpp" -> "${SnoreNotify_SRCS}"
+		"${SnoreNotify_SRCS},plugins/plugincontainer.cpp,plugins/plugins.cpp,plugins/snorefrontend.cpp,plugins/snorebackend.cpp,plugins/snoresecondarybackend.cpp,plugins/settingsplugin.cpp" -> "plugins/plugincontainer.cpp"
+		"${SnoreNotify_SRCS},plugins/plugincontainer.cpp,plugins/plugins.cpp,plugins/snorefrontend.cpp,plugins/snorebackend.cpp,plugins/snoresecondarybackend.cpp,plugins/settingsplugin.cpp" -> "plugins/plugins.cpp"
+		"${SnoreNotify_SRCS},plugins/plugincontainer.cpp,plugins/plugins.cpp,plugins/snorefrontend.cpp,plugins/snorebackend.cpp,plugins/snoresecondarybackend.cpp,plugins/settingsplugin.cpp" -> "plugins/snorefrontend.cpp"
+		"${SnoreNotify_SRCS},plugins/plugincontainer.cpp,plugins/plugins.cpp,plugins/snorefrontend.cpp,plugins/snorebackend.cpp,plugins/snoresecondarybackend.cpp,plugins/settingsplugin.cpp" -> "plugins/snorebackend.cpp"
+		"${SnoreNotify_SRCS},plugins/plugincontainer.cpp,plugins/plugins.cpp,plugins/snorefrontend.cpp,plugins/snorebackend.cpp,plugins/snoresecondarybackend.cpp,plugins/settingsplugin.cpp" -> "plugins/snoresecondarybackend.cpp"
+		"${SnoreNotify_SRCS},plugins/plugincontainer.cpp,plugins/plugins.cpp,plugins/snorefrontend.cpp,plugins/snorebackend.cpp,plugins/snoresecondarybackend.cpp,plugins/settingsplugin.cpp" -> "plugins/settingsplugin.cpp"
+		"${SnoreNotify_SRCS}" -> "${SnoreNotify_SRCS},notification/notification.cpp,notification/notification_p.cpp,notification/notificationaction.cpp,notification/icon.cpp"
+		"${SnoreNotify_SRCS},notification/notification.cpp,notification/notification_p.cpp,notification/notificationaction.cpp,notification/icon.cpp" -> SnoreNotify_SRCS
+		"${SnoreNotify_SRCS},notification/notification.cpp,notification/notification_p.cpp,notification/notificationaction.cpp,notification/icon.cpp" -> "notification/notification.cpp"
+		"${SnoreNotify_SRCS},notification/notification.cpp,notification/notification_p.cpp,notification/notificationaction.cpp,notification/icon.cpp" -> "notification/notification_p.cpp"
+		"${SnoreNotify_SRCS},notification/notification.cpp,notification/notification_p.cpp,notification/notificationaction.cpp,notification/icon.cpp" -> "notification/notificationaction.cpp"
+		"${SnoreNotify_SRCS},notification/notification.cpp,notification/notification_p.cpp,notification/notificationaction.cpp,notification/icon.cpp" -> "notification/icon.cpp"
+	}
+	subgraph cluster_1 {
+		include_6 [label=include_6 shape=parallelogram]
+		CMakeDependentOption [label=CMakeDependentOption shape=ellipse]
+		include_6 -> CMakeDependentOption [label=DEPENDS]
+	}
+	subgraph cluster_2 {
+		GenerateExportHeader [label=GenerateExportHeader shape=ellipse]
+		include_5 [label=include_5 shape=parallelogram]
+		include_5 -> GenerateExportHeader [label=DEPENDS]
+	}
+	subgraph cluster_3 {
+		include_18 [label=include_18 shape=parallelogram]
+		CMakeParseArguments [label=CMakeParseArguments shape=ellipse]
+		include_18 -> CMakeParseArguments [label=DEPENDS]
+	}
+	subgraph cluster_4 {
+		ECMOptionalAddSubdirectory [label=ECMOptionalAddSubdirectory shape=ellipse]
+		include_13 [label=include_13 shape=parallelogram]
+		include_13 -> ECMOptionalAddSubdirectory [label=DEPENDS]
+	}
+	subgraph cluster_5 {
+		"./KDE/snorenotify/_2" [label="./KDE/snorenotify/_2" shape=ellipse]
+		"${CMAKE_SOURCE_DIR}" [label="${CMAKE_SOURCE_DIR}" shape=cds]
+		"${CMAKE_SOURCE_DIR}" -> "./KDE/snorenotify/_2"
+	}
+	subgraph cluster_6 {
+		include_15 [label=include_15 shape=parallelogram]
+		ECMSetupVersion [label=ECMSetupVersion shape=ellipse]
+		include_8 [label=include_8 shape=parallelogram]
+		include_15 -> ECMSetupVersion [label=DEPENDS]
+		include_8 -> ECMSetupVersion [label=DEPENDS]
+	}
+	subgraph cluster_7 {
+		include_12 [label=include_12 shape=parallelogram]
+		ECMMarkNonGuiExecutable [label=ECMMarkNonGuiExecutable shape=ellipse]
+		include_12 -> ECMMarkNonGuiExecutable [label=DEPENDS]
+	}
+	subgraph cluster_8 {
+		include_7 [label=include_7 shape=parallelogram]
+		CMakePackageConfigHelpers [label=CMakePackageConfigHelpers shape=ellipse]
+		include_7 -> CMakePackageConfigHelpers [label=DEPENDS]
+	}
+	subgraph cluster_9 {
+		"./KDE/snorenotify/src_2" [label="./KDE/snorenotify/src_2" shape=ellipse]
+		"${CMAKE_CURRENT_SOURCE_DIR}_3" [label="${CMAKE_CURRENT_SOURCE_DIR}_3" shape=cds]
+		"${CMAKE_CURRENT_SOURCE_DIR}_3" -> "./KDE/snorenotify/src_2"
+	}
+	subgraph cluster_10 {
+		"\"Snorenotify is unmaintained, it is recommended to use KNotifications instead. If you only care for Windows notification use https://invent.kde.org/libraries/snoretoast\"" [label="\"Snorenotify is unmaintained, it is recommended to use KNotifications instead. If you only care for Windows notification use https://invent.kde.org/libraries/snoretoast\"" shape=ellipse]
+		"WARNING,\"Snorenotify is unmaintained, it is recommended to use KNotifications instead. If you only care for Windows notification use https://invent.kde.org/libraries/snoretoast\"" [label=CONCAT shape=doubleoctagon]
+		message [label=message shape=parallelogram]
+		WARNING [label=WARNING shape=ellipse]
+		"WARNING,\"Snorenotify is unmaintained, it is recommended to use KNotifications instead. If you only care for Windows notification use https://invent.kde.org/libraries/snoretoast\"" -> WARNING
+		"WARNING,\"Snorenotify is unmaintained, it is recommended to use KNotifications instead. If you only care for Windows notification use https://invent.kde.org/libraries/snoretoast\"" -> "\"Snorenotify is unmaintained, it is recommended to use KNotifications instead. If you only care for Windows notification use https://invent.kde.org/libraries/snoretoast\""
+		message -> "WARNING,\"Snorenotify is unmaintained, it is recommended to use KNotifications instead. If you only care for Windows notification use https://invent.kde.org/libraries/snoretoast\"" [label=COMMANDS]
+	}
+	subgraph cluster_11 {
+		ECMInstallIcons [label=ECMInstallIcons shape=ellipse]
+		include_11 [label=include_11 shape=parallelogram]
+		include_11 -> ECMInstallIcons [label=DEPENDS]
+	}
+	subgraph cluster_12 {
+		include_3 [label=include_3 shape=parallelogram]
+		KDECMakeSettings [label=KDECMakeSettings shape=ellipse]
+		include_3 -> KDECMakeSettings [label=DEPENDS]
+	}
+	subgraph cluster_13 {
+		"./KDE/snorenotify/src/libsnore/plugins_2" [label="./KDE/snorenotify/src/libsnore/plugins_2" shape=ellipse]
+		"${CMAKE_CURRENT_SOURCE_DIR}_6" [label="${CMAKE_CURRENT_SOURCE_DIR}_6" shape=cds]
+		"${CMAKE_CURRENT_SOURCE_DIR}_6" -> "./KDE/snorenotify/src/libsnore/plugins_2"
+	}
+	subgraph cluster_14 {
+		SNORE_STATIC_QT [label=SNORE_STATIC_QT shape=larrow]
+		"${SNORE_STATIC_QT}" [label="${SNORE_STATIC_QT}" shape=cds]
+		"${SNORE_STATIC_QT}" -> SNORE_STATIC_QT
+	}
+	subgraph cluster_15 {
+		QtStatic [label=QtStatic shape=ellipse]
+		include_16 [label=include_16 shape=parallelogram]
+		include_16 -> QtStatic [label=DEPENDS]
+	}
+	subgraph cluster_16 {
+		"1.7.0" [label="1.7.0" shape=ellipse]
+		"ECM,1.7.0,REQUIRED,NO_MODULE" [label=CONCAT shape=doubleoctagon]
+		find_package_0 [label=find_package_0 shape=parallelogram]
+		"${ECM_FOUND}" [label="${ECM_FOUND}" shape=cds]
+		NO_MODULE [label=NO_MODULE shape=ellipse]
+		REQUIRED [label=REQUIRED shape=ellipse]
+		"Qt5Core,REQUIRED" [label=CONCAT shape=doubleoctagon]
+		find_package_1 [label=find_package_1 shape=parallelogram]
+		"${Qt5Core_FOUND}" [label="${Qt5Core_FOUND}" shape=cds]
+		Qt5Core [label=Qt5Core shape=ellipse]
+		"Qt5Network,REQUIRED" [label=CONCAT shape=doubleoctagon]
+		find_package_2 [label=find_package_2 shape=parallelogram]
+		"${Qt5Network_FOUND}" [label="${Qt5Network_FOUND}" shape=cds]
+		Qt5Network [label=Qt5Network shape=ellipse]
+		"Qt5Gui,REQUIRED" [label=CONCAT shape=doubleoctagon]
+		find_package_3 [label=find_package_3 shape=parallelogram]
+		"${Qt5Gui_FOUND}" [label="${Qt5Gui_FOUND}" shape=cds]
+		Qt5Gui [label=Qt5Gui shape=ellipse]
+		ECM [label=ECM shape=ellipse]
+		"ECM,1.7.0,REQUIRED,NO_MODULE" -> ECM
+		"ECM,1.7.0,REQUIRED,NO_MODULE" -> "1.7.0"
+		"ECM,1.7.0,REQUIRED,NO_MODULE" -> REQUIRED
+		"ECM,1.7.0,REQUIRED,NO_MODULE" -> NO_MODULE
+		find_package_0 -> "ECM,1.7.0,REQUIRED,NO_MODULE" [label=COMMANDS]
+		"${ECM_FOUND}" -> find_package_0
+		"Qt5Core,REQUIRED" -> Qt5Core
+		"Qt5Core,REQUIRED" -> REQUIRED
+		find_package_1 -> "Qt5Core,REQUIRED" [label=COMMANDS]
+		"${Qt5Core_FOUND}" -> find_package_1
+		"Qt5Network,REQUIRED" -> Qt5Network
+		"Qt5Network,REQUIRED" -> REQUIRED
+		find_package_2 -> "Qt5Network,REQUIRED" [label=COMMANDS]
+		"${Qt5Network_FOUND}" -> find_package_2
+		"Qt5Gui,REQUIRED" -> Qt5Gui
+		"Qt5Gui,REQUIRED" -> REQUIRED
+		find_package_3 -> "Qt5Gui,REQUIRED" [label=COMMANDS]
+		"${Qt5Gui_FOUND}" -> find_package_3
+	}
+	subgraph cluster_17 {
+		"./KDE/snorenotify/data_2" [label="./KDE/snorenotify/data_2" shape=ellipse]
+		"${CMAKE_CURRENT_SOURCE_DIR}_2" [label="${CMAKE_CURRENT_SOURCE_DIR}_2" shape=cds]
+		"${CMAKE_CURRENT_SOURCE_DIR}/../data/snore.qrc" [label=CONCAT shape=doubleoctagon]
+		"${SNORE_RCS},${CMAKE_CURRENT_SOURCE_DIR}/../data/snore.qrc" [label=CONCAT shape=doubleoctagon]
+		"${SNORE_RCS}" [label="${SNORE_RCS}" shape=cds]
+		SNORE_RCS [label=SNORE_RCS shape=cds]
+		"/../data/snore.qrc" [label="/../data/snore.qrc" shape=ellipse]
+		"${CMAKE_CURRENT_SOURCE_DIR}_2" -> "./KDE/snorenotify/data_2"
+		"${CMAKE_CURRENT_SOURCE_DIR}/../data/snore.qrc" -> "${CMAKE_CURRENT_SOURCE_DIR}_2"
+		"${CMAKE_CURRENT_SOURCE_DIR}/../data/snore.qrc" -> "/../data/snore.qrc"
+		"${SNORE_RCS},${CMAKE_CURRENT_SOURCE_DIR}/../data/snore.qrc" -> SNORE_RCS
+		"${SNORE_RCS},${CMAKE_CURRENT_SOURCE_DIR}/../data/snore.qrc" -> "${CMAKE_CURRENT_SOURCE_DIR}/../data/snore.qrc"
+		"${SNORE_RCS}" -> "${SNORE_RCS},${CMAKE_CURRENT_SOURCE_DIR}/../data/snore.qrc"
+	}
+	subgraph cluster_18 {
+		include_10 [label=include_10 shape=parallelogram]
+		ECMGeneratePriFile [label=ECMGeneratePriFile shape=ellipse]
+		include_10 -> ECMGeneratePriFile [label=DEPENDS]
+	}
+	subgraph cluster_19 {
+		"${CMAKE_CURRENT_SOURCE_DIR}_8" [label="${CMAKE_CURRENT_SOURCE_DIR}_8" shape=cds]
+		"./KDE/snorenotify/src/plugins_2" [label="./KDE/snorenotify/src/plugins_2" shape=ellipse]
+		"${CMAKE_CURRENT_SOURCE_DIR}_8" -> "./KDE/snorenotify/src/plugins_2"
+	}
+	subgraph cluster_20 {
+		GetGitRevisionDescription [label=GetGitRevisionDescription shape=ellipse]
+		include_19 [label=include_19 shape=parallelogram]
+		include_19 -> GetGitRevisionDescription [label=DEPENDS]
+	}
+	subgraph cluster_21 {
+		include_2 [label=include_2 shape=parallelogram]
+		KDEInstallDirs [label=KDEInstallDirs shape=ellipse]
+		include_2 -> KDEInstallDirs [label=DEPENDS]
+	}
+	subgraph cluster_22 {
+		include_4 [label=include_4 shape=parallelogram]
+		KDEFrameworkCompilerSettings [label=KDEFrameworkCompilerSettings shape=ellipse]
+		include_4 -> KDEFrameworkCompilerSettings [label=DEPENDS]
+	}
+	subgraph cluster_23 {
+		include_14 [label=include_14 shape=parallelogram]
+		ECMPoQmTools [label=ECMPoQmTools shape=ellipse]
+		include_14 -> ECMPoQmTools [label=DEPENDS]
+	}
+	subgraph cluster_24 {
+		"${CMAKE_CURRENT_SOURCE_DIR}_5" [label="${CMAKE_CURRENT_SOURCE_DIR}_5" shape=cds]
+		"./KDE/snorenotify/src/libsnore/notification_2" [label="./KDE/snorenotify/src/libsnore/notification_2" shape=ellipse]
+		"${CMAKE_CURRENT_SOURCE_DIR}_5" -> "./KDE/snorenotify/src/libsnore/notification_2"
+	}
+	subgraph cluster_25 {
+		include [label=include shape=parallelogram]
+		FeatureSummary [label=FeatureSummary shape=ellipse]
+		include -> FeatureSummary [label=DEPENDS]
+	}
+	subgraph cluster_26 {
+		ECMAddAppIcon [label=ECMAddAppIcon shape=ellipse]
+		include_9 [label=include_9 shape=parallelogram]
+		include_9 -> ECMAddAppIcon [label=DEPENDS]
+	}
+}

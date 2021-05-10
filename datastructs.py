@@ -2,7 +2,7 @@ from typing import Optional, List
 import copy
 
 from condition_data_structure import Rule
-
+import logging
 created_commands = dict()
 
 
@@ -352,7 +352,7 @@ class Lookup:
             if key in self.items[-1]:  #
                 del (self.items[-1][key])
             else:
-                print(f"[WARNING] Called deleteKey without finding the key in lookup table for {key}")
+                logging.warning(f"[WARNING] [deleteKey] Called deleteKey without finding the key in lookup table for {key}")
 
     def dropScope(self):
         self.items.pop()
