@@ -6,6 +6,7 @@ graph.gv
 graph.gv.pdf
 *.log
 .venv
+venv
 .idea
 *.pickle
 .vscode
