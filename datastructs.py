@@ -90,6 +90,9 @@ class TargetNode(Node):
         # <CustomCommand (target_link_libraries command), condition: Set>
         self.linkLibrariesConditions = dict()
 
+        # This list will contain the other target nodes that this node depends on and they have to be compiled before this one
+        self.depends = []; 
+        
     def getPointTo(self) -> Node:
         return self.sources
 
