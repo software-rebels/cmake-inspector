@@ -2128,6 +2128,67 @@ class TestVariableDefinitions(unittest.TestCase):
                              'files_for_test/b.cxx',
                              'files_for_test/c.cxx'}, a['[build_client, build_server]'])
 
+    def test_simple_target_name_as_variable(self):
+        text = """
+        SET(EXE foo)
+        add_executable(${EXE} bar.c)
+        """
+        self.runTool(text)
+        self.assertIsNotNone(self.lookup.getKey('t:foo'))
+        self.assertIsInstance(self.lookup.getKey('t:foo'), TargetNode)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'foo')
+        self.assertSetEqual({'bar.c'}, a['[]'])
+
+    def test_simple_target_link_library_target_name_as_variable(self):
+        text = """
+        set(EXE foo)
+        add_executable(${EXE} bar.c)
+        add_executable(john doe.c)
+        target_link_libraries(${EXE} john)
+        """
+        self.runTool(text)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'foo')
+        self.assertSetEqual({'bar.c', 'doe.c'}, a['[]'])
+
+    def test_conditional_target_name_as_variable(self):
+        text = """
+        if(APPLE)
+            set(EXE foo)
+        else()
+            set(EXE bar)
+        endif()
+        add_executable(${EXE} bar.c)
+        """
+        self.runTool(text)
+        self.assertIsNotNone(self.lookup.getKey('t:foo'))
+        self.assertIsInstance(self.lookup.getKey('t:foo'), TargetNode)
+        self.assertIsNotNone(self.lookup.getKey('t:bar'))
+        self.assertIsInstance(self.lookup.getKey('t:bar'), TargetNode)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'foo')
+        b = printFilesForATarget(self.vmodel, self.lookup, 'bar')
+        self.assertSetEqual({'bar.c'}, a['[k!1, APPLE]'])
+        self.assertSetEqual({'bar.c'}, b['[k!1, Not(APPLE)]'])
+
+    def test_conditional_target_name_as_variable_2(self):
+        text = """
+        if(APPLE)
+            set(EXE foo)
+            add_executable(${EXE} foo.c)
+        else()
+            set(EXE bar)
+            add_executable(${EXE} bar.c)
+        endif()
+        """
+        self.runTool(text)
+        self.assertIsNotNone(self.lookup.getKey('t:foo'))
+        self.assertIsInstance(self.lookup.getKey('t:foo'), TargetNode)
+        self.assertIsNotNone(self.lookup.getKey('t:bar'))
+        self.assertIsInstance(self.lookup.getKey('t:bar'), TargetNode)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'foo')
+        b = printFilesForATarget(self.vmodel, self.lookup, 'bar')
+        self.assertSetEqual({'foo.c'}, a['[k!1, APPLE]'])
+        self.assertSetEqual({'bar.c'}, b['[k!1, Not(APPLE)]'])
+
 
 if __name__ == '__main__':
     unittest.main()

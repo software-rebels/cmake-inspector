@@ -216,6 +216,10 @@ class ConstantExpression(LogicalExpression):
         return [(self.evaluate(), {})]
 
     def getAssertions(self):
+        if self.value.lower() in ('false', 'no', 0, '0'):
+            return Bool(False)
+        if self.value.lower() in ('true', 'yes'):
+            return Bool(True)
         if self.type == self.PYTHON_STR:
             return self.value
         elif self.type == self.Z3_STR:
