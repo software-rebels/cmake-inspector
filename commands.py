@@ -251,72 +251,73 @@ def addTarget(arguments, isExecutable=True):
     lookupTable = Lookup.getInstance()
 
     targetName = arguments.pop(0)
-    targetName = flattenAlgorithmWithConditions(vmodel.expand([targetName]))[0][0]
-    lookupTableName = 't:{}'.format(targetName)
-    nextNode = None
-    libraryType = None
-    isObjectLibrary = False
-    interfaceLibrary = None
+    for item in flattenAlgorithmWithConditions(vmodel.expand([targetName])):
+        targetName = item[0]
+        condition = item[1]
+        lookupTableName = 't:{}'.format(targetName)
+        nextNode = None
+        libraryType = None
+        isObjectLibrary = False
+        interfaceLibrary = None
 
-    # These values may exist in add_library only. There is a type property in TargetNode that we can set
-    if arguments[0] in ('STATIC', 'SHARED', 'MODULE'):
-        libraryType = arguments.pop(0)
+        # These values may exist in add_library only. There is a type property in TargetNode that we can set
+        if arguments[0] in ('STATIC', 'SHARED', 'MODULE'):
+            libraryType = arguments.pop(0)
 
-    # Object libraries just contains list of files, so there is small change in behaviour
-    if arguments and arguments[0] == 'OBJECT':
-        arguments.pop(0)
-        isObjectLibrary = True
-        lookupTableName = "$<TARGET_OBJECTS:{}>".format(targetName)
+        # Object libraries just contains list of files, so there is small change in behaviour
+        if arguments and arguments[0] == 'OBJECT':
+            arguments.pop(0)
+            isObjectLibrary = True
+            lookupTableName = "$<TARGET_OBJECTS:{}>".format(targetName)
 
-    # Interface libraries are useful for header-only libraries.
-    # more info at: http://mariobadr.com/creating-a-header-only-library-with-cmake.html
-    if arguments and arguments[0] == 'INTERFACE':
-        arguments.pop(0)
-        interfaceLibrary = True
+        # Interface libraries are useful for header-only libraries.
+        # more info at: http://mariobadr.com/creating-a-header-only-library-with-cmake.html
+        if arguments and arguments[0] == 'INTERFACE':
+            arguments.pop(0)
+            interfaceLibrary = True
 
-    # IMPORTED target node doesn't have any more argument to expand
-    # ALIAS target node points to another target node, so the logic behind it is a little different
-    if arguments and arguments[0] not in ('IMPORTED', 'ALIAS'):
-        nextNode = vmodel.expand(arguments, True)
+        # IMPORTED target node doesn't have any more argument to expand
+        # ALIAS target node points to another target node, so the logic behind it is a little different
+        if arguments and arguments[0] not in ('IMPORTED', 'ALIAS'):
+            nextNode = vmodel.expand(arguments, True)
 
-    targetNode = lookupTable.getKey(lookupTableName)
-    prevNode = None
-    if targetNode is None:
-        targetNode = TargetNode(targetName, nextNode)
-        targetNode.setDefinition(vmodel.DIRECTORY_PROPERTIES.getKey('COMPILE_OPTIONS'))
-        targetNode.linkLibraries = vmodel.DIRECTORY_PROPERTIES.getKey('LINK_LIBRARIES')
-        targetNode.includeDirectories = vmodel.DIRECTORY_PROPERTIES.getKey('INCLUDE_DIRECTORIES')
-        lookupTable.setKey(lookupTableName, targetNode)
-        vmodel.nodes.append(targetNode)
-    else:
-        prevNode = targetNode.sources
+        targetNode = lookupTable.getKey(lookupTableName)
+        prevNode = None
+        if targetNode is None:
+            targetNode = TargetNode(targetName, nextNode)
+            targetNode.setDefinition(vmodel.DIRECTORY_PROPERTIES.getKey('COMPILE_OPTIONS'))
+            targetNode.linkLibraries = vmodel.DIRECTORY_PROPERTIES.getKey('LINK_LIBRARIES')
+            targetNode.includeDirectories = vmodel.DIRECTORY_PROPERTIES.getKey('INCLUDE_DIRECTORIES')
+            lookupTable.setKey(lookupTableName, targetNode)
+            vmodel.nodes.append(targetNode)
+        else:
+            prevNode = targetNode.sources
 
-    if libraryType:
-        targetNode.libraryType = libraryType
+        if libraryType:
+            targetNode.libraryType = libraryType
 
-    targetNode.isExecutable = isExecutable
-    targetNode.isObjectLibrary = isObjectLibrary
-    targetNode.interfaceLibrary = interfaceLibrary
+        targetNode.isExecutable = isExecutable
+        targetNode.isObjectLibrary = isObjectLibrary
+        targetNode.interfaceLibrary = interfaceLibrary
 
-    # TODO: We have to decide whether keep the experiment to change it
-    # EXPERIMENT: We flatten the target name and add all the possible values to the graph as a potential target
-    # flattedTargetName = flattenAlgorithmWithConditions(vmodel.expand([targetName]))
-    # if flattedTargetName:
-    #     for item in flattedTargetName:
-    #         # We already set a key with the name targetNode
-    #         if item[0] != targetName:
-    #             lookupTable.setKey("t:{}".format(item[0]), targetNode)
+        # TODO: We have to decide whether keep the experiment to change it
+        # EXPERIMENT: We flatten the target name and add all the possible values to the graph as a potential target
+        # flattedTargetName = flattenAlgorithmWithConditions(vmodel.expand([targetName]))
+        # if flattedTargetName:
+        #     for item in flattedTargetName:
+        #         # We already set a key with the name targetNode
+        #         if item[0] != targetName:
+        #             lookupTable.setKey("t:{}".format(item[0]), targetNode)
 
-    if 'IMPORTED' in arguments:
-        targetNode.imported = True
+        if 'IMPORTED' in arguments:
+            targetNode.imported = True
 
-    if 'ALIAS' in arguments:
-        aliasTarget = lookupTable.getKey('t:{}'.format(arguments[1]))
-        nextNode = aliasTarget
+        if 'ALIAS' in arguments:
+            aliasTarget = lookupTable.getKey('t:{}'.format(arguments[1]))
+            nextNode = aliasTarget
 
-    # TODO: Why we pass the prevNode? I remove it for now!
-    nextNode = util_handleConditions(nextNode, targetName, prevNode)
-    targetNode.sources = nextNode
+        nextNode = util_handleConditions(nextNode, targetName, prevNode, condition)
+        targetNode.sources = nextNode
 
 
 # Very similar to while command

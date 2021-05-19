@@ -1,7 +1,9 @@
 # Convert list of strings to a string separated by space.
 from typing import List, Optional
 
-from condition_data_structure import LogicalExpression, NotExpression, AndExpression
+from z3 import And
+
+from condition_data_structure import LogicalExpression, NotExpression, AndExpression, Rule, ConstantExpression
 from datastructs import SelectNode, Node, RefNode, Lookup
 from vmodel import VModel
 
@@ -39,13 +41,27 @@ def util_create_and_add_refNode_for_variable(varName: str, nextNode: Node,
 
 # This function looks for previously defined node in the lookup table which works for variables and targets, but
 # not for other nodes that we don't push to lookup table. This third argument helps to manually pass that node.
-def util_handleConditions(nextNode, newNodeName, prevNode=None):
+def util_handleConditions(nextNode, newNodeName, prevNode=None, prior_condition=None):
     vmodel = VModel.getInstance()
     # If inside condition, we just create a SelectNode after newly created RefNode (Node)
     # which true edge points to the new node created for the arguments.
     # If the variable were already defined before the if, the false edge points to that
     systemState = None
     stateProperty = None
+
+    # There could be a prior condition apply to the node, for example, a target node that target name is depend
+    # on another condition, and the target node itself is inside a if condition. The prior knowledge is for the
+    # conditions applied on the name
+    if prior_condition:
+        selectNodeName = "SELECT_{}_{}".format(newNodeName,
+                                               str(prior_condition))
+        newSelectNode = SelectNode(selectNodeName, '')
+        newSelectNode.rule = Rule()
+        newSelectNode.rule.flattenedResult = [And(*prior_condition)]
+        newSelectNode.rule.setCondition(ConstantExpression('True'))
+
+        newSelectNode.setTrueNode(nextNode)
+        nextNode = newSelectNode
 
     # The for statement will traverse all nested if nodes and create corresponding select node for each of them
     # However, we only interested in states in outer levels. So, we skip the ones in a same level
