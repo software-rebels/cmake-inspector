@@ -6,7 +6,7 @@ from collections import Set, defaultdict
 from typing import Dict, List
 from z3 import *
 
-from datastructs import DefinitionNode, Node, LiteralNode, RefNode, CustomCommandNode, SelectNode, ConcatNode, TargetNode, OptionNode
+from datastructs import DefinitionNode, Node, LiteralNode, RefNode, CustomCommandNode, SelectNode, ConcatNode, TargetNode, OptionNode, TestNode
 from vmodel import VModel
 
 
@@ -74,6 +74,8 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
         flattedResult = [(node.getValue(), conditions)]
     elif isinstance(node, TargetNode):
         flattedResult = [(node.rawName, conditions)]
+    elif isinstance(node, TestNode): # XXX Check with @Mehran later
+        flattedResult = [(node.rawName, conditions)]
     elif isinstance(node, OptionNode):
         # TODO: We may want to consider the default value for option
         flattedResult = []
@@ -126,11 +128,13 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                     flattedResult += flattenAlgorithmWithConditions(node.falseNode,
                                                                     set(s.assertions()),
                                                                     debug, recStack)
+
     elif isinstance(node, ConcatNode):
         result = list()
         children = node.getChildren()
         
         for idx, item in enumerate(children):
+
             childSet = flattenAlgorithmWithConditions(item, conditions, debug, recStack)
             tempSet = list()
             # The flattened values for a child could be empty, skipping ...

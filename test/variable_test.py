@@ -13,21 +13,15 @@ from datastructs import CommandDefinitionNode, DefinitionNode, Lookup, RefNode, 
 from algorithms import flattenAlgorithm, flattenAlgorithmWithConditions, getFlattedArguments, flattenCustomCommandNode, \
     CycleDetectedException, getFlattenedDefinitionsFromNode, postprocessZ3Output
 from vmodel import VModel
+from extract import initialize
 
 
 class TestVariableDefinitions(unittest.TestCase):
 
     def runTool(self, text):
-        lexer = CMakeLexer(InputStream(text))
-        stream = CommonTokenStream(lexer)
-        parser = CMakeParser(stream)
-        tree = parser.cmakefile()
-        extractor = CMakeExtractorListener()
-        walker = ParseTreeWalker()
-        # root_dir = '.'
-        # Directory().getInstance().setRoot(root_dir)
-        walker.walk(extractor, tree)
+        initialize(text,False)
         linkDirectory()
+
 
     def setUp(self) -> None:
         self.vmodel = VModel.getInstance()
@@ -471,7 +465,7 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         self.assertIn(self.lookup.getKey("${var1}"), self.vmodel.findNode('FILE.(WRITE ${var1})').getChildren())
-        self.assertIn(self.vmodel.findNode('"Hey John Doe!"'),
+        self.assertIn(self.vmodel.findNode('Hey John Doe!'),
                       self.vmodel.findNode('FILE.(WRITE ${var1})').getChildren())
 
     def test_file_write_with_variable_in_content_part(self):
@@ -567,7 +561,7 @@ class TestVariableDefinitions(unittest.TestCase):
         fileNode2 = self.lookup.getKey("${john}").pointTo
         self.assertIsInstance(fileNode1, CustomCommandNode)
         self.assertIsInstance(fileNode2, CustomCommandNode)
-        self.assertEqual('"/bar/test"', fileNode1.pointTo[0].getValue())
+        self.assertEqual('/bar/test', fileNode1.pointTo[0].getValue())
 
     def test_file_timestamp(self):
         text = """
@@ -2283,6 +2277,120 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertSetEqual({'bar.c', 'doe.c'}, a['[APPLE]'])
         self.assertSetEqual({'bar.c', 'doe.c'}, b['[Not(APPLE)]'])
 
+    def test_project_gloabl_variables(self):
+        text = """    
+        set(KALARM_VERSION "3.2.1")
 
+        project(kalarm VERSION ${KALARM_VERSION})
+        """
+        self.runTool(text)
+        projectSourceDir = self.lookup.getKey('${kalarm_VERSION}')
+        self.assertEqual(projectSourceDir.pointTo.getValue(),'${KALARM_VERSION}')
+
+    def test_prevent_stacking_double_quotation(self):
+        text = """    
+        set(a "test")
+        set(b "${a}")
+        set(cVar "${b}" )
+        set(dVar "${cVar}/test" )
+        """
+        self.runTool(text)
+        cVar = self.lookup.getKey('${cVar}')
+        a = flattenAlgorithmWithConditions(cVar)
+        self.assertEqual('test', a[0][0])
+        dVar = self.lookup.getKey('${dVar}')
+        b = flattenAlgorithmWithConditions(dVar)
+        self.assertEqual('test/test', b[0][0])
+
+
+    def test_ECM_config(self):
+        text= """
+        get_filename_component(PACKAGE_PREFIX_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../" ABSOLUTE)
+
+        macro(set_and_check _var _file)
+          set(${_var} "${_file}")
+          if(NOT EXISTS "${_file}")
+            message(FATAL_ERROR "File or directory ${_file} referenced by variable ${_var} does not exist !")
+          endif()
+        endmacro()
+        
+        macro(check_required_components _NAME)
+          foreach(comp ${${_NAME}_FIND_COMPONENTS})
+            if(NOT ${_NAME}_${comp}_FOUND)
+              if(${_NAME}_FIND_REQUIRED_${comp})
+                set(${_NAME}_FOUND FALSE)
+              endif()
+            endif()
+          endforeach()
+        endmacro()
+        
+        ####################################################################################
+        
+        set(ECM_FIND_MODULE_DIR "${PACKAGE_PREFIX_DIR}/share/ECM/find-modules/")
+        
+        set(ECM_MODULE_DIR "${PACKAGE_PREFIX_DIR}/share/ECM/modules/")
+        
+        set(ECM_KDE_MODULE_DIR "${PACKAGE_PREFIX_DIR}/share/ECM/kde-modules/")
+        
+        set(ECM_PREFIX "${PACKAGE_PREFIX_DIR}")
+        
+        set(ECM_MODULE_PATH "${ECM_MODULE_DIR}" "${ECM_FIND_MODULE_DIR}" "${ECM_KDE_MODULE_DIR}")
+        
+        set(ECM_GLOBAL_FIND_VERSION "${ECM_FIND_VERSION}")
+        """
+        self.runTool(text)
+        ECM_FIND_MODULE_DIR = self.lookup.getKey('${ECM_FIND_MODULE_DIR}')
+        a = flattenAlgorithmWithConditions(ECM_FIND_MODULE_DIR)
+        self.assertEqual('/../../../share/ECM/find-modules/', a[0][0])
+        ECM_MODULE_PATH = self.lookup.getKey('${ECM_MODULE_PATH}')
+        b = flattenAlgorithmWithConditions(ECM_MODULE_PATH)
+        self.assertEqual('/../../../share/ECM/kde-modules/', b[0][0])
+        self.assertEqual('/../../../share/ECM/find-modules/', b[1][0])
+        self.assertEqual('/../../../share/ECM/modules/', b[2][0])
+
+    def test_PROJECT_SOURCE_DIR(self):
+        text = """    
+        set(KF5_MIN_VERSION "5.82.0")
+        set(KALARM_VERSION "3.2.1")
+
+        project(kalarm VERSION ${KALARM_VERSION})
+        """
+        self.runTool(text)
+        kalarm_SOURCE_DIR = self.lookup.getKey('${kalarm_SOURCE_DIR}')
+        a = flattenAlgorithmWithConditions(kalarm_SOURCE_DIR)
+        self.assertEqual('', a[0][0])
+
+    def test_finding_package_config_mode_cmake_file(self):
+        text = """    
+        set(KF5_MIN_VERSION "5.82.0")
+        set(KALARM_VERSION "3.2.1")
+
+        project(kalarm VERSION ${KALARM_VERSION})
+        
+        find_package(ECM ${KF5_MIN_VERSION} CONFIG REQUIRED)
+        set(CMAKE_MODULE_PATH ${kalarm_SOURCE_DIR}/cmake/modules ${ECM_MODULE_PATH})
+        """
+        self.runTool(text)
+        CMAKE_MODULE_PATH = self.lookup.getKey('${CMAKE_MODULE_PATH}')
+        a = flattenAlgorithmWithConditions(CMAKE_MODULE_PATH)
+        self.assertEqual('/usr/share/ECM/cmake/../../../share/ECM/kde-modules/', a[0][0])
+        self.assertEqual('/cmake/modules', a[1][0])
+        self.assertEqual('/usr/share/ECM/cmake/../../../share/ECM/find-modules/', a[2][0])
+        self.assertEqual('/usr/share/ECM/cmake/../../../share/ECM/modules/', a[3][0])
+
+    def test_multi_level_include(self):
+        pass;
+
+    def test_conditional_find_package(self):
+        text = """    
+        set(var CheckFortranSourceRuns)
+        if(APPLE)
+          set(var ECM)
+        endif(APPLE )
+        find_package(${var})
+        """
+        self.runTool(text)
+        print("done!")
+        pass;
 if __name__ == '__main__':
     unittest.main()
