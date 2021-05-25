@@ -6,7 +6,7 @@ graph.gv
 graph.gv.pdf
 *.log
 .venv
-venv
+venv/*
 .idea
 *.pickle
 .vscode
@@ -18,3 +18,11 @@ graph_dots/
 graph_dots_final/
 koffice-plugins/
 venv/
+graph_dots
+KDE
+.vscode
+1
+graph_dots_final
+.env
+
+
