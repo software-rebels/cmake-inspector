@@ -13,9 +13,24 @@ for i in "${prjs[@]}"
 do
     git clone https://github.com/$i.git -q
     cd ..
+<<<<<<< HEAD
     # First we clone the repository
     if [[ $(python ./extract.py ./$i/ 2>&1 | grep  "^line") ]]; then
 	    echo $i
+=======
+    echo "log:Start analysing $i"
+    python ./extract.py ./$i/ 2>&1 | grep  "^\[enterCommand_invocation\]"  >> ./KDE_command_analysis/ignored_commands.txt
+    FILE=./graph.gv
+    # First we clone the repository
+    if [[ ! -f "$FILE"  ]]; then
+        # echo "log:Error $i !"
+	    echo $i >> ./KDE_command_analysis/issued_repos.txt
+    else
+        # echo "log:Finished $i successfully!"
+        name=$(echo $i | tr "/" _)
+        # echo "log:Finished $i successfully!"
+        mv ./graph.gv ./graph_dots/$name
+>>>>>>> add real find_package command
     fi
     cd KDE
 done

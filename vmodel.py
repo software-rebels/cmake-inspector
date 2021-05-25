@@ -197,9 +197,17 @@ class VModel:
     def flatten(self, textToFlat: List[str]) -> List[Node]:
         result = []
         processedText = []
+        # To prevent stacking up double quotation
+
         for item in textToFlat:
             tempText = re.split("(\${[A-Za-z_][A-Za-z0-9_]*})", item)
             for t in tempText:
+                if len(t) and t[0] == '"':
+                    t = t[1:]
+
+                if len(t) and t[-1] == '"':
+                    t = t[:-1]
+
                 if t != "":
                     processedText.append(t)
         for item in processedText:
@@ -219,6 +227,11 @@ class VModel:
                 if not node:
                     node = self.findNode(item)
                 if not node:
+                    if item[0] == '"' and item[-1] == '"':
+                        item = item[:-1]
+                        item = item[1:]
+
+
                     node = LiteralNode(item, item)
                 result.append(node)
         return result
