@@ -26,6 +26,7 @@ from utils import util_handleConditions, util_getStringFromList,\
     util_create_and_add_refNode_for_variable, util_extract_variable_name
 from commands import *
 
+
 logging.basicConfig(filename='cmakeInspector.log', level=logging.DEBUG)
 config.DATABASE_URL = 'bolt://neo4j:123@localhost:7687'
 
