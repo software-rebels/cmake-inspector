@@ -3,7 +3,8 @@ from typing import List, Optional
 
 from z3 import And
 
-from condition_data_structure import LogicalExpression, NotExpression, AndExpression, Rule, ConstantExpression
+from condition_data_structure import LogicalExpression, NotExpression, AndExpression, Rule, ConstantExpression, \
+    DummyExpression
 from datastructs import SelectNode, Node, RefNode, Lookup
 from vmodel import VModel
 
@@ -53,13 +54,12 @@ def util_handleConditions(nextNode, newNodeName, prevNode=None, prior_condition=
     # on another condition, and the target node itself is inside a if condition. The prior knowledge is for the
     # conditions applied on the name
     if prior_condition:
+        logicalExpression = DummyExpression(prior_condition)
         selectNodeName = "SELECT_{}_{}".format(newNodeName,
                                                str(prior_condition))
         newSelectNode = SelectNode(selectNodeName, '')
         newSelectNode.rule = Rule()
-        newSelectNode.rule.flattenedResult = [And(*prior_condition)]
-        newSelectNode.rule.setCondition(ConstantExpression('True'))
-
+        newSelectNode.rule.setCondition(logicalExpression)
         newSelectNode.setTrueNode(nextNode)
         nextNode = newSelectNode
 

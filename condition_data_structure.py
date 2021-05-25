@@ -193,6 +193,19 @@ class LocalVariable(LogicalExpression):
         return self.variable
 
 
+class DummyExpression(LogicalExpression):
+
+    def __init__(self, assertion: List):
+        super(DummyExpression, self).__init__('DUMMY')
+        self.assertion = And(*assertion)
+
+    def getAssertions(self):
+        return simplify(self.assertion)
+
+    def getText(self, pretty=False) -> str:
+        return str(self.getAssertions())
+
+
 class ConstantExpression(LogicalExpression):
     value: str = None
 
@@ -217,9 +230,9 @@ class ConstantExpression(LogicalExpression):
 
     def getAssertions(self):
         if self.value.lower() in ('false', 'no', 0, '0'):
-            return Bool(False)
+            return BoolVal(False)
         if self.value.lower() in ('true', 'yes'):
-            return Bool(True)
+            return BoolVal(True)
         if self.type == self.PYTHON_STR:
             return self.value
         elif self.type == self.Z3_STR:

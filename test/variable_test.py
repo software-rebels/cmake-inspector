@@ -2166,8 +2166,8 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertIsInstance(self.lookup.getKey('t:bar'), TargetNode)
         a = printFilesForATarget(self.vmodel, self.lookup, 'foo')
         b = printFilesForATarget(self.vmodel, self.lookup, 'bar')
-        self.assertSetEqual({'bar.c'}, a['[k!1, APPLE]'])
-        self.assertSetEqual({'bar.c'}, b['[k!1, Not(APPLE)]'])
+        self.assertSetEqual({'bar.c'}, a['[APPLE]'])
+        self.assertSetEqual({'bar.c'}, b['[Not(APPLE)]'])
 
     def test_conditional_target_name_as_variable_2(self):
         text = """
@@ -2186,8 +2186,26 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertIsInstance(self.lookup.getKey('t:bar'), TargetNode)
         a = printFilesForATarget(self.vmodel, self.lookup, 'foo')
         b = printFilesForATarget(self.vmodel, self.lookup, 'bar')
-        self.assertSetEqual({'foo.c'}, a['[k!1, APPLE]'])
-        self.assertSetEqual({'bar.c'}, b['[k!1, Not(APPLE)]'])
+        self.assertSetEqual({'foo.c'}, a['[APPLE]'])
+        self.assertSetEqual({'bar.c'}, b['[Not(APPLE)]'])
+
+    def test_simple_target_link_library_target_name_as_variable_conditional(self):
+        text = """
+        if(APPLE)
+            set(EXE foo)
+        else()
+            set(EXE bar)
+        endif()
+        add_executable(${EXE} bar.c)
+        
+        add_executable(john doe.c)
+        target_link_libraries(${EXE} john)
+        """
+        self.runTool(text)
+        a = printFilesForATarget(self.vmodel, self.lookup, 'foo')
+        b = printFilesForATarget(self.vmodel, self.lookup, 'bar')
+        self.assertSetEqual({'bar.c', 'doe.c'}, a['[APPLE]'])
+        self.assertSetEqual({'bar.c', 'doe.c'}, b['[Not(APPLE)]'])
 
 
 if __name__ == '__main__':
