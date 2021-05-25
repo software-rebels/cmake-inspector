@@ -2,73 +2,23 @@
 digraph {
 	graph [ordering=out]
 	subgraph cluster_0 {
-		RELWITHDEBINFO [label=RELWITHDEBINFO shape=ellipse]
-		"DEBUG,RELEASE,RELWITHDEBINFO" [label=CONCAT shape=doubleoctagon]
-		"SELECT_${_bt}_${MSVC}" [label="SELECT
-${MSVC}" shape=diamond]
-		"SELECT_${_bt}_${BUILD_STATIC_RUNTIME}" [label="SELECT
-${BUILD_STATIC_RUNTIME}" shape=diamond]
-		"${_bt}" [label="${_bt}" shape=cds]
-		"${CMAKE_CXX_FLAGS_${_bt}}_2" [label=CONCAT shape=doubleoctagon]
-		"REPLACE,\"/MD\",\"/MT\",${CMAKE_CXX_FLAGS_${_bt}}" [label=CONCAT shape=doubleoctagon]
-		string_0 [label=string_0 shape=parallelogram]
-		"SELECT_${CMAKE_CXX_FLAGS_${_bt}}_${MSVC}" [label="SELECT
-${MSVC}" shape=diamond]
-		"SELECT_${CMAKE_CXX_FLAGS_${_bt}}_${BUILD_STATIC_RUNTIME}" [label="SELECT
-${BUILD_STATIC_RUNTIME}" shape=diamond]
-		"${CMAKE_CXX_FLAGS_${_bt}}" [label="${CMAKE_CXX_FLAGS_${_bt}}" shape=cds]
-		foreach [label=foreach shape=parallelogram]
-		"${CMAKE_CXX_FLAGS_${_bt}}_1" [label="${CMAKE_CXX_FLAGS_${_bt}}_1" shape=cds]
-		"${BUILD_STATIC_RUNTIME}" [label="${BUILD_STATIC_RUNTIME}" shape=cds]
-		BUILD_STATIC_RUNTIME [label=BUILD_STATIC_RUNTIME shape=larrow]
-		"${MSVC}" [label="${MSVC}" shape=cds]
-		"\"/MT\"" [label="\"/MT\"" shape=ellipse]
-		"\"/MD\"" [label="\"/MD\"" shape=ellipse]
-		REPLACE [label=REPLACE shape=ellipse]
-		"}" [label="}" shape=ellipse]
-		"${CMAKE_CXX_FLAGS_" [label="${CMAKE_CXX_FLAGS_" shape=ellipse]
-		RELEASE [label=RELEASE shape=ellipse]
-		DEBUG [label=DEBUG shape=ellipse]
-		"DEBUG,RELEASE,RELWITHDEBINFO" -> DEBUG
-		"DEBUG,RELEASE,RELWITHDEBINFO" -> RELEASE
-		"DEBUG,RELEASE,RELWITHDEBINFO" -> RELWITHDEBINFO
-		"SELECT_${_bt}_${MSVC}" -> "DEBUG,RELEASE,RELWITHDEBINFO" [label=TRUE]
-		"SELECT_${_bt}_${MSVC}" -> "${MSVC}" [label=CONDITION]
-		"SELECT_${_bt}_${BUILD_STATIC_RUNTIME}" -> "SELECT_${_bt}_${MSVC}" [label=TRUE]
-		"SELECT_${_bt}_${BUILD_STATIC_RUNTIME}" -> "${BUILD_STATIC_RUNTIME}" [label=CONDITION]
-		"${_bt}" -> "SELECT_${_bt}_${BUILD_STATIC_RUNTIME}"
-		"${CMAKE_CXX_FLAGS_${_bt}}_2" -> "${CMAKE_CXX_FLAGS_"
-		"${CMAKE_CXX_FLAGS_${_bt}}_2" -> "${_bt}"
-		"${CMAKE_CXX_FLAGS_${_bt}}_2" -> "}"
-		"REPLACE,\"/MD\",\"/MT\",${CMAKE_CXX_FLAGS_${_bt}}" -> REPLACE
-		"REPLACE,\"/MD\",\"/MT\",${CMAKE_CXX_FLAGS_${_bt}}" -> "\"/MD\""
-		"REPLACE,\"/MD\",\"/MT\",${CMAKE_CXX_FLAGS_${_bt}}" -> "\"/MT\""
-		"REPLACE,\"/MD\",\"/MT\",${CMAKE_CXX_FLAGS_${_bt}}" -> "${CMAKE_CXX_FLAGS_${_bt}}_2"
-		string_0 -> "REPLACE,\"/MD\",\"/MT\",${CMAKE_CXX_FLAGS_${_bt}}" [label=COMMANDS]
-		"SELECT_${CMAKE_CXX_FLAGS_${_bt}}_${MSVC}" -> string_0 [label=TRUE]
-		"SELECT_${CMAKE_CXX_FLAGS_${_bt}}_${MSVC}" -> "${MSVC}" [label=CONDITION]
-		"SELECT_${CMAKE_CXX_FLAGS_${_bt}}_${BUILD_STATIC_RUNTIME}" -> "SELECT_${CMAKE_CXX_FLAGS_${_bt}}_${MSVC}" [label=TRUE]
-		"SELECT_${CMAKE_CXX_FLAGS_${_bt}}_${BUILD_STATIC_RUNTIME}" -> "${BUILD_STATIC_RUNTIME}" [label=CONDITION]
-		"${CMAKE_CXX_FLAGS_${_bt}}" -> "SELECT_${CMAKE_CXX_FLAGS_${_bt}}_${BUILD_STATIC_RUNTIME}"
-		foreach -> "${_bt}" [label=COMMANDS]
-		foreach -> "${CMAKE_CXX_FLAGS_${_bt}}" [label=DEPENDS]
-		"${CMAKE_CXX_FLAGS_${_bt}}_1" -> foreach
-		"${BUILD_STATIC_RUNTIME}" -> BUILD_STATIC_RUNTIME
-	}
-	subgraph cluster_1 {
-		"${CMAKE_CURRENT_SOURCE_DIR}_4" [label="${CMAKE_CURRENT_SOURCE_DIR}_4" shape=cds]
-		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${BUILD_EXAMPLES}" [label="SELECT
+		"${CMAKE_AUTOMOC}" [label="${CMAKE_AUTOMOC}" shape=cds]
+		"SELECT_${CMAKE_AUTOMOC}_${BUILD_EXAMPLES}" [label="SELECT
 ${BUILD_EXAMPLES}" shape=diamond]
 		"${BUILD_EXAMPLES}" [label="${BUILD_EXAMPLES}" shape=cds]
-		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${BUILD_EXAMPLES}_2" [label="SELECT
+		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${BUILD_EXAMPLES}" [label="SELECT
 ${BUILD_EXAMPLES}" shape=diamond]
-		"${CMAKE_CURRENT_SOURCE_DIR}_5" [label="${CMAKE_CURRENT_SOURCE_DIR}_5" shape=cds]
+		"${CMAKE_CURRENT_SOURCE_DIR}_4" [label="${CMAKE_CURRENT_SOURCE_DIR}_4" shape=cds]
 		"${CMAKE_CURRENT_SOURCE_DIR}" [label="${CMAKE_CURRENT_SOURCE_DIR}" shape=cds]
 		"${CMAKE_CURRENT_SOURCE_DIR}/cmake/" [label=CONCAT shape=doubleoctagon]
 		"${CMAKE_MODULE_PATH}" [label="${CMAKE_MODULE_PATH}" shape=cds]
 		"/cmake/" [label="/cmake/" shape=ellipse]
-		"./KDE/snoretoast/" [label="./KDE/snoretoast/" shape=ellipse]
+		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${BUILD_EXAMPLES}_2" [label="SELECT
+${BUILD_EXAMPLES}" shape=diamond]
+		"${CMAKE_CURRENT_SOURCE_DIR}_5" [label="${CMAKE_CURRENT_SOURCE_DIR}_5" shape=cds]
 		"./KDE/snoretoast/examples/qt_2" [label="./KDE/snoretoast/examples/qt_2" shape=ellipse]
+		"./KDE/snoretoast/" [label="./KDE/snoretoast/" shape=ellipse]
+		"./KDE/snoretoast/examples_2" [label="./KDE/snoretoast/examples_2" shape=ellipse]
 		"SELECT_${CMAKE_CXX_STANDARD}_${BUILD_EXAMPLES}" [label="SELECT
 ${BUILD_EXAMPLES}" shape=diamond]
 		"${CMAKE_CXX_STANDARD}_2" [label="${CMAKE_CXX_STANDARD}_2" shape=cds]
@@ -80,23 +30,20 @@ ${BUILD_EXAMPLES}" shape=diamond]
 		"${CMAKE_INCLUDE_CURRENT_DIR}_2" [label="${CMAKE_INCLUDE_CURRENT_DIR}_2" shape=cds]
 		"${CMAKE_INCLUDE_CURRENT_DIR}" [label="${CMAKE_INCLUDE_CURRENT_DIR}" shape=cds]
 		ON [label=ON shape=ellipse]
-		"SELECT_${CMAKE_AUTOMOC}_${BUILD_EXAMPLES}" [label="SELECT
-${BUILD_EXAMPLES}" shape=diamond]
-		"${CMAKE_AUTOMOC}" [label="${CMAKE_AUTOMOC}" shape=cds]
 		"SELECT_${Qt5Core_FOUND}_${BUILD_EXAMPLES}" [label="SELECT
 ${BUILD_EXAMPLES}" shape=diamond]
 		"${Qt5Core_FOUND}" [label="${Qt5Core_FOUND}" shape=cds]
-		find_package_5 [label=find_package_5 shape=parallelogram]
+		find_package_9 [label=find_package_9 shape=parallelogram]
 		"Qt5Core,REQUIRED" [label=CONCAT shape=doubleoctagon]
 		REQUIRED [label=REQUIRED shape=ellipse]
 		"Qt5Network,REQUIRED" [label=CONCAT shape=doubleoctagon]
-		find_package_6 [label=find_package_6 shape=parallelogram]
+		find_package_10 [label=find_package_10 shape=parallelogram]
 		"SELECT_${Qt5Network_FOUND}_${BUILD_EXAMPLES}" [label="SELECT
 ${BUILD_EXAMPLES}" shape=diamond]
 		"${Qt5Network_FOUND}" [label="${Qt5Network_FOUND}" shape=cds]
 		Qt5Network [label=Qt5Network shape=ellipse]
 		"LibSnoreToast,REQUIRED" [label=CONCAT shape=doubleoctagon]
-		find_package_7 [label=find_package_7 shape=parallelogram]
+		find_package_11 [label=find_package_11 shape=parallelogram]
 		"SELECT_${LibSnoreToast_FOUND}_NOT ${SnoreToast->SnoreToastActions}" [label="SELECT
 (NOT ${SnoreToast::SnoreToastActions})" shape=diamond]
 		"SELECT_${LibSnoreToast_FOUND}_${BUILD_EXAMPLES}" [label="SELECT
@@ -116,7 +63,7 @@ ${BUILD_EXAMPLES}" shape=diamond]
 		"SnoreToast->SnoreToastActions_2" [label="SnoreToast->SnoreToastActions_2" shape=box]
 		SnoreToastActions_2 [label=SnoreToastActions_2 shape=box]
 		"TARGETS,snoretoast,SnoreToastActions,EXPORT,LibSnoreToastConfig,RUNTIME,DESTINATION,bin,LIBRARY,DESTINATION,lib,ARCHIVE,DESTINATION,lib" [label=CONCAT shape=doubleoctagon]
-		install [label=install shape=parallelogram]
+		install_6 [label=install_6 shape=parallelogram]
 		lib_2 [label=lib_2 shape=ellipse]
 		DESTINATION_3 [label=DESTINATION_3 shape=ellipse]
 		ARCHIVE [label=ARCHIVE shape=ellipse]
@@ -126,7 +73,7 @@ ${BUILD_EXAMPLES}" shape=diamond]
 		bin [label=bin shape=ellipse]
 		DESTINATION [label=DESTINATION shape=ellipse]
 		"FILES,snoretoastactions.h,${CMAKE_CURRENT_BINARY_DIR}/config.h,DESTINATION,include/snoretoast" [label=CONCAT shape=doubleoctagon]
-		install_2 [label=install_2 shape=parallelogram]
+		install_7 [label=install_7 shape=parallelogram]
 		"include/snoretoast" [label="include/snoretoast" shape=ellipse]
 		"${CMAKE_CURRENT_BINARY_DIR}/config.h" [label=CONCAT shape=doubleoctagon]
 		"/config.h" [label="/config.h" shape=ellipse]
@@ -151,7 +98,7 @@ ${BUILD_EXAMPLES}" shape=diamond]
 		"snoretoastactions.h" [label="snoretoastactions.h" shape=ellipse]
 		FILES [label=FILES shape=ellipse]
 		"EXPORT,LibSnoreToastConfig,DESTINATION,lib/cmake/libsnoretoast,NAMESPACE,SnoreToast->" [label=CONCAT shape=doubleoctagon]
-		install_3 [label=install_3 shape=parallelogram]
+		install_8 [label=install_8 shape=parallelogram]
 		"SnoreToast->" [label="SnoreToast->" shape=ellipse]
 		NAMESPACE [label=NAMESPACE shape=ellipse]
 		"lib/cmake/libsnoretoast" [label="lib/cmake/libsnoretoast" shape=ellipse]
@@ -181,6 +128,7 @@ ${BUILD_EXAMPLES}" shape=diamond]
 		PUBLIC [label=PUBLIC shape=ellipse]
 		"PUBLIC,__WRL_CLASSIC_COM_STRICT__" [label=CONCAT shape=doubleoctagon]
 		__WRL_CLASSIC_COM_STRICT__ [label=__WRL_CLASSIC_COM_STRICT__ shape=ellipse]
+		generate_export_header_5 [label=generate_export_header_5 shape=parallelogram]
 		"snoretoasts.cpp,toasteventhandler.cpp,linkhelper.cpp,utils.cpp" [label=CONCAT shape=doubleoctagon]
 		"utils.cpp" [label="utils.cpp" shape=ellipse]
 		"linkhelper.cpp" [label="linkhelper.cpp" shape=ellipse]
@@ -201,20 +149,22 @@ ${BUILD_EXAMPLES}" shape=diamond]
 		"Qt5->Core" [label="Qt5->Core" shape=ellipse]
 		PROJECT_NAME [label=PROJECT_NAME shape=cds]
 		BUILD_EXAMPLES [label=BUILD_EXAMPLES shape=larrow]
-		"./KDE/snoretoast/examples_2" [label="./KDE/snoretoast/examples_2" shape=ellipse]
-		"${CMAKE_CURRENT_SOURCE_DIR}_4" -> "SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${BUILD_EXAMPLES}"
+		"${CMAKE_AUTOMOC}" -> "SELECT_${CMAKE_AUTOMOC}_${BUILD_EXAMPLES}"
+		"SELECT_${CMAKE_AUTOMOC}_${BUILD_EXAMPLES}" -> ON [label=TRUE]
+		"SELECT_${CMAKE_AUTOMOC}_${BUILD_EXAMPLES}" -> "${BUILD_EXAMPLES}" [label=CONDITION]
+		"${BUILD_EXAMPLES}" -> BUILD_EXAMPLES
 		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${BUILD_EXAMPLES}" -> "./KDE/snoretoast/examples_2" [label=TRUE]
 		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${BUILD_EXAMPLES}" -> "${CMAKE_CURRENT_SOURCE_DIR}" [label=FALSE]
 		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${BUILD_EXAMPLES}" -> "${BUILD_EXAMPLES}" [label=CONDITION]
-		"${BUILD_EXAMPLES}" -> BUILD_EXAMPLES
-		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${BUILD_EXAMPLES}_2" -> "./KDE/snoretoast/examples/qt_2" [label=TRUE]
-		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${BUILD_EXAMPLES}_2" -> "${CMAKE_CURRENT_SOURCE_DIR}" [label=FALSE]
-		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${BUILD_EXAMPLES}_2" -> "${BUILD_EXAMPLES}" [label=CONDITION]
-		"${CMAKE_CURRENT_SOURCE_DIR}_5" -> "SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${BUILD_EXAMPLES}_2"
+		"${CMAKE_CURRENT_SOURCE_DIR}_4" -> "SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${BUILD_EXAMPLES}"
 		"${CMAKE_CURRENT_SOURCE_DIR}" -> "./KDE/snoretoast/"
 		"${CMAKE_CURRENT_SOURCE_DIR}/cmake/" -> "${CMAKE_CURRENT_SOURCE_DIR}"
 		"${CMAKE_CURRENT_SOURCE_DIR}/cmake/" -> "/cmake/"
 		"${CMAKE_MODULE_PATH}" -> "${CMAKE_CURRENT_SOURCE_DIR}/cmake/"
+		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${BUILD_EXAMPLES}_2" -> "./KDE/snoretoast/examples/qt_2" [label=TRUE]
+		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${BUILD_EXAMPLES}_2" -> "${CMAKE_CURRENT_SOURCE_DIR}" [label=FALSE]
+		"SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${BUILD_EXAMPLES}_2" -> "${BUILD_EXAMPLES}" [label=CONDITION]
+		"${CMAKE_CURRENT_SOURCE_DIR}_5" -> "SELECT_${CMAKE_CURRENT_SOURCE_DIR}_${BUILD_EXAMPLES}_2"
 		"SELECT_${CMAKE_CXX_STANDARD}_${BUILD_EXAMPLES}" -> 11 [label=TRUE]
 		"SELECT_${CMAKE_CXX_STANDARD}_${BUILD_EXAMPLES}" -> "${CMAKE_CXX_STANDARD}" [label=FALSE]
 		"SELECT_${CMAKE_CXX_STANDARD}_${BUILD_EXAMPLES}" -> "${BUILD_EXAMPLES}" [label=CONDITION]
@@ -225,25 +175,22 @@ ${BUILD_EXAMPLES}" shape=diamond]
 		"SELECT_${CMAKE_INCLUDE_CURRENT_DIR}_${BUILD_EXAMPLES}" -> "${BUILD_EXAMPLES}" [label=CONDITION]
 		"${CMAKE_INCLUDE_CURRENT_DIR}_2" -> "SELECT_${CMAKE_INCLUDE_CURRENT_DIR}_${BUILD_EXAMPLES}"
 		"${CMAKE_INCLUDE_CURRENT_DIR}" -> ON
-		"SELECT_${CMAKE_AUTOMOC}_${BUILD_EXAMPLES}" -> ON [label=TRUE]
-		"SELECT_${CMAKE_AUTOMOC}_${BUILD_EXAMPLES}" -> "${BUILD_EXAMPLES}" [label=CONDITION]
-		"${CMAKE_AUTOMOC}" -> "SELECT_${CMAKE_AUTOMOC}_${BUILD_EXAMPLES}"
-		"SELECT_${Qt5Core_FOUND}_${BUILD_EXAMPLES}" -> find_package_5 [label=TRUE]
+		"SELECT_${Qt5Core_FOUND}_${BUILD_EXAMPLES}" -> find_package_9 [label=TRUE]
 		"SELECT_${Qt5Core_FOUND}_${BUILD_EXAMPLES}" -> "${BUILD_EXAMPLES}" [label=CONDITION]
 		"${Qt5Core_FOUND}" -> "SELECT_${Qt5Core_FOUND}_${BUILD_EXAMPLES}"
-		find_package_5 -> "Qt5Core,REQUIRED" [label=COMMANDS]
+		find_package_9 -> "Qt5Core,REQUIRED" [label=COMMANDS]
 		"Qt5Core,REQUIRED" -> Qt5Core
 		"Qt5Core,REQUIRED" -> REQUIRED
 		"Qt5Network,REQUIRED" -> Qt5Network
 		"Qt5Network,REQUIRED" -> REQUIRED
-		find_package_6 -> "Qt5Network,REQUIRED" [label=COMMANDS]
-		"SELECT_${Qt5Network_FOUND}_${BUILD_EXAMPLES}" -> find_package_6 [label=TRUE]
+		find_package_10 -> "Qt5Network,REQUIRED" [label=COMMANDS]
+		"SELECT_${Qt5Network_FOUND}_${BUILD_EXAMPLES}" -> find_package_10 [label=TRUE]
 		"SELECT_${Qt5Network_FOUND}_${BUILD_EXAMPLES}" -> "${BUILD_EXAMPLES}" [label=CONDITION]
 		"${Qt5Network_FOUND}" -> "SELECT_${Qt5Network_FOUND}_${BUILD_EXAMPLES}"
 		"LibSnoreToast,REQUIRED" -> LibSnoreToast
 		"LibSnoreToast,REQUIRED" -> REQUIRED
-		find_package_7 -> "LibSnoreToast,REQUIRED" [label=COMMANDS]
-		"SELECT_${LibSnoreToast_FOUND}_NOT ${SnoreToast->SnoreToastActions}" -> find_package_7 [label=TRUE]
+		find_package_11 -> "LibSnoreToast,REQUIRED" [label=COMMANDS]
+		"SELECT_${LibSnoreToast_FOUND}_NOT ${SnoreToast->SnoreToastActions}" -> find_package_11 [label=TRUE]
 		"SELECT_${LibSnoreToast_FOUND}_NOT ${SnoreToast->SnoreToastActions}" -> "NOT,${SnoreToast->SnoreToastActions}" [label=CONDITION]
 		"SELECT_${LibSnoreToast_FOUND}_${BUILD_EXAMPLES}" -> "SELECT_${LibSnoreToast_FOUND}_NOT ${SnoreToast->SnoreToastActions}" [label=TRUE]
 		"SELECT_${LibSnoreToast_FOUND}_${BUILD_EXAMPLES}" -> "${BUILD_EXAMPLES}" [label=CONDITION]
@@ -281,13 +228,13 @@ ${BUILD_EXAMPLES}" shape=diamond]
 		"TARGETS,snoretoast,SnoreToastActions,EXPORT,LibSnoreToastConfig,RUNTIME,DESTINATION,bin,LIBRARY,DESTINATION,lib,ARCHIVE,DESTINATION,lib" -> ARCHIVE
 		"TARGETS,snoretoast,SnoreToastActions,EXPORT,LibSnoreToastConfig,RUNTIME,DESTINATION,bin,LIBRARY,DESTINATION,lib,ARCHIVE,DESTINATION,lib" -> DESTINATION_3
 		"TARGETS,snoretoast,SnoreToastActions,EXPORT,LibSnoreToastConfig,RUNTIME,DESTINATION,bin,LIBRARY,DESTINATION,lib,ARCHIVE,DESTINATION,lib" -> lib_2
-		install -> "TARGETS,snoretoast,SnoreToastActions,EXPORT,LibSnoreToastConfig,RUNTIME,DESTINATION,bin,LIBRARY,DESTINATION,lib,ARCHIVE,DESTINATION,lib" [label=COMMANDS]
+		install_6 -> "TARGETS,snoretoast,SnoreToastActions,EXPORT,LibSnoreToastConfig,RUNTIME,DESTINATION,bin,LIBRARY,DESTINATION,lib,ARCHIVE,DESTINATION,lib" [label=COMMANDS]
 		"FILES,snoretoastactions.h,${CMAKE_CURRENT_BINARY_DIR}/config.h,DESTINATION,include/snoretoast" -> FILES
 		"FILES,snoretoastactions.h,${CMAKE_CURRENT_BINARY_DIR}/config.h,DESTINATION,include/snoretoast" -> "snoretoastactions.h"
 		"FILES,snoretoastactions.h,${CMAKE_CURRENT_BINARY_DIR}/config.h,DESTINATION,include/snoretoast" -> "${CMAKE_CURRENT_BINARY_DIR}/config.h"
 		"FILES,snoretoastactions.h,${CMAKE_CURRENT_BINARY_DIR}/config.h,DESTINATION,include/snoretoast" -> DESTINATION
 		"FILES,snoretoastactions.h,${CMAKE_CURRENT_BINARY_DIR}/config.h,DESTINATION,include/snoretoast" -> "include/snoretoast"
-		install_2 -> "FILES,snoretoastactions.h,${CMAKE_CURRENT_BINARY_DIR}/config.h,DESTINATION,include/snoretoast" [label=COMMANDS]
+		install_7 -> "FILES,snoretoastactions.h,${CMAKE_CURRENT_BINARY_DIR}/config.h,DESTINATION,include/snoretoast" [label=COMMANDS]
 		"${CMAKE_CURRENT_BINARY_DIR}/config.h" -> CMAKE_CURRENT_BINARY_DIR
 		"${CMAKE_CURRENT_BINARY_DIR}/config.h" -> "/config.h"
 		"${CMAKE_CURRENT_BINARY_DIR}/bin" -> CMAKE_CURRENT_BINARY_DIR
@@ -317,7 +264,7 @@ ${BUILD_EXAMPLES}" shape=diamond]
 		"EXPORT,LibSnoreToastConfig,DESTINATION,lib/cmake/libsnoretoast,NAMESPACE,SnoreToast->" -> "lib/cmake/libsnoretoast"
 		"EXPORT,LibSnoreToastConfig,DESTINATION,lib/cmake/libsnoretoast,NAMESPACE,SnoreToast->" -> NAMESPACE
 		"EXPORT,LibSnoreToastConfig,DESTINATION,lib/cmake/libsnoretoast,NAMESPACE,SnoreToast->" -> "SnoreToast->"
-		install_3 -> "EXPORT,LibSnoreToastConfig,DESTINATION,lib/cmake/libsnoretoast,NAMESPACE,SnoreToast->" [label=COMMANDS]
+		install_8 -> "EXPORT,LibSnoreToastConfig,DESTINATION,lib/cmake/libsnoretoast,NAMESPACE,SnoreToast->" [label=COMMANDS]
 		snoretoast_2 -> "WIN32,main.cpp,${TOAST_ICON}" [label=Sources]
 		snoretoast_2 -> "PRIVATE,UNICODE,_UNICODE,WIN32_LEAN_AND_MEAN,NOMINMAX" [label=Definitions]
 		"snoretoast,PRIVATE,SnoreToast->LibSnoreToast,snoreretoastsources" -> snoretoast_2
@@ -337,6 +284,7 @@ ${BUILD_EXAMPLES}" shape=diamond]
 		"WIN32,main.cpp,${TOAST_ICON}" -> TOAST_ICON
 		"PUBLIC,__WRL_CLASSIC_COM_STRICT__" -> PUBLIC
 		"PUBLIC,__WRL_CLASSIC_COM_STRICT__" -> __WRL_CLASSIC_COM_STRICT__
+		generate_export_header_5 -> libsnoretoast_2 [label=COMMANDS]
 		"snoretoasts.cpp,toasteventhandler.cpp,linkhelper.cpp,utils.cpp" -> "snoretoasts.cpp"
 		"snoretoasts.cpp,toasteventhandler.cpp,linkhelper.cpp,utils.cpp" -> "toasteventhandler.cpp"
 		"snoretoasts.cpp,toasteventhandler.cpp,linkhelper.cpp,utils.cpp" -> "linkhelper.cpp"
@@ -353,45 +301,99 @@ ${BUILD_EXAMPLES}" shape=diamond]
 		"${PROJECT_NAME},Qt5->Core,Qt5->Network,SnoreToast->SnoreToastActions" -> "Qt5->Network"
 		"${PROJECT_NAME},Qt5->Core,Qt5->Network,SnoreToast->SnoreToastActions" -> "SnoreToast->SnoreToastActions_3"
 	}
+	subgraph cluster_1 {
+		"REPLACE,\"/MD\",\"/MT\",${CMAKE_CXX_FLAGS_${_bt}}" [label=CONCAT shape=doubleoctagon]
+		string_0 [label=string_0 shape=parallelogram]
+		"SELECT_${CMAKE_CXX_FLAGS_${_bt}}_${MSVC}" [label="SELECT
+${MSVC}" shape=diamond]
+		"SELECT_${CMAKE_CXX_FLAGS_${_bt}}_${BUILD_STATIC_RUNTIME}" [label="SELECT
+${BUILD_STATIC_RUNTIME}" shape=diamond]
+		"${CMAKE_CXX_FLAGS_${_bt}}" [label="${CMAKE_CXX_FLAGS_${_bt}}" shape=cds]
+		foreach [label=foreach shape=parallelogram]
+		"${CMAKE_CXX_FLAGS_${_bt}}_1" [label="${CMAKE_CXX_FLAGS_${_bt}}_1" shape=cds]
+		"${_bt}" [label="${_bt}" shape=cds]
+		"${CMAKE_CXX_FLAGS_${_bt}}_2" [label=CONCAT shape=doubleoctagon]
+		"}" [label="}" shape=ellipse]
+		"${CMAKE_CXX_FLAGS_" [label="${CMAKE_CXX_FLAGS_" shape=ellipse]
+		"SELECT_${_bt}_${BUILD_STATIC_RUNTIME}" [label="SELECT
+${BUILD_STATIC_RUNTIME}" shape=diamond]
+		"${BUILD_STATIC_RUNTIME}" [label="${BUILD_STATIC_RUNTIME}" shape=cds]
+		BUILD_STATIC_RUNTIME [label=BUILD_STATIC_RUNTIME shape=larrow]
+		"SELECT_${_bt}_${MSVC}" [label="SELECT
+${MSVC}" shape=diamond]
+		"${MSVC}" [label="${MSVC}" shape=cds]
+		"DEBUG,RELEASE,RELWITHDEBINFO" [label=CONCAT shape=doubleoctagon]
+		RELWITHDEBINFO [label=RELWITHDEBINFO shape=ellipse]
+		RELEASE [label=RELEASE shape=ellipse]
+		DEBUG [label=DEBUG shape=ellipse]
+		"\"/MT\"" [label="\"/MT\"" shape=ellipse]
+		"\"/MD\"" [label="\"/MD\"" shape=ellipse]
+		REPLACE [label=REPLACE shape=ellipse]
+		"REPLACE,\"/MD\",\"/MT\",${CMAKE_CXX_FLAGS_${_bt}}" -> REPLACE
+		"REPLACE,\"/MD\",\"/MT\",${CMAKE_CXX_FLAGS_${_bt}}" -> "\"/MD\""
+		"REPLACE,\"/MD\",\"/MT\",${CMAKE_CXX_FLAGS_${_bt}}" -> "\"/MT\""
+		"REPLACE,\"/MD\",\"/MT\",${CMAKE_CXX_FLAGS_${_bt}}" -> "${CMAKE_CXX_FLAGS_${_bt}}_2"
+		string_0 -> "REPLACE,\"/MD\",\"/MT\",${CMAKE_CXX_FLAGS_${_bt}}" [label=COMMANDS]
+		"SELECT_${CMAKE_CXX_FLAGS_${_bt}}_${MSVC}" -> string_0 [label=TRUE]
+		"SELECT_${CMAKE_CXX_FLAGS_${_bt}}_${MSVC}" -> "${MSVC}" [label=CONDITION]
+		"SELECT_${CMAKE_CXX_FLAGS_${_bt}}_${BUILD_STATIC_RUNTIME}" -> "SELECT_${CMAKE_CXX_FLAGS_${_bt}}_${MSVC}" [label=TRUE]
+		"SELECT_${CMAKE_CXX_FLAGS_${_bt}}_${BUILD_STATIC_RUNTIME}" -> "${BUILD_STATIC_RUNTIME}" [label=CONDITION]
+		"${CMAKE_CXX_FLAGS_${_bt}}" -> "SELECT_${CMAKE_CXX_FLAGS_${_bt}}_${BUILD_STATIC_RUNTIME}"
+		foreach -> "${_bt}" [label=COMMANDS]
+		foreach -> "${CMAKE_CXX_FLAGS_${_bt}}" [label=DEPENDS]
+		"${CMAKE_CXX_FLAGS_${_bt}}_1" -> foreach
+		"${_bt}" -> "SELECT_${_bt}_${BUILD_STATIC_RUNTIME}"
+		"${CMAKE_CXX_FLAGS_${_bt}}_2" -> "${CMAKE_CXX_FLAGS_"
+		"${CMAKE_CXX_FLAGS_${_bt}}_2" -> "${_bt}"
+		"${CMAKE_CXX_FLAGS_${_bt}}_2" -> "}"
+		"SELECT_${_bt}_${BUILD_STATIC_RUNTIME}" -> "SELECT_${_bt}_${MSVC}" [label=TRUE]
+		"SELECT_${_bt}_${BUILD_STATIC_RUNTIME}" -> "${BUILD_STATIC_RUNTIME}" [label=CONDITION]
+		"${BUILD_STATIC_RUNTIME}" -> BUILD_STATIC_RUNTIME
+		"SELECT_${_bt}_${MSVC}" -> "DEBUG,RELEASE,RELWITHDEBINFO" [label=TRUE]
+		"SELECT_${_bt}_${MSVC}" -> "${MSVC}" [label=CONDITION]
+		"DEBUG,RELEASE,RELWITHDEBINFO" -> DEBUG
+		"DEBUG,RELEASE,RELWITHDEBINFO" -> RELEASE
+		"DEBUG,RELEASE,RELWITHDEBINFO" -> RELWITHDEBINFO
+	}
 	subgraph cluster_2 {
-		"${CMAKE_SOURCE_DIR}" [label="${CMAKE_SOURCE_DIR}" shape=cds]
-		"./KDE/snoretoast/_2" [label="./KDE/snoretoast/_2" shape=ellipse]
-		"${CMAKE_SOURCE_DIR}" -> "./KDE/snoretoast/_2"
+		"eb1fdd5b-8f70-4b5a-b230-998a2dc19303" [label="eb1fdd5b-8f70-4b5a-b230-998a2dc19303" shape=ellipse]
+		"${SNORETOAST_CALLBACK_GUID}" [label="${SNORETOAST_CALLBACK_GUID}" shape=cds]
+		"${SNORETOAST_CALLBACK_GUID}" -> "eb1fdd5b-8f70-4b5a-b230-998a2dc19303"
 	}
 	subgraph cluster_3 {
-		"config.h.in,config.h,@ONLY" [label=CONCAT shape=doubleoctagon]
 		configure_file [label=configure_file shape=parallelogram]
+		"config.h.in,config.h,@ONLY" [label=CONCAT shape=doubleoctagon]
 		"@ONLY" [label="@ONLY" shape=ellipse]
 		"config.h" [label="config.h" shape=ellipse]
 		"config.h.in" [label="config.h.in" shape=ellipse]
+		configure_file -> "config.h.in,config.h,@ONLY" [label=COMMANDS]
 		"config.h.in,config.h,@ONLY" -> "config.h.in"
 		"config.h.in,config.h,@ONLY" -> "config.h"
 		"config.h.in,config.h,@ONLY" -> "@ONLY"
-		configure_file -> "config.h.in,config.h,@ONLY" [label=COMMANDS]
 	}
 	subgraph cluster_4 {
-		"${SNORETOAST_CALLBACK_GUID}" [label="${SNORETOAST_CALLBACK_GUID}" shape=cds]
-		"eb1fdd5b-8f70-4b5a-b230-998a2dc19303" [label="eb1fdd5b-8f70-4b5a-b230-998a2dc19303" shape=ellipse]
-		"${SNORETOAST_CALLBACK_GUID}" -> "eb1fdd5b-8f70-4b5a-b230-998a2dc19303"
-	}
-	subgraph cluster_5 {
-		include_2 [label=include_2 shape=parallelogram]
-		SnoreMacros [label=SnoreMacros shape=ellipse]
-		include_2 -> SnoreMacros [label=DEPENDS]
-	}
-	subgraph cluster_6 {
-		"cmakerc/CMakeRC" [label="cmakerc/CMakeRC" shape=ellipse]
 		include_3 [label=include_3 shape=parallelogram]
+		"cmakerc/CMakeRC" [label="cmakerc/CMakeRC" shape=ellipse]
 		include_3 -> "cmakerc/CMakeRC" [label=DEPENDS]
 	}
-	subgraph cluster_7 {
+	subgraph cluster_5 {
+		include [label=include shape=parallelogram]
+		GenerateExportHeader [label=GenerateExportHeader shape=ellipse]
+		include -> GenerateExportHeader [label=DEPENDS]
+	}
+	subgraph cluster_6 {
 		"${CMAKE_CURRENT_SOURCE_DIR}_2" [label="${CMAKE_CURRENT_SOURCE_DIR}_2" shape=cds]
 		"./KDE/snoretoast/data_2" [label="./KDE/snoretoast/data_2" shape=ellipse]
 		"${CMAKE_CURRENT_SOURCE_DIR}_2" -> "./KDE/snoretoast/data_2"
 	}
+	subgraph cluster_7 {
+		SnoreMacros [label=SnoreMacros shape=ellipse]
+		include_2 [label=include_2 shape=parallelogram]
+		include_2 -> SnoreMacros [label=DEPENDS]
+	}
 	subgraph cluster_8 {
-		GenerateExportHeader [label=GenerateExportHeader shape=ellipse]
-		include [label=include shape=parallelogram]
-		include -> GenerateExportHeader [label=DEPENDS]
+		"${CMAKE_SOURCE_DIR}" [label="${CMAKE_SOURCE_DIR}" shape=cds]
+		"./KDE/snoretoast/_2" [label="./KDE/snoretoast/_2" shape=ellipse]
+		"${CMAKE_SOURCE_DIR}" -> "./KDE/snoretoast/_2"
 	}
 }

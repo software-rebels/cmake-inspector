@@ -1,3 +1,4 @@
+import logging
 from algorithms import flattenAlgorithmWithConditions
 from condition_data_structure import Rule
 from datastructs import Lookup, CustomCommandNode, TargetNode, ConcatNode, WhileCommandNode, TestNode
@@ -290,14 +291,14 @@ def ECMAddTest(arguments):
     customCommand.commands.append(vmodel.expand(target_link_arguments))
     finalNode = util_handleConditions(customCommand, customCommand.name, None)
     # Next variable should have the target nodes itself or the name of targets
-    targetList = flattenAlgorithmWithConditions(customCommand.commands[0].getChildren()[0], useCache=False)
+    targetList = flattenAlgorithmWithConditions(customCommand.commands[0].getChildren()[0])
     for target in targetList:
         targetNode = target[0]
         if not isinstance(targetNode, TargetNode):
             targetNode = vmodel.lookupTable.getKey("t:{}".format(targetNode))
         # Now we should have a TargetNode
         assert isinstance(targetNode, TargetNode)
-        assert isinstance(target[1], dict)
+        assert isinstance(targEXet[1], set)
         targetNode.linkLibrariesConditions[finalNode] = target[1]
 
     vmodel.nodes.append(
@@ -316,6 +317,7 @@ def addTarget(arguments, isExecutable=True):
     lookupTable = Lookup.getInstance()
 
     targetName = arguments.pop(0)
+<<<<<<< HEAD
     for item in flattenAlgorithmWithConditions(vmodel.expand([targetName])):
         targetName = item[0]
         condition = item[1]
@@ -334,6 +336,33 @@ def addTarget(arguments, isExecutable=True):
             arguments.pop(0)
             isObjectLibrary = True
             lookupTableName = "$<TARGET_OBJECTS:{}>".format(targetName)
+=======
+    # temp=vmodel.expand([targetName])
+    # if(isinstance(temp,RefNode)):
+    #     print('--->',temp.getPointTo())
+    # print('++++++++++>',flattenAlgorithmWithConditions(temp))
+    targetWithCondition = flattenAlgorithmWithConditions(vmodel.expand([targetName]))
+    if len(targetWithCondition):
+        targetName = targetWithCondition[0][0]
+    else:
+        logging.info("[addTarget] Something look suspicious please double check")
+
+    lookupTableName = 't:{}'.format(targetName)
+    nextNode = None
+    libraryType = None
+    isObjectLibrary = False
+    interfaceLibrary = None
+
+    # These values may exist in add_library only. There is a type property in TargetNode that we can set
+    if arguments[0] in ('STATIC', 'SHARED', 'MODULE'):
+        libraryType = arguments.pop(0)
+
+    # Object libraries just contains list of files, so there is small change in behaviour
+    if arguments and arguments[0] == 'OBJECT':
+        arguments.pop(0)
+        isObjectLibrary = True
+        lookupTableName = "$<TARGET_OBJECTS:{}>".format(targetName)
+>>>>>>> add real find_package command
 
         # Interface libraries are useful for header-only libraries.
         # more info at: http://mariobadr.com/creating-a-header-only-library-with-cmake.html

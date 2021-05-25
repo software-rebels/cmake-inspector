@@ -36,6 +36,14 @@ lookupTable = Lookup.getInstance()
 extension_type= "ECM"
 
 no_op_commands=['cmake_policy','enable_testing','fltk_wrap_ui','install','mark_as_advanced','message','qt_wrap_cpp','source_group','variable_watch']
+find_package_lookup_directories=['cmake','CMake',':name',':name/cmake',':name/CMake','lib/cmake/:name',
+                                 'share/cmake/:name','lib/:name','share/:name','lib/:name/cmake','lib/:name/CMake',
+                                 'share/:name/cmake','share/:name/CMake',':name/lib/cmake/:name',
+                                 ':name/share/cmake/:name',':name/lib/:name',':name/share/:name',
+                                 ':name/lib/:name/cmake',':name/lib/:name/CMake',':name/share/:name/cmake',
+                                 ':name/share/:name/CMake']
+find_package_prefix='/usr'
+includes_paths=[]
 
 class CMakeExtractorListener(CMakeListener):
     rule: Optional[Rule] = None
@@ -79,7 +87,7 @@ class CMakeExtractorListener(CMakeListener):
                 # Wherever we create a LocalVariable, we should flat the corresponding variable
                 self.flattenVariableInConditionExpression(localVariable, variableLookedUp)
             except Z3Exception as e:
-                logging.error("[exitLogicalEntity]",localVariable)
+                logging.error("[exitLogicalEntity] {}".format(localVariable))
                 raise e
 
         else:
@@ -287,6 +295,48 @@ class CMakeExtractorListener(CMakeListener):
         functionName = arguments.pop(0)
         vmodel.functions[functionName] = {'arguments': arguments, 'commands': bodyText, 'isMacro': isMacro}
 
+    def includeCommand(self,arguments):
+
+
+        commandNode = CustomCommandNode("include")
+        if 'RESULT_VARIABLE' in arguments:
+            varIndex = arguments.index('RESULT_VARIABLE')
+            arguments.pop(varIndex)  # This is RESULT_VAR
+            util_create_and_add_refNode_for_variable(arguments.pop(varIndex), commandNode,
+                                                     relatedProperty='RESULT_VARIABLE')
+
+        args = vmodel.expand(arguments)
+        argsVal=flattenAlgorithmWithConditions(args)[0][0]
+        commandNode.depends.append(args)
+
+        includedFile = os.path.join(project_dir, argsVal)
+
+        # clean the include path
+        while includedFile.find('//') != -1:
+            includedFile = includedFile.replace('//','/')
+
+        # We execute the command if we can find the CMake file and there is no condition to execute it
+        if os.path.isfile(includedFile):
+            parseFile(includedFile,True)
+            # for item in vmodel.nodes:
+            #     if item not in prevNodeStack:
+            #         commandNode.commands.append(item)
+        elif os.path.isdir(includedFile):
+            util_create_and_add_refNode_for_variable('CMAKE_CURRENT_LIST_DIR',
+                                                     LiteralNode(f"include_{includedFile}", includedFile))
+            parseFile(os.path.join(includedFile, 'CMakeLists.txt'),True)
+        else:
+            paths = [os.path.join(path,argsVal).replace('//','/')+'.cmake' for path in includes_paths]
+            paths += [os.path.join(path,argsVal).replace('//','/') for path in includes_paths]
+            foundModule = False
+            for path in paths:
+                if os.path.isfile(path):
+                    parseFile(path, True)
+                    foundModule = True
+            if not foundModule:
+                logging.error("[enterCommand_invocation] Cannot Find : {} to include".format(arguments))
+                vmodel.nodes.append(util_handleConditions(commandNode, commandNode.getName()))
+
     def enterCommand_invocation(self, ctx: CMakeParser.Command_invocationContext):
         global project_dir
         global extension_type
@@ -348,35 +398,82 @@ class CMakeExtractorListener(CMakeListener):
         #                 components...]
         #                 [NO_POLICY_SCOPE])
         elif commandId == 'find_package':
-            packageName = arguments[0]
+            # XXX versioning is not considered in this version
+            packageName = vmodel.expand([arguments[0]])
             findPackageNode = CustomCommandNode("find_package_{}".format(vmodel.getNextCounter()))
             findPackageNode.commands.append(vmodel.expand(arguments))
-            util_create_and_add_refNode_for_variable(packageName + "_FOUND", findPackageNode)
+            util_create_and_add_refNode_for_variable(packageName.getValue() + "_FOUND", findPackageNode)
+
+            capitalArguments = [x.upper() for x in arguments]
+            if 'REQUIRED' in capitalArguments:
+                requiredIndex = capitalArguments.index('REQUIRED')
+            else:
+                requiredIndex = -1
+            requiredPackage = False
+            if requiredIndex != -1:
+                requiredPackage = True
+
+            includePath = None
+            flattened_packageName = flattenAlgorithmWithConditions(packageName)
+            for possible_include in flattened_packageName:
+                for index,path in enumerate(find_package_lookup_directories):
+                    if os.path.exists(os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0]}Config.cmake')):
+                        includePath = os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0]}Config.cmake')
+                    if os.path.exists(os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0].lower()}-config.cmake')):
+                        includePath = os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0].lower()}-config.cmake')
+
+                if includePath:
+                    util_create_and_add_refNode_for_variable(packageName.getValue() + "_CONFIG", LiteralNode(includePath, includePath))
+                    if len(possible_include[1]):
+                        vmodel = VModel.getInstance()
+                        # customCommand = CustomCommandNode("WHILE({})".format(util_getStringFromList(arguments)))
+                        vmodel.pushCurrentLookupTable()
+                        vmodel.nodeStack.append(list(vmodel.nodes))
+
+                        tempProjectDir = project_dir
+                        project_dir = os.path.dirname(includePath)
+                        setCommand(['CMAKE_CURRENT_LIST_DIR', project_dir])
+                        self.includeCommand([includePath])
+                        project_dir = tempProjectDir
+
+                        lookupTable = Lookup.getInstance()
+
+                        lastPushedLookup = vmodel.getLastPushedLookupTable()
+                        # command = WhileCommandNode(rule)
+                        prevNodeStack = vmodel.nodeStack.pop()
+
+                        for item in vmodel.nodes:
+                            if item not in prevNodeStack:
+                                command.pointTo.append(item)
+
+                        for key in lookupTable.items[-1].keys():
+                            if key not in lastPushedLookup.items[-1].keys() or lookupTable.getKey(
+                                    key) != lastPushedLookup.getKey(key):
+                                refNode = RefNode("{}_{}".format(key, vmodel.getNextCounter()), command)
+                                lookupTable.setKey(key, refNode)
+                                vmodel.nodes.append(refNode)
+                    else:
+                        tempProjectDir = project_dir
+                        project_dir = os.path.dirname(includePath)
+                        setCommand(['CMAKE_CURRENT_LIST_DIR',project_dir])
+                        self.includeCommand([includePath])
+                        project_dir = tempProjectDir
+
+                elif requiredPackage:
+                    raise Exception("Required package not found: {}".format(packageName))
+
+            # capitalArguments = [x.upper() for x in arguments]
+            # projectVersion = None
+            # projectDescription = None
+            # if 'DESCRIPTION' in capitalArguments:
+            #     descriptionIndex = arguments.index('DESCRIPTION')
+            #     projectDescription = arguments[descriptionIndex+1]
+
 
         # include( < file | module > [OPTIONAL][RESULT_VARIABLE < VAR >]
         #          [NO_POLICY_SCOPE])
         elif commandId == 'include':
-            commandNode = CustomCommandNode("include")
-            if 'RESULT_VARIABLE' in arguments:
-                varIndex = arguments.index('RESULT_VARIABLE')
-                arguments.pop(varIndex)  # This is RESULT_VAR
-                util_create_and_add_refNode_for_variable(arguments.pop(varIndex), commandNode,
-                                                         relatedProperty='RESULT_VARIABLE')
-
-
-            args = vmodel.expand(arguments)
-            commandNode.depends.append(args)
-
-            # prevNodeStack = list(vmodel.nodes)
-            # We execute the command if we can find the CMake file and there is no condition to execute it
-            if os.path.exists(os.path.join(project_dir, args.getValue())):
-                parseFile(os.path.join(project_dir, args.getValue()))
-                # for item in vmodel.nodes:
-                #     if item not in prevNodeStack:
-                #         commandNode.commands.append(item)
-            else:
-                logging.error("[enterCommand_invocation] Cannot Find : {} to include".format(arguments))
-                vmodel.nodes.append(util_handleConditions(commandNode, commandNode.getName()))
+            self.includeCommand(arguments)
 
         elif commandId == 'find_file':
             variableName = arguments.pop(0)
@@ -573,12 +670,20 @@ class CMakeExtractorListener(CMakeListener):
         # get_filename_component(<var> <FileName> PROGRAM [PROGRAM_ARGS <arg_var>] [CACHE])
         elif commandId == 'get_filename_component':
             varName = arguments.pop(0)
+
+            # currentPath = vmodel.expand(['${CMAKE_CURRENT_LIST_DIR}'])
+            # currentPathValue = flattenAlgorithmWithConditions(currentPath)[0][0]
+            # print(os.path.join(currentPathValue,arguments[0].strip('"')))
             commandNode = CustomCommandNode("get_filename_component_{}".format(vmodel.getNextCounter()))
             refNode = RefNode("{}_{}".format(varName, vmodel.getNextCounter()), commandNode)
             lookupTable.setKey("${{{}}}".format(varName), refNode)
             vmodel.nodes.append(refNode)
             otherArgs = vmodel.expand(arguments)
             commandNode.commands.append(otherArgs)
+
+            pathVariable = vmodel.expand([arguments[0]])
+            pathValue = flattenAlgorithmWithConditions(pathVariable)[0][0].rstrip('/')
+            setCommand([varName,pathValue])
 
         # build_command(<variable>
         #       [CONFIGURATION <config>]
@@ -1066,12 +1171,12 @@ class CMakeExtractorListener(CMakeListener):
             # TODO check if we need to bring anything from the new state
             lookupTable.newScope()
 
-            logging.info('start new file',os.path.join(project_dir, 'CMakeLists.txt'))
+            logging.info('start new file {}'.format((str)(os.path.join(project_dir, 'CMakeLists.txt'))))
             possible_paths = flattenAlgorithmWithConditions(vmodel.expand([project_dir]))
             project_dir = possible_paths[0][0]
             util_create_and_add_refNode_for_variable('CMAKE_CURRENT_SOURCE_DIR',
                                                      LiteralNode(possible_paths[0][0], possible_paths[0][0]))
-            parseFile(os.path.join(possible_paths[0][0], 'CMakeLists.txt'))
+            parseFile(os.path.join(possible_paths[0][0], 'CMakeLists.txt'),True)
             lookupTable.dropScope()
             project_dir = tempProjectDir
 
@@ -1210,6 +1315,23 @@ class CMakeExtractorListener(CMakeListener):
         elif commandId == 'project':
             projectName = arguments.pop(0)
             vmodel.langs = list(arguments)
+            capitalArguments = [x.upper() for x in arguments]
+            projectVersion = None
+            projectDescription = None
+            if 'DESCRIPTION' in capitalArguments:
+                descriptionIndex = arguments.index('DESCRIPTION')
+                projectDescription = arguments[descriptionIndex+1]
+
+
+            if 'VERSION' in capitalArguments:
+                versionIndex = arguments.index('VERSION')
+                projectVersion = arguments[versionIndex+1]
+
+            util_create_and_add_refNode_for_variable(f'{projectName}_SOURCE_DIR', LiteralNode(project_dir, project_dir))
+            if projectVersion:
+                util_create_and_add_refNode_for_variable(f'{projectName}_VERSION', LiteralNode(f'{projectName}_VERSION_DIR', projectVersion))
+            if projectDescription:
+                util_create_and_add_refNode_for_variable(f'{projectName}_DESCRIPTION_DIR', LiteralNode(f'{projectName}_DESCRIPTION_DIR', projectDescription))
 
         elif commandId == 'cmake_dependent_option':
             optionName = arguments.pop(0)
@@ -1275,23 +1397,24 @@ class CMakeExtractorListener(CMakeListener):
             def handleProperty(propertyList, targetProperty):
                 if propertyList:
                     extendedProperties = vmodel.expand(propertyList, True)
-                    extendedPropertiesNodeWithConditions = util_handleConditions(extendedProperties, extendedProperties.name, None)
+                    # XXX Ask @mehran whether we need to keep this or not
+                    # extendedPropertiesNodeWithConditions = util_handleConditions(extendedProperties, extendedProperties.name, None)
                     if len(propertyList)==1:
                         tmpConcatNode = ConcatNode("{}_{}".format(extendedProperties.name,vmodel.getNextCounter()))
-                        tmpConcatNode.addNode(extendedPropertiesNodeWithConditions)
-                        extendedPropertiesNodeWithConditions = tmpConcatNode
+                        tmpConcatNode.addNode(extendedProperties)
+                        extendedProperties = tmpConcatNode
 
                     assert isinstance(extendedProperties, ConcatNode)
                     if not vmodel.DIRECTORY_PROPERTIES.getOwnKey('INCLUDE_DIRECTORIES'):
-                        vmodel.DIRECTORY_PROPERTIES.setKey('INCLUDE_DIRECTORIES', extendedPropertiesNodeWithConditions)
+                        vmodel.DIRECTORY_PROPERTIES.setKey('INCLUDE_DIRECTORIES', extendedProperties)
                     else:
                         if shouldPrepended:
-                            extendedPropertiesNodeWithConditions.listOfNodes = extendedPropertiesNodeWithConditions.listOfNodes + \
+                            extendedProperties.listOfNodes = extendedProperties.listOfNodes + \
                                                                                 vmodel.DIRECTORY_PROPERTIES.getKey('INCLUDE_DIRECTORIES').listOfNodes
                         else:
-                            extendedPropertiesNodeWithConditions.listOfNodes = vmodel.DIRECTORY_PROPERTIES.getKey('INCLUDE_DIRECTORIES').listOfNodes + \
-                                                                                extendedPropertiesNodeWithConditions.listOfNodes
-                        vmodel.DIRECTORY_PROPERTIES.setKey('INCLUDE_DIRECTORIES', extendedPropertiesNodeWithConditions)
+                            extendedProperties.listOfNodes = vmodel.DIRECTORY_PROPERTIES.getKey('INCLUDE_DIRECTORIES').listOfNodes + \
+                                                                                extendedProperties.listOfNodes
+                        vmodel.DIRECTORY_PROPERTIES.setKey('INCLUDE_DIRECTORIES', extendedProperties)
 
             handleProperty(includeDirectories, 'includeDirectories')
 
@@ -1357,14 +1480,14 @@ class CMakeExtractorListener(CMakeListener):
 
 
         # https://cmake.org/cmake/help/latest/command/add_dependencies.html
-        elif add_dependencies == 'add_dependencies':
+        elif commandId == 'add_dependencies':
             target = arguments.pop(0)
-            targetNode = vmodel.lookupTable.getKey("t:{}".format(argument))
+            targetNode = vmodel.lookupTable.getKey("t:{}".format(target))
             assert isinstance(targetNode, TargetNode)
             for targetDependency in arguments:
                 targetDependencyNode = vmodel.lookupTable.getKey("t:{}".format(targetDependency))
                 assert isinstance(targetDependencyNode, TargetNode)
-                target.depends.append(targetDependencyNode)
+                targetNode.depends.append(targetDependencyNode)
 
         # https://cmake.org/cmake/help/latest/command/cmake_policy.html
         elif commandId == 'cmake_policy':
@@ -1388,396 +1511,398 @@ class CMakeExtractorListener(CMakeListener):
             vmodel.nodes.append(commandNode)
 
 
-        elif extension_type=='ECM': #This part is for ECM commands
-            # ecm_qt_declare_logging_category(<sources_var_name(|target (since 5.80))>
-            #     HEADER <filename>
-            #     IDENTIFIER <identifier>
-            #     CATEGORY_NAME <category_name>
-            #     [OLD_CATEGORY_NAMES <oldest_cat_name> [<second_oldest_cat_name> [...]]]
-            #     [DEFAULT_SEVERITY <Debug|Info|Warning|Critical|Fatal>]
-            #     [EXPORT <exportid>]
-            #     [DESCRIPTION <description>]
-            # )
-            # This command will add debugging and logging feature to QT 
-            # more info: https://api.kde.org/ecm/module/ECMQtDeclareLoggingCategory.html
-            if commandId == 'ecm_qt_declare_logging_category':
-                commandNode = CustomCommandNode("ecm_qt_declare_logging_category_{}".format(vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
+        # ecm_qt_declare_logging_category(<sources_var_name(|target (since 5.80))>
+        #     HEADER <filename>
+        #     IDENTIFIER <identifier>
+        #     CATEGORY_NAME <category_name>
+        #     [OLD_CATEGORY_NAMES <oldest_cat_name> [<second_oldest_cat_name> [...]]]
+        #     [DEFAULT_SEVERITY <Debug|Info|Warning|Critical|Fatal>]
+        #     [EXPORT <exportid>]
+        #     [DESCRIPTION <description>]
+        # )
+        # This command will add debugging and logging feature to QT
+        # more info: https://api.kde.org/ecm/module/ECMQtDeclareLoggingCategory.html
+        elif extension_type=='ECM' and commandId == 'ecm_qt_declare_logging_category':
+            commandNode = CustomCommandNode("ecm_qt_declare_logging_category_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
 
-            # ecm_add_test(<sources> LINK_LIBRARIES <library> [<library> [...]]
-            #            [TEST_NAME <name>]
-            #            [NAME_PREFIX <prefix>]
-            #            [GUI])
-            elif commandId == 'ecm_add_test':
-                ECMAddTest(arguments)
+        # ecm_add_test(<sources> LINK_LIBRARIES <library> [<library> [...]]
+        #            [TEST_NAME <name>]
+        #            [NAME_PREFIX <prefix>]
+        #            [GUI])
+        elif extension_type=='ECM' and commandId == 'ecm_add_test':
+            ECMAddTest(arguments)
 
-            # ecm_add_tests(<sources> LINK_LIBRARIES <library> [<library> [...]]
-            #            [TEST_NAME <name>]
-            #            [NAME_PREFIX <prefix>]
-            #            [GUI])
-            elif commandId == 'ecm_add_tests':
+        # ecm_add_tests(<sources> LINK_LIBRARIES <library> [<library> [...]]
+        #            [TEST_NAME <name>]
+        #            [NAME_PREFIX <prefix>]
+        #            [GUI])
+        elif extension_type=='ECM' and commandId == 'ecm_add_tests':
 
-                sources = []
-                func_keys = ["link_libraries","NAME_PREFIX","GUI","TARGET_NAMES_VAR","TEST_NAMES_VAR"]
-                while len(arguments) and arguments[0].lower() not in func_keys:
-                    sources.append(arguments.pop(0))
+            sources = []
+            func_keys = ["link_libraries","NAME_PREFIX","GUI","TARGET_NAMES_VAR","TEST_NAMES_VAR"]
+            while len(arguments) and arguments[0].lower() not in func_keys:
+                sources.append(arguments.pop(0))
 
-                target_name = '.'.join(sources[0].split('.')[:-1])
-                libraries = []
-                base_name = target_name 
-                prefix = ""
-                target_var_name = ""
-                test_var_name = ""
-                while len(arguments):
-                    key = arguments.pop(0).lower()
-                    values = []
-                    if key == "link_libraries":
-                        while  len(arguments) and arguments[0].lower() not in func_keys:
-                            values.append(arguments.pop(0))
-                        libraries = values
+            target_name = '.'.join(sources[0].split('.')[:-1])
+            libraries = []
+            prefix = ""
+            target_var_name = ""
+            test_var_name = ""
+            while len(arguments):
+                key = arguments.pop(0).lower()
+                values = []
+                if key == "link_libraries":
+                    while  len(arguments) and arguments[0].lower() not in func_keys:
+                        values.append(arguments.pop(0))
+                    libraries = values
 
-                    if key == "test_name":      
-                        arguments.pop(0) 
-                        target_name = arguments.pop(0)  
-
-                    if key == "target_names_var":
-                        target_var_name = arguments.pop(0)
-
-                    if key == "test_names_var":
-                        test_var_name = arguments.pop(0)
-
-                    if key == "name_prefix":
-                        arguments.pop(0)
-                        prefix = arguments.pop(0)
-
-                base_name = prefix + target_name 
-                if target_var_name:
-                    targert_names = [';'.join((prefix+'.'.join(source.split('.')[:-1]))) for source in sources]
-                    setCommand([target_var_name, targert_names])
-
-                if test_var_name:
-                    test_names = [';'.join((prefix+'.'.join(source.split('.')[:-1]))) for source in sources]
-                    setCommand([test_var_name, test_names])
-
-
-
-                for source in sources:
-                    if prefix:
-                        ECMAddTest([source,"LINK_LIBRARIES"]+libraries+["NAME_PREFIX",prefix] )                    
-                    else:
-                        ECMAddTest([source,"LINK_LIBRARIES"]+libraries )
-
-            # ecm_mark_as_test(<target1> [<target2> [...]])
-            elif commandId == 'ecm_mark_as_test':
-                for argument in arguments:
-                    # XXX
-                    # targetNode = vmodel.expand(target_link_arguments)
-                    targetNode = vmodel.lookupTable.getKey("t:{}".format(argument))
-                    targetConditions = flattenAlgorithmWithConditions(targetNode)
-                    assert isinstance(targetNode, TargetNode)
-                    # Here we are going to add condition
-
-            # https://doc.qt.io/qt-5/qtwidgets-cmake-qt5-wrap-ui.html
-            elif commandId in ['ki18n_wrap_ui','qt5_wrap_ui']:
-                # we just check if there is any error that stops the processing of cmake file
-                commandNode = CustomCommandNode("{}_{}".format(commandId,vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
-
-            # TODO: find a proper documentation
-            elif commandId == 'kde4_add_plugin':
-                addTarget(arguments, False)
-
-
-            # Code: https://github.com/KDE/kconfig/blob/master/KF5ConfigMacros.cmake
-            # https://techbase.kde.org/ECM5/IncompatibleChangesKDELibs4ToECM
-            # TODO: check with @Mehran if the config files are important
-            elif commandId in ['kconfig_add_kcfg_files','kde4_add_kcfg_files']:
-                commandNode = CustomCommandNode("{}_{}".format(commandId,vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
-
-            # ecm_generate_headers(<camelcase_forwarding_headers_var>
-            #     HEADER_NAMES <CamelCaseName> [<CamelCaseName> [...]]
-            #     [ORIGINAL <CAMELCASE|LOWERCASE>]
-            #     [HEADER_EXTENSION <header_extension>]
-            #     [OUTPUT_DIR <output_dir>]
-            #     [PREFIX <prefix>]
-            #     [REQUIRED_HEADERS <variable>]
-            #     [COMMON_HEADER <HeaderName>]
-            #     [RELATIVE <relative_path>])
-            # https://github.com/KDAB/KDSoap/blob/master/cmake/ECMGenerateHeaders.cmake
-            # TODO: Similar to 'generate_export_header'
-            elif commandId == 'ecm_generate_headers':
-                commandNode = CustomCommandNode("ecm_generate_headers_{}".format(vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
-
-            # https://github.com/KDE/kcoreaddons/blob/master/KF5CoreAddonsMacros.cmake
-            # TODO: similar to 'generate_export_header'
-            elif commandId == 'kcoreaddons_desktop_to_json':
-                commandNode = CustomCommandNode("kcoreaddons_desktop_to_json_{}".format(vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
-
-            # https://github.com/KDE/extra-cmake-modules/blob/master/modules/ECMSetupVersion.cmake
-            # TODO: similar to 'generate_export_header'
-            # headsup: It also assign some variables so, we might want to set them
-            elif commandId == 'ecm_setup_version':
-                commandNode = CustomCommandNode("ecm_setup_version_{}".format(vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
-
-            # https://github.com/KDE/extra-cmake-modules/blob/master/modules/ECMInstallIcons.cmake
-            # For kde4_install icons:https://github.com/KDE/kmag/commit/4507e6d698f0d6aef0102e80dabd984c06f81ea6
-            # TODO: similar to 'generate_export_header'
-            # headsup: It also assign some variables so, we might want to set them
-            elif commandId in ['ecm_install_icons','kde4_install_icons']:
-                commandNode = CustomCommandNode("{}_{}".format(commandId,vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
-
-            # https://github.com/KDE/extra-cmake-modules/blob/c0aa4d1692a6b7b8c00b8d9203379469cf3be531/modules/KDE4Macros.cmake#L752
-            # https://invent.kde.org/graphics/krita/-/blob/2e9348b37e3b21cb7bfbd3f6839c28a005294467/cmake/kde_macro/KDE4Macros.cmake
-            # XXX : Add condition for build, similar to 'ecm_mark_as_test'
-            elif commandId == 'kde4_add_unit_test':
-                testName = arguments.pop(0)
-                if arguments[0].upper() == "TESTNAME":
+                if key == "test_name":
                     arguments.pop(0)
-                    targetName = vmodel.expand(arguments.pop(0))
+                    target_name = arguments.pop(0)
+
+                if key == "target_names_var":
+                    target_var_name = arguments.pop(0)
+
+                if key == "test_names_var":
+                    test_var_name = arguments.pop(0)
+
+                if key == "name_prefix":
+                    arguments.pop(0)
+                    prefix = arguments.pop(0)
+
+            base_name = prefix + target_name
+            if target_var_name:
+                targert_names = [';'.join((prefix+'.'.join(source.split('.')[:-1]))) for source in sources]
+                setCommand([target_var_name, targert_names])
+
+            if test_var_name:
+                test_names = [';'.join((prefix+'.'.join(source.split('.')[:-1]))) for source in sources]
+                setCommand([test_var_name, test_names])
+
+
+
+            for source in sources:
+                if prefix:
+                    ECMAddTest([source,"LINK_LIBRARIES"]+libraries+["NAME_PREFIX",prefix] )
                 else:
-                    targetName = testName
-                targetNode = vmodel.expand(testName)
-                executable = targetNode.pointTo.getValue()+'.bat' # XXX:ask @Mehran what happens if we have conditions on this? snf how to get all the conditional values
-                testNode = TestNode(targetName)
-                testNode.command = vmodel.expand(executable)
+                    ECMAddTest([source,"LINK_LIBRARIES"]+libraries )
 
-                vmodel.nodes.append(testNode)
+        # ecm_mark_as_test(<target1> [<target2> [...]])
+        elif extension_type=='ECM' and commandId == 'ecm_mark_as_test':
+            for argument in arguments:
+                # XXX
+                # targetNode = vmodel.expand(target_link_arguments)
+                targetNode = vmodel.lookupTable.getKey("t:{}".format(argument))
+                targetConditions = flattenAlgorithmWithConditions(targetNode)
+                assert isinstance(targetNode, TargetNode)
+                # Here we are going to add condition
 
-            # https://gitlab.kitware.com/cmake/community/-/wikis/doc/tutorials/How-To-Build-KDE4-Software
-            elif commandId == 'kde4_add_executable':
-                addTarget(arguments, True)
+        # https://doc.qt.io/qt-5/qtwidgets-cmake-qt5-wrap-ui.html
+        elif extension_type=='ECM' and commandId in ['ki18n_wrap_ui','qt5_wrap_ui']:
+            # we just check if there is any error that stops the processing of cmake file
+            commandNode = CustomCommandNode("{}_{}".format(commandId,vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
 
-            # https://doc.qt.io/qt-5.12/qtdbus-cmake-qt5-add-dbus-interface.html
-            # TODO: similar to 'generate_export_header'
-            # headsup: It also assign aadd outputted addresses to the first variable
-            # https://doc.qt.io/qt-5/qtwidgets-cmake-qt5-wrap-ui.html
-            # Been replace recently: https://techbase.kde.org/ECM5/IncompatibleChangesKDELibs4ToECM
-            elif commandId in ('qt5_add_dbus_interface','kde4_add_ui_files'):
-                commandNode = CustomCommandNode("{}_{}".format(commandId,vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
+        # TODO: find a proper documentation
+        elif extension_type=='ECM' and commandId == 'kde4_add_plugin':
+            addTarget(arguments, False)
+
+
+        # Code: https://github.com/KDE/kconfig/blob/master/KF5ConfigMacros.cmake
+        # https://techbase.kde.org/ECM5/IncompatibleChangesKDELibs4ToECM
+        # TODO: check with @Mehran if the config files are important
+        elif extension_type=='ECM' and commandId in ['kconfig_add_kcfg_files','kde4_add_kcfg_files']:
+            commandNode = CustomCommandNode("{}_{}".format(commandId,vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
+
+        # ecm_generate_headers(<camelcase_forwarding_headers_var>
+        #     HEADER_NAMES <CamelCaseName> [<CamelCaseName> [...]]
+        #     [ORIGINAL <CAMELCASE|LOWERCASE>]
+        #     [HEADER_EXTENSION <header_extension>]
+        #     [OUTPUT_DIR <output_dir>]
+        #     [PREFIX <prefix>]
+        #     [REQUIRED_HEADERS <variable>]
+        #     [COMMON_HEADER <HeaderName>]
+        #     [RELATIVE <relative_path>])
+        # https://github.com/KDAB/KDSoap/blob/master/cmake/ECMGenerateHeaders.cmake
+        # TODO: Similar to 'generate_export_header'
+        elif extension_type=='ECM' and commandId == 'ecm_generate_headers':
+            commandNode = CustomCommandNode("ecm_generate_headers_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
+
+        # https://github.com/KDE/kcoreaddons/blob/master/KF5CoreAddonsMacros.cmake
+        # TODO: similar to 'generate_export_header'
+        elif extension_type=='ECM' and commandId == 'kcoreaddons_desktop_to_json':
+            commandNode = CustomCommandNode("kcoreaddons_desktop_to_json_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
+
+        # https://github.com/KDE/extra-cmake-modules/blob/master/modules/ECMSetupVersion.cmake
+        # TODO: similar to 'generate_export_header'
+        # headsup: It also assign some variables so, we might want to set them
+        elif extension_type=='ECM' and commandId == 'ecm_setup_version':
+            commandNode = CustomCommandNode("ecm_setup_version_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
+
+        # https://github.com/KDE/extra-cmake-modules/blob/master/modules/ECMInstallIcons.cmake
+        # For kde4_install icons:https://github.com/KDE/kmag/commit/4507e6d698f0d6aef0102e80dabd984c06f81ea6
+        # TODO: similar to 'generate_export_header'
+        # headsup: It also assign some variables so, we might want to set them
+        elif extension_type=='ECM' and commandId in ['ecm_install_icons','kde4_install_icons']:
+            commandNode = CustomCommandNode("{}_{}".format(commandId,vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
+
+        # https://github.com/KDE/extra-cmake-modules/blob/c0aa4d1692a6b7b8c00b8d9203379469cf3be531/modules/KDE4Macros.cmake#L752
+        # https://invent.kde.org/graphics/krita/-/blob/2e9348b37e3b21cb7bfbd3f6839c28a005294467/cmake/kde_macro/KDE4Macros.cmake
+        # XXX : Add condition for build, similar to 'ecm_mark_as_test'
+        elif extension_type=='ECM' and commandId == 'kde4_add_unit_test':
+            testName = arguments.pop(0)
+            if arguments[0].upper() == "TESTNAME":
+                arguments.pop(0)
+                targetName = arguments.pop(0)
+            else:
+                targetName = testName
+            # targetNode = vmodel.expand(testName)
+            # executable = targetNode.pointTo.getValue()+'.bat' # XXX:ask @Mehran what happens if we have conditions on this? snf how to get all the conditional values
+            testNode = TestNode(targetName)
+            # testNode.command = vmodel.expand(executable)
+            testNode.command = vmodel.expand(arguments)
+
+
+            vmodel.nodes.append(testNode)
+
+        # https://gitlab.kitware.com/cmake/community/-/wikis/doc/tutorials/How-To-Build-KDE4-Software
+        elif extension_type=='ECM' and commandId == 'kde4_add_executable':
+            addTarget(arguments, True)
+
+        # https://doc.qt.io/qt-5.12/qtdbus-cmake-qt5-add-dbus-interface.html
+        # TODO: similar to 'generate_export_header'
+        # headsup: It also assign aadd outputted addresses to the first variable
+        # https://doc.qt.io/qt-5/qtwidgets-cmake-qt5-wrap-ui.html
+        # Been replace recently: https://techbase.kde.org/ECM5/IncompatibleChangesKDELibs4ToECM
+        elif extension_type=='ECM' and commandId in ('qt5_add_dbus_interface','kde4_add_ui_files'):
+            commandNode = CustomCommandNode("{}_{}".format(commandId,vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
+
+        # qt5_add_dbus_adaptor(<VAR> dbus_spec header parent_class
+        #          [basename]
+        #          [classname])
+        # Generates a C++ header file implementing an adaptor for a D-Bus interface description file defined
+        # in dbus_spec. The path of the generated file is added to <VAR>. The generated adaptor class takes a
+        #  pointer to parent_class as QObject parent. parent_class should be declared in header, which is
+        # included in the generated code as #include "header".
+        # TODO: similar to 'generate_export_header'
+        # headsup: It also assign aadd outputted addresses to the first variable
+        # https://cmake.org/cmake/help/latest/module/FindQt4.html
+        elif extension_type=='ECM' and commandId in ['qt5_add_dbus_adaptor','qt4_add_dbus_adaptor']:
+            commandNode = CustomCommandNode("{}ـ{}".format(commandId,vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
+
+
+        # https://github.com/KDE/kdoctools/blob/master/KF5DocToolsMacros.cmake#L77
+        elif extension_type=='ECM' and commandId == 'kdoctools_create_handbook':
+            commandNode = CustomCommandNode("kdoctools_create_handbook_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
+
+        # https://github.com/KDE/extra-cmake-modules/blob/fb0d05a8363b1f37c24f995b9565cb90c8625256/modules/MacroOptionalFindPackage.cmake
+        elif extension_type=='ECM' and commandId == 'macro_optional_find_package':
+            commandNode = CustomCommandNode("macro_optional_find_package_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
+
+        # https://cmake.org/cmake/help/v3.19/module/FeatureSummary.html#command:add_feature_info
+        elif extension_type=='ECM' and commandId == 'add_feature_info':
+            commandNode = CustomCommandNode("add_feature_info_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
+
+        # https://gitlab.kitware.com/cmake/community/-/wikis/doc/tutorials/How-To-Build-KDE4-Software
+        elif extension_type=='ECM' and commandId == 'kde4_add_library':
+            addTarget(arguments, False)
+
+        # https://api.kde.org/ecm/module/ECMQtDeclareLoggingCategory.html
+        elif extension_type=='ECM' and commandId == 'ecm_qt_install_logging_categories':
+            commandNode = CustomCommandNode("ecm_qt_install_logging_categories_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
+
+        # https://github.com/KDE/extra-cmake-modules/blob/26a5b6d0b901f5c6e1c8ef487a95678830ff5dbc/modules/MacroLogFeature.cmake#L29
+        elif extension_type=='ECM' and commandId == 'macro_log_feature':
+            commandNode = CustomCommandNode("macro_log_feature_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
+
+        # https://github.com/KDE/kcoreaddons/blob/master/KF5CoreAddonsMacros.cmake
+        # TODO: add installation process to the graph
+        elif extension_type=='ECM' and commandId == 'kcoreaddons_add_plugin':
+            plugin_name = arguments.pop(0)
+            sources = []
+            jsonName = ""
+            installNamespace=""
+            fields = ["SOURCES","JSON","INSTALL_NAMESPACE"]
+            while arguments[0].upper() in fields:
+                if arguments[0].upper() == "SOURCES":
+                    arguments.pop(0)
+                    while arguments[0].upper() not in fields:
+                        sources.append(arguments.pop(0))
+                elif arguments[0].upper() == "JSON":
+                    arguments.pop(0)
+                    jsonName = arguments.pop(0)
+                elif arguments[0].upper() == "INSTALL_NAMESPACE":
+                    arguments.pop(0)
+                    installNamespace=arguments.pop(0)
+
+            addTarget([plugin_name,"MODULE"]+sources)
+
+        # https://api.kde.org/ecm/module/ECMGeneratePriFile.html
+        # https://github.com/KDAB/KDStateMachineEditor/blob/master/cmake/ECMGeneratePriFile.cmake
+        elif extension_type=='ECM' and commandId == 'ecm_generate_pri_file':
+            commandNode = CustomCommandNode("ecm_generate_pri_file_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
+
+        # https://github.com/IGNF/ContinuousGeneralisation/blob/master/ContinuousGeneralizer/Citations/eigen/bench/btl/cmake/MacroOptionalAddSubdirectory.cmake
+        # https://github.com/KDE/extra-cmake-modules/blob/ea843d0852d7319a5a1ab3bf7a8c3cd9f823bdd6/modules/ECMOptionalAddSubdirectory.cmake
+        elif extension_type=='ECM' and commandId in ['macro_optional_add_subdirectory', 'ecm_optional_add_subdirectory']:
+            tempProjectDir = project_dir
+            project_dir = os.path.join(project_dir, ctx.argument().single_argument()[0].getText())
+            if(os.path.exists(project_dir)):
+                # TODO check if we need to bring anything from the new state
+                lookupTable.newScope()
+                logging.info('start new file {} '.format(os.path.join(project_dir,'CMakeLists.txt')))
+                parseFile(os.path.join(project_dir, 'CMakeLists.txt'),True)
+                logging.info('finished new file {}'.format(os.path.join(project_dir, 'CMakeLists.txt')))
+                lookupTable.dropScope()
+            project_dir = tempProjectDir
+
+        # https://github.com/KDE/knipptasch/blob/8d11ec10fe4f47e9c781b5e0d9f13dc3e6a13ddb/cmake/modules/MacroBoolTo01.cmake
+        # XXX : really simple but need to talk with @Mehran about implementation of conditions
+        elif extension_type=='ECM' and commandId == 'macro_bool_to_01':
+            commandNode = CustomCommandNode("macro_bool_to_01_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
+
+
+        # https://api.kde.org/frameworks/ki18n/html/
+        # https://github.com/KDE/ki18n/blob/9ddb73321624f87f3fa8da5fa441f9717dc06da5/cmake/KF5I18nMacros.cmake.in#L74
+        elif extension_type=='ECM' and commandId == 'ki18n_install':
+            commandNode = CustomCommandNode("ki18n_install_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
+
+
+        # https://api.kde.org/ecm/kde-module/KDECompilerSettings.html
+        # https://github.com/KDE/extra-cmake-modules/blob/master/kde-modules/KDECompilerSettings.cmake#L318
+        elif extension_type=='ECM' and commandId == 'kde_enable_exceptions':
+            commandNode = CustomCommandNode("kde_enable_exceptions_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
+
+        # https://api.kde.org/ecm/module/ECMMarkNonGuiExecutable.html
+        # https://github.com/KDE/extra-cmake-modules/blob/ea843d0852d7319a5a1ab3bf7a8c3cd9f823bdd6/modules/ECMMarkNonGuiExecutable.cmake
+        elif extension_type=='ECM' and commandId == 'ecm_mark_nongui_executable':
+            for argument in arguments:
+                commandNode = CustomCommandNode("set_target_properties_{}".format(vmodel.getNextCounter()))
+                commandNode.pointTo.append(vmodel.expand([argument,'PROPERTIES','WIN32_EXECUTABLE','FALSE','MACOSX_BUNDLE','FALSE']))
                 vmodel.nodes.append(commandNode)
 
-            # qt5_add_dbus_adaptor(<VAR> dbus_spec header parent_class
-            #          [basename]
-            #          [classname])
-            # Generates a C++ header file implementing an adaptor for a D-Bus interface description file defined 
-            # in dbus_spec. The path of the generated file is added to <VAR>. The generated adaptor class takes a
-            #  pointer to parent_class as QObject parent. parent_class should be declared in header, which is 
-            # included in the generated code as #include "header".                
-            # TODO: similar to 'generate_export_header'
-            # headsup: It also assign aadd outputted addresses to the first variable
-            # https://cmake.org/cmake/help/latest/module/FindQt4.html
-            elif commandId in ['qt5_add_dbus_adaptor','qt4_add_dbus_adaptor']:
-                commandNode = CustomCommandNode("{}ـ{}".format(commandId,vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
+
+        # https://github.com/KDE/calligra/blob/895c398bc22ecbab622487ddca69c66d26802ea7/cmake/modules/CalligraProductSetMacros.cmake#L215
+        elif extension_type=='ECM' and commandId == 'calligra_define_product':
+            commandNode = CustomCommandNode("calligra_define_product_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
+
+        # https://github.com/KDE/smokegen/blob/f7126dca066d2b0a5f71a4ad48931181061a78b5/cmake/MacroOptionalAddBindings.cmake#L12
+        # XXX: has to be handled dynamically later
+        elif extension_type=='ECM' and commandId == 'macro_optional_add_bindings':
+            commandNode = CustomCommandNode("macro_optional_add_bindings_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
+
+        # https://github.com/KDE/kdoctools/blob/master/KF5DocToolsMacros.cmake#L211
+        elif extension_type=='ECM' and commandId == 'kdoctools_install':
+            commandNode = CustomCommandNode("macro_optional_add_bindings_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
+
+        # https://api.kde.org/ecm/kde-module/KDEClangFormat.html
+        elif extension_type=='ECM' and commandId == 'kde_clang_format':
+            commandNode = CustomCommandNode("kde_clang_format_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
 
 
-            # https://github.com/KDE/kdoctools/blob/master/KF5DocToolsMacros.cmake#L77
-            elif commandId == 'kdoctools_create_handbook':
-                commandNode = CustomCommandNode("kdoctools_create_handbook_{}".format(vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
+        # https://cmake.org/cmake/help/latest/module/CheckCXXSourceCompiles.html
+        # TODO: check functionality
+        elif extension_type=='ECM' and commandId == 'check_cxx_source_compiles':
+            selectNodeName = "SELECT_{}_{}".format('check_cxx_source_compiles',
+                                               util_getStringFromList(arguments))
+            newSelectNode = SelectNode(selectNodeName, arguments)
+            newSelectNode.args = vmodel.expand(arguments)
+            rule =  Rule()
+            rule.setCondition(LocalVariable(arguments[1]))
+            newSelectNode.rule = rule
+            vmodel.nodes.append(newSelectNode)
 
-            # https://github.com/KDE/extra-cmake-modules/blob/fb0d05a8363b1f37c24f995b9565cb90c8625256/modules/MacroOptionalFindPackage.cmake
-            elif commandId == 'macro_optional_find_package':
-                commandNode = CustomCommandNode("macro_optional_find_package_{}".format(vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
+        elif extension_type=='ECM' and commandId == 'kdoctools_create_manpage':
+            commandNode = CustomCommandNode("kdoctools_create_manpage_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
 
-            # https://cmake.org/cmake/help/v3.19/module/FeatureSummary.html#command:add_feature_info
-            elif commandId == 'add_feature_info':
-                commandNode = CustomCommandNode("add_feature_info_{}".format(vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
+        # https://api.kde.org/ecm/module/ECMAddQch.html
+        elif extension_type=='ECM' and commandId == 'ecm_install_qch_export':
+            targetNodeName = arguments[1]
+            targetInstance = lookupTable.getKey("t:{}".format(targetNodeName))
+            assert isinstance(targetInstance, TargetNode)
+            commandNode = CustomCommandNode("install_{}_{}".format(commandId,vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
 
-            # https://gitlab.kitware.com/cmake/community/-/wikis/doc/tutorials/How-To-Build-KDE4-Software
-            elif commandId == 'kde4_add_library':
-                addTarget(arguments, False)
+        # https://api.kde.org/ecm/module/ECMAddQch.html
+        elif extension_type=='ECM' and commandId == 'ecm_add_qch_':
+            commandNode = CustomCommandNode("kdoctools_create_manpage_{}".format(vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
 
-            # https://api.kde.org/ecm/module/ECMQtDeclareLoggingCategory.html
-            elif commandId == 'ecm_qt_install_logging_categories':
-                commandNode = CustomCommandNode("ecm_qt_install_logging_categories_{}".format(vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
+        # https://github.com/KDE/extra-cmake-modules/blob/master/kde-modules/KDEGitCommitHooks.cmake
+        elif extension_type=='ECM' and commandId == 'kde_configure_git_pre_commit_hook':
+            commandNode = CustomCommandNode("{}_{}".format(commandId,vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
 
-            # https://github.com/KDE/extra-cmake-modules/blob/26a5b6d0b901f5c6e1c8ef487a95678830ff5dbc/modules/MacroLogFeature.cmake#L29
-            elif commandId == 'macro_log_feature':
-                commandNode = CustomCommandNode("macro_log_feature_{}".format(vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
+        # https://github.com/KDE/kde1-kdelibs/blob/master/cmake/Qt1Macros.cmake#L62
+        elif extension_type=='ECM' and commandId == 'qt1_wrap_moc':
+            commandNode = CustomCommandNode("{}_{}".format(commandId,vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
 
-            # https://github.com/KDE/kcoreaddons/blob/master/KF5CoreAddonsMacros.cmake
-            # TODO: add installation proccess to the graph
-            elif commandId == 'kcoreaddons_add_plugin':
-                plugin_name = arguments.pop(0)
-                sources = []
-                jsonName = ""
-                installNamespace=""
-                fields = ["SOURCES","JSON","INSTALL_NAMESPACE"]
-                while arguments[0].upper() in fields:
-                    if arguments[0].upper() == "SOURCES":
-                        arguments.pop(0)
-                        while arguments[0].upper() not in fields:
-                            sources.append(arguments.pop(0))
-                    elif arguments[0].upper() == "JSON":
-                        arguments.pop(0)
-                        jsonName = arguments.pop(0)
-                    elif arguments[0].upper() == "INSTALL_NAMESPACE":
-                        arguments.pop(0)
-                        installNamespace=arguments.pop(0)
-
-                addTarget([pluginName,"MODULE"]+sources)
-
-            # https://api.kde.org/ecm/module/ECMGeneratePriFile.html
-            # https://github.com/KDAB/KDStateMachineEditor/blob/master/cmake/ECMGeneratePriFile.cmake
-            elif commandId == 'ecm_generate_pri_file':
-                commandNode = CustomCommandNode("ecm_generate_pri_file_{}".format(vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
-
-            # https://github.com/IGNF/ContinuousGeneralisation/blob/master/ContinuousGeneralizer/Citations/eigen/bench/btl/cmake/MacroOptionalAddSubdirectory.cmake
-            # https://github.com/KDE/extra-cmake-modules/blob/ea843d0852d7319a5a1ab3bf7a8c3cd9f823bdd6/modules/ECMOptionalAddSubdirectory.cmake
-            elif commandId in ['macro_optional_add_subdirectory', 'ecm_optional_add_subdirectory']:
-                tempProjectDir = project_dir
-                project_dir = os.path.join(project_dir, ctx.argument().single_argument()[0].getText())
-                if(os.path.exists(project_dir)):
-                    # TODO check if we need to bring anything from the new state
-                    lookupTable.newScope()
-                    print('start new file',os.path.join(project_dir, 'CMakeLists.txt'))
-                    parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
-                    print('finished new file',os.path.join(project_dir, 'CMakeLists.txt'))
-                    lookupTable.dropScope()
-                project_dir = tempProjectDir
-
-            # https://github.com/KDE/knipptasch/blob/8d11ec10fe4f47e9c781b5e0d9f13dc3e6a13ddb/cmake/modules/MacroBoolTo01.cmake
-            # XXX : really simple but need to talk with @Mehran about implementation of conditions
-            elif commandId == 'macro_bool_to_01':   
-                commandNode = CustomCommandNode("macro_bool_to_01_{}".format(vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
-
-
-            # https://api.kde.org/frameworks/ki18n/html/
-            # https://github.com/KDE/ki18n/blob/9ddb73321624f87f3fa8da5fa441f9717dc06da5/cmake/KF5I18nMacros.cmake.in#L74
-            elif commandId == 'ki18n_install':   
-                commandNode = CustomCommandNode("ki18n_install_{}".format(vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
-
-
-            # https://api.kde.org/ecm/kde-module/KDECompilerSettings.html
-            # https://github.com/KDE/extra-cmake-modules/blob/master/kde-modules/KDECompilerSettings.cmake#L318
-            elif commandId == 'kde_enable_exceptions':   
-                commandNode = CustomCommandNode("kde_enable_exceptions_{}".format(vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
-
-            # https://api.kde.org/ecm/module/ECMMarkNonGuiExecutable.html
-            # https://github.com/KDE/extra-cmake-modules/blob/ea843d0852d7319a5a1ab3bf7a8c3cd9f823bdd6/modules/ECMMarkNonGuiExecutable.cmake
-            elif commandId == 'ecm_mark_nongui_executable':   
-                for argument in arguments:                    
-                    commandNode = CustomCommandNode("set_target_properties_{}".format(vmodel.getNextCounter()))
-                    commandNode.pointTo.append(vmodel.expand([argument,'PROPERTIES','WIN32_EXECUTABLE','FALSE','MACOSX_BUNDLE','FALSE']))
-                    vmodel.nodes.append(commandNode)
-
-
-            # https://github.com/KDE/calligra/blob/895c398bc22ecbab622487ddca69c66d26802ea7/cmake/modules/CalligraProductSetMacros.cmake#L215
-            elif commandId == 'calligra_define_product':   
-                commandNode = CustomCommandNode("calligra_define_product_{}".format(vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
-
-            # https://github.com/KDE/smokegen/blob/f7126dca066d2b0a5f71a4ad48931181061a78b5/cmake/MacroOptionalAddBindings.cmake#L12
-            # XXX: has to be handled dynamically later
-            elif commandId == 'macro_optional_add_bindings':   
-                commandNode = CustomCommandNode("macro_optional_add_bindings_{}".format(vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
-
-            # https://github.com/KDE/kdoctools/blob/master/KF5DocToolsMacros.cmake#L211
-            elif commandId == 'kdoctools_install':                   
-                commandNode = CustomCommandNode("macro_optional_add_bindings_{}".format(vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
-
-            # https://api.kde.org/ecm/kde-module/KDEClangFormat.html
-            elif commandId == 'kde_clang_format':                   
-                commandNode = CustomCommandNode("kde_clang_format_{}".format(vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
-
-
-            # https://cmake.org/cmake/help/latest/module/CheckCXXSourceCompiles.html
-            # TODO: check functionality
-            elif commandId == 'check_cxx_source_compiles':                   
-                selectNodeName = "SELECT_{}_{}".format('check_cxx_source_compiles',
-                                                   util_getStringFromList(arguments))
-                newSelectNode = SelectNode(selectNodeName, arguments)
-                newSelectNode.args = vmodel.expand(arguments)
-                rule =  Rule()
-                rule.setCondition(LocalVariable(arguments[1]))
-                newSelectNode.rule = rule
-                vmodel.nodes.append(newSelectNode)
-
-            elif commandId == 'kdoctools_create_manpage':                   
-                commandNode = CustomCommandNode("kdoctools_create_manpage_{}".format(vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
-
-            # https://api.kde.org/ecm/module/ECMAddQch.html
-            elif commandId == 'ecm_install_qch_export':
-                targetNodeName = arguments[1]
-                targetInstance = lookupTable.getKey("t:{}".format(targetNodeName))
-                assert isinstance(targetInstance, TargetNode)
-                commandNode = CustomCommandNode("install_{}_{}".format(commandId,vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
-
-            # https://api.kde.org/ecm/module/ECMAddQch.html
-            elif commandId == 'ecm_add_qch_':                   
-                commandNode = CustomCommandNode("kdoctools_create_manpage_{}".format(vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
-
-            # https://github.com/KDE/extra-cmake-modules/blob/master/kde-modules/KDEGitCommitHooks.cmake
-            elif commandId == 'kde_configure_git_pre_commit_hook':                   
-                commandNode = CustomCommandNode("{}_{}".format(commandId,vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
-
-            # https://github.com/KDE/kde1-kdelibs/blob/master/cmake/Qt1Macros.cmake#L62
-            elif commandId == 'qt1_wrap_moc':                   
-                commandNode = CustomCommandNode("{}_{}".format(commandId,vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
-
-            # https://github.com/KDE/kpackage/blob/master/KF5PackageMacros.cmake
-            # TODO: check for add_custom_target in file
-            elif commandId == 'kpackage_install_package':                   
-                commandNode = CustomCommandNode("{}_{}".format(commandId,vmodel.getNextCounter()))
-                commandNode.pointTo.append(vmodel.expand(arguments))
-                vmodel.nodes.append(commandNode)
+        # https://github.com/KDE/kpackage/blob/master/KF5PackageMacros.cmake
+        # TODO: check for add_custom_target in file
+        elif extension_type=='ECM' and commandId == 'kpackage_install_package':
+            commandNode = CustomCommandNode("{}_{}".format(commandId,vmodel.getNextCounter()))
+            commandNode.pointTo.append(vmodel.expand(arguments))
+            vmodel.nodes.append(commandNode)
 
 
         elif commandId in no_op_commands:
+            customCommand = CustomCommandNode("{}".format(commandId))
+            customCommand.commands.append(vmodel.expand(arguments))
+            vmodel.nodes.append(util_handleConditions(customCommand, customCommand.getName()))
+        else:
             customFunction = vmodel.functions.get(commandId)
             if customFunction is None:
-                customCommand = CustomCommandNode("{}".format(commandId))
-                customCommand.commands.append(vmodel.expand(arguments))
-                vmodel.nodes.append(util_handleConditions(customCommand, customCommand.getName()))
+                print("[enterCommand_invocation] Command ignored: {}".format(commandId))
                 return
             if not customFunction.get('isMacro'):
                 vmodel.lookupTable.newScope()
@@ -1805,12 +1930,41 @@ class CMakeExtractorListener(CMakeListener):
             walker.walk(extractor, tree)
             if not customFunction.get('isMacro'):
                 vmodel.lookupTable.dropScope()
-        else:
-            print("[enterCommand_invocation] Command ignored:",commandId)
 
 
-def parseFile(filePath):
-    inputFile = FileStream(filePath, encoding='utf-8')
+def getIncludePaths():
+    global includes_paths
+    basepath="/usr/share/"
+    for fname in os.listdir(basepath):
+        if fname.find('cmake') != -1:
+            path = os.path.join(basepath, fname, 'Modules')
+            if os.path.isdir(path):
+                includes_paths.append(path)
+
+def initialize(input,isPath):
+    if isPath:
+        project_dir = input
+    else:
+        project_dir = ''
+
+    getIncludePaths()
+    # Initializing the important variables
+    util_create_and_add_refNode_for_variable('CMAKE_CURRENT_SOURCE_DIR', LiteralNode(project_dir, project_dir))
+    util_create_and_add_refNode_for_variable('CMAKE_SOURCE_DIR', LiteralNode(project_dir, project_dir))
+    util_create_and_add_refNode_for_variable('CMAKE_CURRENT_LIST_DIR', LiteralNode(project_dir, project_dir))
+    if isPath:
+        parseFile(os.path.join(project_dir, 'CMakeLists.txt'),True)
+    else:
+        parseFile(input,False)
+
+
+
+def parseFile(fileInput,isPath=True):
+    if isPath:
+        inputFile = FileStream(fileInput, encoding='utf-8')
+    else:
+        inputFile = InputStream(fileInput)
+
     lexer = CMakeLexer(inputFile)
     stream = CommonTokenStream(lexer)
     parser = CMakeParser(stream)
@@ -1823,9 +1977,11 @@ def parseFile(filePath):
 def getGraph(directory):
     global project_dir
     project_dir = directory
-    util_create_and_add_refNode_for_variable('CMAKE_CURRENT_SOURCE_DIR', LiteralNode(project_dir, project_dir))
-    util_create_and_add_refNode_for_variable('CMAKE_SOURCE_DIR', LiteralNode(project_dir, project_dir))
-    parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
+    # util_create_and_add_refNode_for_variable('CMAKE_CURRENT_SOURCE_DIR', LiteralNode(project_dir, project_dir))
+    # util_create_and_add_refNode_for_variable('CMAKE_SOURCE_DIR', LiteralNode(project_dir, project_dir))
+    # util_create_and_add_refNode_for_variable('CMAKE_CURRENT_LIST_DIR', LiteralNode(project_dir, project_dir))
+    # parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
+    initialize(os.path.join(project_dir, 'CMakeLists.txt'),True)
     vmodel.findAndSetTargets()
     return vmodel, lookupTable
 
