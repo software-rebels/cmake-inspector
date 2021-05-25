@@ -6,6 +6,14 @@ graph.gv
 graph.gv.pdf
 *.log
 .venv
-venv
+venv/*
 .idea
 *.pickle
+graph_dots
+KDE
+.vscode
+1
+graph_dots_final
+.env
+
+
