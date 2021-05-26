@@ -5,9 +5,9 @@ __pycache__/
 graph.gv
 graph.gv.pdf
 *.log
-.venv
-venv/*
-.idea
+.venv/
+venv/
+.idea/
 *.pickle
 .vscode
 
@@ -17,12 +17,4 @@ KDE_command_analysis/
 graph_dots/
 graph_dots_final/
 koffice-plugins/
-venv/
-graph_dots
-KDE
-.vscode
-1
-graph_dots_final
-.env
-
-
+graphs/
