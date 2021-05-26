@@ -340,6 +340,8 @@ class CMakeExtractorListener(CMakeListener):
     def enterCommand_invocation(self, ctx: CMakeParser.Command_invocationContext):
         global project_dir
         global extension_type
+        global vmodel
+        global lookupTable
 
         commandId = ctx.Identifier().getText().lower()
         arguments = [child.getText() for child in ctx.argument().getChildren() if not isinstance(child, TerminalNode)]
@@ -413,9 +415,10 @@ class CMakeExtractorListener(CMakeListener):
             if requiredIndex != -1:
                 requiredPackage = True
 
-            includePath = None
+
             flattened_packageName = flattenAlgorithmWithConditions(packageName)
             for possible_include in flattened_packageName:
+                includePath = None
                 for index,path in enumerate(find_package_lookup_directories):
                     if os.path.exists(os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0]}Config.cmake')):
                         includePath = os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0]}Config.cmake')
@@ -426,7 +429,17 @@ class CMakeExtractorListener(CMakeListener):
                     util_create_and_add_refNode_for_variable(packageName.getValue() + "_CONFIG", LiteralNode(includePath, includePath))
                     if len(possible_include[1]):
                         vmodel = VModel.getInstance()
-                        # customCommand = CustomCommandNode("WHILE({})".format(util_getStringFromList(arguments)))
+
+                        prior_condition = possible_include[1]
+                        logicalExpression = DummyExpression(prior_condition)
+                        rule = Rule()
+                        if len(vmodel.systemState):
+                            rule.setLevel(vmodel.systemState[-1].level)
+                        else:
+                            rule.setLevel(1)
+                        rule.setType('if')
+                        rule.setCondition(logicalExpression)
+                        vmodel.pushSystemState(rule)
                         vmodel.pushCurrentLookupTable()
                         vmodel.nodeStack.append(list(vmodel.nodes))
 
@@ -436,22 +449,12 @@ class CMakeExtractorListener(CMakeListener):
                         self.includeCommand([includePath])
                         project_dir = tempProjectDir
 
-                        lookupTable = Lookup.getInstance()
-
-                        lastPushedLookup = vmodel.getLastPushedLookupTable()
-                        # command = WhileCommandNode(rule)
+                        rule = vmodel.popSystemState()
                         prevNodeStack = vmodel.nodeStack.pop()
-
                         for item in vmodel.nodes:
                             if item not in prevNodeStack:
-                                command.pointTo.append(item)
+                                findPackageNode.pointTo.append(item)
 
-                        for key in lookupTable.items[-1].keys():
-                            if key not in lastPushedLookup.items[-1].keys() or lookupTable.getKey(
-                                    key) != lastPushedLookup.getKey(key):
-                                refNode = RefNode("{}_{}".format(key, vmodel.getNextCounter()), command)
-                                lookupTable.setKey(key, refNode)
-                                vmodel.nodes.append(refNode)
                     else:
                         tempProjectDir = project_dir
                         project_dir = os.path.dirname(includePath)
@@ -683,6 +686,56 @@ class CMakeExtractorListener(CMakeListener):
 
             pathVariable = vmodel.expand([arguments[0]])
             pathValue = flattenAlgorithmWithConditions(pathVariable)[0][0].rstrip('/')
+            capitalArguments = [x.upper() for x in arguments]
+
+            if 'DIRECTORY' in capitalArguments or 'PATH' in capitalArguments:
+                pathValue = os.path.dirname(pathValue)
+
+            if 'NAME' in capitalArguments:
+                pathValue = os.path.basename(pathValue)
+
+            if 'EXT' in capitalArguments:
+                name = os.path.basename(pathValue)
+                parts = name.split('.')
+                if len(parts)>1:
+                    pathValue = '.'+'.'.join(parts[1:])
+                else:
+                    pathValue = name
+
+
+            if 'NAME_WE'  in capitalArguments:
+                name = os.path.basename(pathValue)
+                pathValue = name.split('.')[0]
+
+            if 'LAST_EXT' in capitalArguments:
+                name = os.path.basename(pathValue)
+                parts = name.split('.')
+                if len(parts) > 1:
+                    pathValue = '.'+parts[-1]
+                else:
+                    pathValue = ''
+
+            if 'LAST_EXT' in capitalArguments:
+                name = os.path.basename(pathValue)
+                parts = name.split('.')
+                if len(parts) > 1:
+                    pathValue = '.'+parts[-1]
+                else:
+                    pathValue = ''
+
+            if 'NAME_WLE' in capitalArguments:
+                name = os.path.basename(pathValue)
+                parts = name.split('.')
+                if len(parts) > 1:
+                    pathValue = parts[:-1]
+                else:
+                    pathValue = parts[0]
+
+            if 'BASE_DIR' in capitalArguments:
+                if not len(pathValue) or pathValue[0]!='/':
+                    base_dir_idx = capitalArguments.index('BASE_DIR') + 1
+                    pathValue = os.path.join(arguments[base_dir_idx],pathValue).rstrip('/')
+
             setCommand([varName,pathValue])
 
         # build_command(<variable>
