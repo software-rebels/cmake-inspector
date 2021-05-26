@@ -429,7 +429,7 @@ class CMakeExtractorListener(CMakeListener):
                     depends.append(targetName)
                     vmodel.nodes.append(customCommand)
                 else:
-                    target.addLinkLibrary(customCommand, vmodel.getNextCounter())
+                    target.addLinkLibrary(customCommand)
             else:
                 while arguments[0] not in OPTIONS:
                     outName = arguments.pop(0)
@@ -1185,7 +1185,6 @@ class CMakeExtractorListener(CMakeListener):
         elif commandId in ('target_link_libraries', 'add_dependencies'):
             customCommand = CustomCommandNode(commandId)
             customCommand.commands.append(vmodel.expand(arguments))
-            finalNode = util_handleConditions(customCommand, customCommand.name, None)
             # Next variable should have the target nodes itself or the name of targets
             targetList = flattenAlgorithmWithConditions(customCommand.commands[0].getChildren()[0])
             for target in targetList:
@@ -1199,11 +1198,9 @@ class CMakeExtractorListener(CMakeListener):
                 if not isinstance(targetNode, TargetNode):
                     continue
                 assert isinstance(target[1], set)
-                targetNode.linkLibrariesConditions[finalNode] = target[1]
-
-            vmodel.nodes.append(
-                finalNode
-            )
+                finalNode = util_handleConditions(customCommand, customCommand.name, None, target[1])
+                targetNode.addLinkLibrary(finalNode)
+                vmodel.nodes.append(finalNode)
 
         # project( < PROJECT - NAME > [ < language - name > ...])
         elif commandId == 'project':

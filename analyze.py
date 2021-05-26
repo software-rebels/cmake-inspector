@@ -89,8 +89,10 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
         targetNode = vmodel.findNode(target)
     assert isinstance(targetNode, TargetNode)
     flattenedFiles = flattenAlgorithmWithConditions(targetNode.sources)
-    for library, conditions in targetNode.linkLibrariesConditions.items():
-        flattenedFiles += flattenAlgorithmWithConditions(library, conditions)
+    # for library, conditions in targetNode.linkLibrariesConditions.items():
+    #     flattenedFiles += flattenAlgorithmWithConditions(library, conditions)
+    if targetNode.linkLibraries:
+        flattenedFiles += flattenAlgorithmWithConditions(targetNode.linkLibraries)
 
     # # Save flatten algorithm result
     # with open('flatten_result.pickle', 'wb') as handle:
