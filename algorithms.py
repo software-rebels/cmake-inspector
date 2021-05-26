@@ -211,16 +211,18 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
                 node = VModel.getInstance().lookupTable.getKey("t:{}".format(item[0]))
                 if isinstance(node, TargetNode):
                     result += flattenAlgorithmWithConditions(node.sources, item[1], recStack=recStack)
-                    for library, conditions in node.linkLibrariesConditions.items():
-                        s = Solver()
-                        # We need to simplify the whole expressions
-                        g = Goal()
-                        g.add(conditions)
-                        g.add(item[1])
-                        s.add(g.simplify())
-                        if s.check() == sat:
-                            result += flattenAlgorithmWithConditions(library, set(s.assertions()),
-                                                                     recStack=recStack)
+                    if node.linkLibraries:
+                        result += flattenAlgorithmWithConditions(node.linkLibraries, item[1], recStack=recStack)
+                    # for library, conditions in node.linkLibrariesConditions.items():
+                    #     s = Solver()
+                    #     # We need to simplify the whole expressions
+                    #     g = Goal()
+                    #     g.add(conditions)
+                    #     g.add(item[1])
+                    #     s.add(g.simplify())
+                    #     if s.check() == sat:
+                    #         result += flattenAlgorithmWithConditions(library, set(s.assertions()),
+                    #                                                  recStack=recStack)
     elif 'remove_item' in node.getName().lower():
         arguments = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
         result = flattenAlgorithmWithConditions(node.depends[0], conditions, recStack=recStack)
