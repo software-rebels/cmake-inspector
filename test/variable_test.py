@@ -394,7 +394,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         self.assertEqual(self.lookup.getVariableHistory('${This}')[0], self.lookup.getKey('${This}'))
         self.assertEqual(self.lookup.getVariableHistory('${This}')[0], self.lookup.getKey('${bar}').getPointTo())
-        self.assertEqual("\"From SIMPLE\"", self.lookup.getVariableHistory('${This}')[1].getPointTo().getValue())
+        self.assertEqual("From SIMPLE", self.lookup.getVariableHistory('${This}')[1].getPointTo().getValue())
 
     def test_variable_scoping_function_with_parent_scope(self):
         text = """
@@ -407,7 +407,7 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         self.assertEqual(self.lookup.getKey('${This}'), self.lookup.getKey('${bar}').getPointTo())
-        self.assertEqual("\"From SIMPLE\"", self.lookup.getKey('${This}').getPointTo().getValue())
+        self.assertEqual("From SIMPLE", self.lookup.getKey('${This}').getPointTo().getValue())
 
     def test_simple_add_executable(self):
         text = """
@@ -684,7 +684,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         self.assertEqual(self.lookup.getVariableHistory('${This}')[1], self.lookup.getKey('${This}'))
         self.assertEqual(self.lookup.getVariableHistory('${This}')[1], self.lookup.getKey('${bar}').getPointTo())
-        self.assertEqual("\"From SIMPLE\"", self.lookup.getKey('${This}').getPointTo().getValue())
+        self.assertEqual("From SIMPLE", self.lookup.getKey('${This}').getPointTo().getValue())
 
     def test_configure_file(self):
         text = """
@@ -743,7 +743,7 @@ class TestVariableDefinitions(unittest.TestCase):
         fooVar = self.lookup.getKey("${foo}")
         commandNode = self.vmodel.findNode("separate_arguments_0")
         self.assertEqual(commandNode, fooVar.pointTo)
-        self.assertEqual("UNIX_COMMAND \"--port=123 --host=127.0.0.1\"",
+        self.assertEqual("UNIX_COMMAND --port=123 --host=127.0.0.1",
                          " ".join(getFlattedArguments(commandNode.pointTo[0])))
 
     def test_cmake_minimum_required(self):
@@ -778,7 +778,7 @@ class TestVariableDefinitions(unittest.TestCase):
         val = self.lookup.getKey("${value}")
         mathNode = self.vmodel.findNode('MATH_0')
         self.assertEqual(mathNode, val.pointTo)
-        self.assertEqual('"100 * 0xA"', mathNode.pointTo[0].getValue())
+        self.assertEqual('100 * 0xA', mathNode.pointTo[0].getValue())
 
     def test_set_directory_properties_without_condition(self):
         text = """
@@ -831,7 +831,7 @@ class TestVariableDefinitions(unittest.TestCase):
         get_cmake_property(baz VARIABLES)
         """
         self.runTool(text)
-        self.assertEqual("foo john", " ".join(getFlattedArguments(self.lookup.getKey("${baz}").pointTo)))
+        self.assertEqual("CMAKE_CURRENT_SOURCE_DIR CMAKE_SOURCE_DIR CMAKE_CURRENT_LIST_DIR foo john", " ".join(getFlattedArguments(self.lookup.getKey("${baz}").pointTo)))
 
     def test_add_custom_command_super_simple(self):
         text = """
@@ -999,9 +999,10 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         fooVar = self.lookup.getKey("${foo}")
-        commandNode = fooVar.pointTo
-        self.assertIsInstance(commandNode, CustomCommandNode)
-        self.assertEqual("bar.cxx DIRECTORY BASE_DIR /home", " ".join(getFlattedArguments(commandNode.commands[0])))
+        a = flattenAlgorithmWithConditions(fooVar)
+        self.assertIsInstance(fooVar,RefNode)
+        self.assertEqual(1, len(a))
+        self.assertEqual("/home", a[0][0])
 
     def test_get_property(self):
         text = """
@@ -1091,7 +1092,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual(commandNode, compileVar.pointTo)
         self.assertEqual(commandNode, runOutputVar.pointTo)
         self.assertEqual("RUN_RESULT_VAR", runVar.relatedProperty)
-        self.assertEqual("\"test_library_magic_val.c\"", commandNode.pointTo[0].getChildren()[1].getValue())
+        self.assertEqual("test_library_magic_val.c", commandNode.pointTo[0].getChildren()[1].getValue())
 
     def test_try_compile(self):
         text = """
@@ -1369,11 +1370,10 @@ class TestVariableDefinitions(unittest.TestCase):
         text = """
         find_package(Foo CONFIG REQUIRED)
         """
-        self.runTool(text)
-        foundVar = self.lookup.getKey("${Foo_FOUND}")
-        commandNode = foundVar.getPointTo()
-        self.assertIsInstance(commandNode, CustomCommandNode)
-        self.assertEqual("Foo CONFIG REQUIRED", " ".join(getFlattedArguments(commandNode.commands[0])))
+        with self.assertRaises(Exception) as context:
+            self.runTool(text)
+
+        self.assertTrue('Required package not found' in str(context.exception))
 
     def test_find_file_without_condition(self):
         text = """
@@ -2378,9 +2378,6 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual('/usr/share/ECM/cmake/../../../share/ECM/find-modules/', a[2][0])
         self.assertEqual('/usr/share/ECM/cmake/../../../share/ECM/modules/', a[3][0])
 
-    def test_multi_level_include(self):
-        pass;
-
     def test_conditional_find_package(self):
         text = """    
         set(var CheckFortranSourceRuns)
@@ -2390,7 +2387,10 @@ class TestVariableDefinitions(unittest.TestCase):
         find_package(${var})
         """
         self.runTool(text)
-        print("done!")
-        pass;
+        ECM_PREFIX = self.lookup.getKey('${ECM_PREFIX}')
+        a = flattenAlgorithmWithConditions(ECM_PREFIX)
+        self.assertEqual('/usr/share/ECM/cmake/../../..', a[0][0])
+        self.assertEqual('{APPLE}', str(a[0][1]))
+        self.assertEqual(1, len(a))
 if __name__ == '__main__':
     unittest.main()
