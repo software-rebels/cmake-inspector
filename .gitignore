@@ -11,10 +11,14 @@ venv/
 *.pickle
 .vscode
 
+venv
 .env/
 KDE/
 KDE_command_analysis/
 graph_dots/
+graph_dots
+graph_dots/*
 graph_dots_final/
 koffice-plugins/
 graphs/
+
