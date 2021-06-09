@@ -10,6 +10,8 @@ from datastructs import Node, LiteralNode, RefNode, CustomCommandNode, SelectNod
 from vmodel import VModel
 
 
+directory_definition_stack = set()
+
 def flattenAlgorithm(node: Node):
     if isinstance(node, LiteralNode):
         return [node.getValue()]
@@ -115,6 +117,9 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                 s = Solver()
                 s.add(priorKnowledge)
                 s.add(conditions)
+                # Why did we not add this here?
+                if s.check() == unsat:
+                    continue
                 falseAssertion = simplify(Not(assertion))
                 if falseAssertion not in s.assertions():
                     s.add(falseAssertion)
@@ -236,7 +241,52 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
         result = flattenAlgorithmWithConditions(node.depends[0], conditions, recStack=recStack)
         for argument in arguments:
             del result[argument.getValue()]
+ 
+    elif 'directory_definitions' in node.getName().lower():
+        # Normally, there are 2 dependents for each definition node: 'directory_definition_(i+1) and a 
+        # definition command like add_definition. Sometimes, we also have to concat
+        # Also, the ordering here is important because index 0 is the command, index 1 is 
+        # the directory_definitions_(i+1)
+        result = []
+        for dependent in node.depends:
+            result += flattenAlgorithmWithConditions(dependent, conditions, recStack=recStack)
+    
+    elif 'target_definitions' in node.getName().lower():
+        # Similar to the directory_definitions
+        result = []
+        for dependent in node.depends:
+            result += flattenAlgorithmWithConditions(dependent, conditions, recStack=recStack)
 
+    elif 'target_compile_definitions' in node.getName().lower():
+        result = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
+
+    elif 'add_definitions' in node.getName().lower():
+        global directory_definition_stack
+        result = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
+        flags_to_add = [flag[0] for flag in result]
+        for flag in flags_to_add:
+            directory_definition_stack.add(flag)
+
+    elif 'remove_definitions' in node.getName().lower():
+        temp_result = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
+        result = []
+        for e in temp_result:
+            flag, condition = e[0], e[1]
+            if flag not in directory_definition_stack:
+                # Since the flags have not been introduced by add_definitions, 
+                # there is nothing we need to do
+                print(f"REMOVE: flags {flag} not yet added")
+                continue
+            else:
+                # take the negation of all of the nodes' condition
+                if len(condition) == 0:
+                    new_condition = {}
+                elif len(condition) == 1:
+                    new_condition = {Not(*condition)}
+                else:
+                    new_condition = {Not(And(*condition))}
+                
+                result.append((flag, new_condition))
     return result
 
 

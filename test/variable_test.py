@@ -9,7 +9,7 @@ from extract import CMakeExtractorListener
 from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
 from datastructs import Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, \
-    CustomCommandNode, TargetNode, TestNode, OptionNode, Node
+    CustomCommandNode, TargetNode, TestNode, OptionNode, Node, Directory
 from algorithms import flattenAlgorithm, flattenAlgorithmWithConditions, getFlattedArguments, flattenCustomCommandNode, \
     CycleDetectedException, postprocessZ3Output
 from vmodel import VModel
@@ -801,6 +801,7 @@ class TestVariableDefinitions(unittest.TestCase):
         get_directory_property(baz SOMETHING)
         """
         self.runTool(text)
+        self.vmodel.export()
         johnVar = self.lookup.getKey("${john}")
         doeVar = self.lookup.getKey("${doe}")
         bazVar = self.lookup.getKey("${baz}")
@@ -1236,16 +1237,27 @@ class TestVariableDefinitions(unittest.TestCase):
 
     def test_remove_definitions(self):
         text = """
-        add_definitions(-Djohn)
-        add_library(foo bar.cxx)
         if(AMD)
-            remove_definitions(-Djohn)
+            add_definitions(/Dbar -Wall -Werror)
+            add_library(foo bar.cxx car.cxx far.cxx)
+            target_compile_definitions(foo PUBLIC bar)
+            target_compile_definitions(foo PRIVATE test2)
+            target_compile_definitions(foo INTERFACE test3)
+        else()
+            remove_definitions(-Djohn -Dbar)
         endif(AMD)
         """
         self.runTool(text)
-        commandNode = self.vmodel.findNode('remove_definitions')
-        self.assertIsInstance(commandNode, CustomCommandNode)
-        self.assertEqual('-Djohn', commandNode.commands[0].getValue())
+        directory = Directory.getInstance()
+        from extract import linkDirectory
+        linkDirectory()
+        self.vmodel.export()
+        # print(defn := self.lookup.getKey('t:foo').definitions)
+        print(f"Flattened result: {flattenAlgorithmWithConditions(self.lookup.getKey('t:foo').definitions)}")
+        # print(f"Flatten Result: {flattenAlgorithmWithConditions(self.vmodel.findNode('remove_definitions'))}")
+        # commandNode = self.vmodel.findNode('remove_definitions')
+        # self.assertIsInstance(commandNode, CustomCommandNode)
+        # self.assertEqual('-Djohn', commandNode.commands[0].getValue())
 
     def test_load_cache(self):
         text = """
