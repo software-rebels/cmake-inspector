@@ -1166,6 +1166,9 @@ class CMakeExtractorListener(CMakeListener):
             handleProperty(interfaceIncludeDirectories, 'interfaceIncludeDirectories')
             handleProperty(interfaceSystemIncludeDirectories, 'interfaceSystemIncludeDirectories')
 
+        elif commandId == 'add_compile_definitions':
+            addCompileDefinitionsCommand(arguments)
+
         elif commandId == 'add_compile_options':
             addCompileOptionsCommand(arguments)
 
@@ -1293,6 +1296,7 @@ def getGraph(directory):
     util_create_and_add_refNode_for_variable('CMAKE_SOURCE_DIR', LiteralNode(project_dir, project_dir))
     parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
     vmodel.findAndSetTargets()
+    linkDirectory()
     return vmodel, lookupTable
 
 def linkDirectory():
@@ -1311,7 +1315,8 @@ def linkDirectory():
             local_definition_node.append(parent_definition_node)
         vmodel.directory_to_properties.get(cur_dir).setKey('COMPILE_DEFINITIONS', local_definition_node)
     
-        # Need to use concat node for target_add_definition, then we can concat our directory definition to it
+        # Need to use concat node for target_add_definition, 
+        # then we can concat our directory definitions to it
         for target in dir_node.targets:
             if target.definitions is None:
                 target.setDefinition(local_definition_node)
