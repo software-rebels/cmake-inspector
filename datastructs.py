@@ -1,3 +1,4 @@
+from operator import is_
 from typing import Optional, List
 import copy
 
@@ -50,6 +51,9 @@ class Node:
         if other is None:
             return False
         return self.name == other.name
+    
+    # def __repr__(self):
+    #     return str(self.__dict__)
 
 
 class TargetNode(Node):
@@ -69,6 +73,7 @@ class TargetNode(Node):
         self.interfaceIncludeDirectories = None  # Property of Target
         self.interfaceSystemIncludeDirectories = None  # Property of Target
         self.definitions = None
+        self.interfaceDefinitions = None  # Not sure if we need this yet
         self.linkLibraries = None
 
         self.scope = None
@@ -99,6 +104,8 @@ class TargetNode(Node):
             result.append(self.sources)
         if self.definitions:
             result.append(self.definitions)
+        if self.interfaceDefinitions:
+            result.append(self.interfaceDefinitions)
         if self.linkLibraries:
             result.append(self.linkLibraries)
         if self.interfaceSources:
@@ -369,6 +376,107 @@ class Lookup:
     def getInstance(cls):
         if cls._instance is None:
             cls._instance = Lookup()
+
+        return cls._instance
+
+    @classmethod
+    def clearInstance(cls):
+        cls._instance = None
+
+
+class DirectoryNode(LiteralNode):
+    def __init__(self, name):
+        super().__init__(name)
+        self._post_num = 0 # for linearization
+        self.depends_on = [] # child
+        self.depended_by = [] # parent
+        self.targets = []
+
+
+class DefinitionPair:
+    def __init__(self, head, tail=None):
+        self.head = head
+        self.tail = tail
+
+
+# Not much for now, but might have more in the future
+# Technically not really a custom command, but the depends attribute is useful
+class DefinitionNode(CustomCommandNode):
+    def __init__(self, from_dir=True, is_flag=False):
+        super().__init__(f"{'directory' if from_dir else 'target'}_definitions")
+        self.is_flag = is_flag
+        self.from_dir = from_dir
+
+
+# Repeated flags need to be taken care of
+# Might have unsatisfiable path in the graph for definitions.
+class CommandDefinitionNode(CustomCommandNode):
+    def __init__(self, command, specific=False):
+        if not command in ['add', 'remove']:
+            raise ValueError(f'CommandDefinitionNode given wrong initialization input: {command}')
+        name = ''
+        if specific:
+            name = f'{command}_compile_definitions'
+        else:
+            name = f'{command}_definitions'
+        super().__init__(name)
+
+
+class TargetCompileDefinitionNode(CustomCommandNode):
+    def __init__(self):
+        super().__init__('target_compile_definitions')
+
+
+class Directory:
+    _instance = None
+
+    def __init__(self):
+        self.root = None
+        self.map = {}
+        self.topologicalOrder = None
+
+    def setRoot(self, root_dir):
+        self.root = DirectoryNode(root_dir)
+        self.map[root_dir] = self.root
+
+    def find(self, name):
+        return self.map.get(name, None) 
+
+    # Should also check for circular dependency when adding new child
+    def addChild(self, node, child):
+        node.depended_by.append(child)
+        child.depends_on.append(node)
+        self.map[child.name] = child
+
+    def getTopologicalOrder(self, force=False):
+        if self.topologicalOrder is not None and not force:
+            return self.topologicalOrder
+        self._dfs(self.root)
+        sorted_nodes = sorted([(node, node._post_num) for _, node in self.map.items()], 
+                                key=lambda x: x[1], reverse=True)
+        result = [node for node, _ in sorted_nodes]
+        return result
+
+    def _dfs(self, node):
+        def _visit(node):
+            node.isVisited = True 
+            for child in node.depends_on:
+                if not child.isVisited:
+                    _visit(child)
+            _post(node)
+        
+        def _post(node):
+            nonlocal post_num
+            post_num += 1
+            node._post_num = post_num
+        
+        post_num = 1
+        _visit(node)
+
+    @classmethod
+    def getInstance(cls):
+        if cls._instance is None:
+            cls._instance = Directory()
 
         return cls._instance
 
