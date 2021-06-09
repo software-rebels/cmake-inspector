@@ -1,6 +1,8 @@
 from typing import Optional, List
 import copy
 
+from numpy import positive
+
 from condition_data_structure import Rule
 
 created_commands = dict()
@@ -380,71 +382,92 @@ class Lookup:
 class DirectoryNode(LiteralNode):
     def __init__(self, name):
         super().__init__(name)
-        self.depends_on = []
-        self.depended_by = []
+        self._post_num = 0 # for linearization
+        self.depends_on = [] # child
+        self.depended_by = [] # parent
         self.targets = []
 
-# Not much for now, but might have more in the future?
-class DefinitionNode(LiteralNode):
+
+# Not much for now, but might have more in the future
+class DefinitionNode(Node):
     def __init__(self, index):
         super().__init__('definition_{}'.format(index))
-
+        self.depends = []
 
 # Need a stack of project dirs.
 # Targets related to the dirs
 # A stack of definition nodes to concat
 # Not by directory but by targets
 # Repeated flags need to be taken care of
+
+# Might have unsatisfiable path in the graph for definitions.
 class AddDefinitionNode(CustomCommandNode):
-    def __init__(self, index):
+    def __init__(self):
         super().__init__('add_definition')
+
+    def handle(self):
+        pass
 
 
 class RemoveDefinitionNode(CustomCommandNode):
-    def __init__(self, index):
+    def __init__(self):
         super().__init__('remove_definition')
+    
+    def handle(self):
+        pass
 
 
 class Directory:
     _instance = None
 
-    def __init__(self, root_dir):
+    def __init__(self):
+        self.root = None
+        self.map = {}
+        self.topologicalOrder = None
+
+    def setRoot(self, root_dir):
         self.root = DirectoryNode(root_dir)
-        self.map = {root_dir: self.root}
+        self.map[root_dir] = self.root
 
     def find(self, name):
         return self.map.get(name, None) 
 
+    # Should also check for circular dependency when adding new child
     def addChild(self, node, child):
-        node.depends_on.append(child)
-        child.depended_by.append(node)
+        node.depended_by.append(child)
+        child.depends_on.append(node)
+
+    def getTopologicalOrder(self, force=False):
+        if self.topologicalOrder is not None and not force:
+            return self.topologicalOrder
+        self._dfs(self.root)
+        sorted_nodes = sorted([(node, node._post_num) for _, node in self.map.items()], 
+                                key=lambda x: x[1], reverse=True)
+        result = [node for node, _ in sorted_nodes]
+        return result
+
+    def _dfs(self, node):
+        def _visit(node):
+            node.isVisited = True 
+            for child in node.children:
+                if not child.isVisited:
+                    _visit(child)
+            _post(node)
+        
+        def _post(node):
+            nonlocal post_num
+            post_num += 1
+            node._post_num = post_num
+        
+        post_num = 1
+        _visit(node)
 
     @classmethod
     def getInstance(cls):
         if cls._instance is None:
-            raise Exception("Root directory not set")
+            return Directory()
         return cls._instance
 
     @classmethod
     def clearInstance(cls):
         cls._instance = None
-
-# project dir only updates at add_subdir, thats where we update tree link
-# class TreeLink:
-#     # A framework for linking dir_tree to nodes
-#     def __init__(self, root, cls):
-#         self.tree_root = cls.getInstance()
-#         self.variables = {} # node: var mapping
-#         self.var
-#         ConcatNode -> global def node
-
-#         # To keep track of definitions
-#         # if definition is added to specific target, this wouldnt matter ..
-#         dir -> subdir -> pop subdir -> dir
-#         self.definitions_stack = [(Directory, definition)]
-#         self.directories_stack = [Directory NODE -> ]
-
-#     def augment(self):
-#         pass
-
-#     flatten after done.

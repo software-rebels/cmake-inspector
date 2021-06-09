@@ -1,6 +1,6 @@
 from algorithms import flattenAlgorithmWithConditions
 from condition_data_structure import Rule
-from datastructs import Lookup, CustomCommandNode, TargetNode, ConcatNode, WhileCommandNode
+from datastructs import Lookup, CustomCommandNode, TargetNode, ConcatNode, WhileCommandNode, DefinitionNode, AddDefinitionNode, RemoveDefinitionNode
 from grammar.CMakeLexer import CMakeLexer, CommonTokenStream, InputStream
 from grammar.CMakeParser import CMakeParser
 from utils import *
@@ -219,21 +219,20 @@ def addCompileOptionsCommand(arguments):
 
 def addCompileDefinitionsCommand(arguments):
     vmodel = VModel.getInstance()
-
+    definitionNode = DefinitionNode(vmodel.getNextCounter())
     nextNode = vmodel.expand(arguments)
-    print(f"Arguments: {arguments}")
-    print(f"Next Node: {nextNode.getValue()}")
     targetNode = util_handleConditions(nextNode, nextNode.name, None)
-    print(f"Target Node: {nextNode.getValue()}")
-
-    # newCompileOptions = ConcatNode("COMPILE_OPTIONS_{}".format(vmodel.getNextCounter()))
-    # if vmodel.DIRECTORY_PROPERTIES.getOwnKey('COMPILE_OPTIONS'):
-    #     newCompileOptions.listOfNodes = list(vmodel.DIRECTORY_PROPERTIES.getKey('COMPILE_OPTIONS').listOfNodes)
-
-    # vmodel.DIRECTORY_PROPERTIES.setKey('COMPILE_OPTIONS', newCompileOptions)
+    newCompileOptions = AddDefinitionNode()
     
-    newCompileOptions.addNode(targetNode)
+    if last_definition_node := vmodel.DIRECTORY_PROPERTIES.getOwnKey('COMPILE_DEFINITIONS'):
+        # this returns the latest Definition node
+        newCompileOptions.depends.append(last_definition_node)
+    newCompileOptions.commands.append(targetNode)
+    definitionNode.depends.append(newCompileOptions)
+    vmodel.DIRECTORY_PROPERTIES.setKey('COMPILE_DEFINITIONS', definitionNode)
 
+    # Just for testing
+    vmodel.nodes.append(definitionNode)
 
 def removeCompileDefinitionsCommand(arguments):
     vmodel = VModel.getInstance()
@@ -241,13 +240,13 @@ def removeCompileDefinitionsCommand(arguments):
     definitionNode = DefinitionNode(vmodel.getNextCounter())
     nextNode = vmodel.expand(arguments)
     targetNode = util_handleConditions(nextNode, nextNode.name, None)
-    newCompileOptions = CustomCommandNode("add_definition_{}".format(vmodel.getNextCounter()))
-    
+    newCompileOptions = RemoveDefinitionNode()
+
     if last_definition_node := vmodel.DIRECTORY_PROPERTIES.getOwnKey('COMPILE_DEFINITIONS'):
-        # this returns the latest Fefinition node
+        # this returns the latest Definition node
         newCompileOptions.depends.append(last_definition_node)
     newCompileOptions.commands.append(targetNode)
-    newCompileOptions.addParent(definitionNode)
+    definitionNode.depends.append(newCompileOptions)
     vmodel.DIRECTORY_PROPERTIES.setKey('COMPILE_DEFINITIONS', definitionNode)
 
     # Just for testing
@@ -322,7 +321,7 @@ def addTarget(arguments, isExecutable=True):
         prevNode = None
         if targetNode is None:
             targetNode = TargetNode(targetName, nextNode)
-            targetNode.setDefinition(vmodel.DIRECTORY_PROPERTIES.getKey('COMPILE_OPTIONS'))
+            # targetNode.setDefinition(vmodel.DIRECTORY_PROPERTIES.getKey('COMPILE_OPTIONS'))
             targetNode.linkLibraries = vmodel.DIRECTORY_PROPERTIES.getKey('LINK_LIBRARIES')
             targetNode.includeDirectories = vmodel.DIRECTORY_PROPERTIES.getKey('INCLUDE_DIRECTORIES')
             lookupTable.setKey(lookupTableName, targetNode)
@@ -355,6 +354,7 @@ def addTarget(arguments, isExecutable=True):
 
         nextNode = util_handleConditions(nextNode, targetName, prevNode, condition)
         targetNode.sources = nextNode
+        return targetNode
 
 
 # Very similar to while command

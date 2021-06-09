@@ -20,7 +20,7 @@ from grammar.CMakeParser import CMakeParser
 from grammar.CMakeListener import CMakeListener
 # Our own library
 from datastructs import RefNode, TargetNode, Lookup, SelectNode, ConcatNode, \
-    CustomCommandNode, TestNode, LiteralNode, Node, OptionNode
+    CustomCommandNode, TestNode, LiteralNode, Node, OptionNode, Directory, DirectoryNode, DefinitionNode
 from analyze import printSourceFiles, printFilesForATarget, checkForCyclesAndPrint
 from utils import util_handleConditions, util_getStringFromList,\
     util_create_and_add_refNode_for_variable, util_extract_variable_name
@@ -33,7 +33,7 @@ project_dir = ""
 
 vmodel = VModel.getInstance()
 lookupTable = Lookup.getInstance()
-
+directoryTree = Directory.getInstance()
 
 class CMakeExtractorListener(CMakeListener):
     rule: Optional[Rule] = None
@@ -1067,12 +1067,11 @@ class CMakeExtractorListener(CMakeListener):
             project_dir = possible_paths[0][0]
             util_create_and_add_refNode_for_variable('CMAKE_CURRENT_SOURCE_DIR',
                                                      LiteralNode(project_dir, project_dir))
-            directory = Directory.getInstance()
-            parent_dir = directory.find(temo_project_dir)
-            child_dir = directory.find(project_dir)
+            parent_dir = directoryTree.find(tempProjectDir)
+            child_dir = directoryTree.find(project_dir)
             if child_dir is None:
                 child_dir = DirectoryNode(project_dir)
-            directory.addChild(parent_dir, child_dir)
+            directoryTree.addChild(parent_dir, child_dir)
             parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
             lookupTable.dropScope()
             project_dir = tempProjectDir
@@ -1094,10 +1093,14 @@ class CMakeExtractorListener(CMakeListener):
 
 
         elif commandId == 'add_library':
-            addTarget(arguments, False)
+            directory_node = directoryTree.find(project_dir)
+            target_node = addTarget(arguments, False)
+            directory_node.targets.append(target_node)
 
         elif commandId == 'add_executable':
-            addTarget(arguments, True)
+            directory_node = directoryTree.find(project_dir)
+            target_node = addTarget(arguments, True)
+            directory_node.targets.append(target_node)
 
         elif commandId == 'list':
             listCommand(arguments)
@@ -1285,11 +1288,45 @@ def parseFile(filePath):
 def getGraph(directory):
     global project_dir
     project_dir = directory
+    directoryTree.setRoot(project_dir)
     util_create_and_add_refNode_for_variable('CMAKE_CURRENT_SOURCE_DIR', LiteralNode(project_dir, project_dir))
     util_create_and_add_refNode_for_variable('CMAKE_SOURCE_DIR', LiteralNode(project_dir, project_dir))
     parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
     vmodel.findAndSetTargets()
     return vmodel, lookupTable
+
+def linkDirectory():
+    topological_order = directoryTree.getTopologicalOrder()
+    # Setting the correct definition depedency based on directory
+    for dir_node in topological_order:
+        cur_dir = dir_node.name
+        definition_node = vmodel.directory_to_properties.get(cur_dir).getOwnKey('COMPILE_DEFINITIONS')
+        # For root node, the concat node is pointless, but added for consistency.
+        local_definition_node = ConcatNode('inherit_definition_{}'.format(vmodel.getNextCounter()))
+        local_definition_node.addChild(definition_node)
+        for parent_node in dir_node.depended_by:
+            # if there is a parent dir, we add concat parent COMPILE DEF.
+            parent_dir = parent_node.name
+            parent_definition_node = vmodel.directory_to_properties.get(parent_dir).getOwnKey('COMPILE_DEFINITIONS')
+            local_definition_node.append(parent_definition_node)
+        vmodel.directory_to_properties.get(cur_dir).setKey('COMPILE_DEFINITIONS', local_definition_node)
+    
+        # Need to use concat node for target_add_definition, then we can concat our directory definition to it
+        for target in dir_node.targets:
+            if target.definitions is None:
+                target.setDefinition(local_definition_node)
+            elif isinstance(target.definitions, DefinitionNode):
+                # this is for cases when we add definition directly to target
+                local_definition_node.addChild(target.definitions)
+                target.setDefinition(local_definition_node)
+            else:
+                raise ValueError("Definition type mismatch")
+    
+
+# TODO: deduplicate definitions, shrink the graph, and resolve satisfiability stuff
+# un-bloat the graph
+def deduplicateAndShrinkDefinitions():
+    pass
 
 
 def getFlattenedFilesForTarget(target: str):
