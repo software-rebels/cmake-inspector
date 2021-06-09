@@ -237,6 +237,10 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
         for argument in arguments:
             del result[argument.getValue()]
 
+    elif 'remove_definitions' in node.getName().lower():
+        # print(result := flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack))
+        
+        return result
     return result
 
 

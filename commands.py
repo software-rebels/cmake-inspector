@@ -217,6 +217,43 @@ def addCompileOptionsCommand(arguments):
     newCompileOptions.addNode(targetNode)
 
 
+def addCompileDefinitionsCommand(arguments):
+    vmodel = VModel.getInstance()
+
+    nextNode = vmodel.expand(arguments)
+    print(f"Arguments: {arguments}")
+    print(f"Next Node: {nextNode.getValue()}")
+    targetNode = util_handleConditions(nextNode, nextNode.name, None)
+    print(f"Target Node: {nextNode.getValue()}")
+
+    # newCompileOptions = ConcatNode("COMPILE_OPTIONS_{}".format(vmodel.getNextCounter()))
+    # if vmodel.DIRECTORY_PROPERTIES.getOwnKey('COMPILE_OPTIONS'):
+    #     newCompileOptions.listOfNodes = list(vmodel.DIRECTORY_PROPERTIES.getKey('COMPILE_OPTIONS').listOfNodes)
+
+    # vmodel.DIRECTORY_PROPERTIES.setKey('COMPILE_OPTIONS', newCompileOptions)
+    
+    newCompileOptions.addNode(targetNode)
+
+
+def removeCompileDefinitionsCommand(arguments):
+    vmodel = VModel.getInstance()
+
+    definitionNode = DefinitionNode(vmodel.getNextCounter())
+    nextNode = vmodel.expand(arguments)
+    targetNode = util_handleConditions(nextNode, nextNode.name, None)
+    newCompileOptions = CustomCommandNode("add_definition_{}".format(vmodel.getNextCounter()))
+    
+    if last_definition_node := vmodel.DIRECTORY_PROPERTIES.getOwnKey('COMPILE_DEFINITIONS'):
+        # this returns the latest Fefinition node
+        newCompileOptions.depends.append(last_definition_node)
+    newCompileOptions.commands.append(targetNode)
+    newCompileOptions.addParent(definitionNode)
+    vmodel.DIRECTORY_PROPERTIES.setKey('COMPILE_DEFINITIONS', definitionNode)
+
+    # Just for testing
+    vmodel.nodes.append(definitionNode)
+
+
 def addLinkLibraries(arguments):
     vmodel = VModel.getInstance()
 

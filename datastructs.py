@@ -375,3 +375,76 @@ class Lookup:
     @classmethod
     def clearInstance(cls):
         cls._instance = None
+
+
+class DirectoryNode(LiteralNode):
+    def __init__(self, name):
+        super().__init__(name)
+        self.depends_on = []
+        self.depended_by = []
+        self.targets = []
+
+# Not much for now, but might have more in the future?
+class DefinitionNode(LiteralNode):
+    def __init__(self, index):
+        super().__init__('definition_{}'.format(index))
+
+
+# Need a stack of project dirs.
+# Targets related to the dirs
+# A stack of definition nodes to concat
+# Not by directory but by targets
+# Repeated flags need to be taken care of
+class AddDefinitionNode(CustomCommandNode):
+    def __init__(self, index):
+        super().__init__('add_definition')
+
+
+class RemoveDefinitionNode(CustomCommandNode):
+    def __init__(self, index):
+        super().__init__('remove_definition')
+
+
+class Directory:
+    _instance = None
+
+    def __init__(self, root_dir):
+        self.root = DirectoryNode(root_dir)
+        self.map = {root_dir: self.root}
+
+    def find(self, name):
+        return self.map.get(name, None) 
+
+    def addChild(self, node, child):
+        node.depends_on.append(child)
+        child.depended_by.append(node)
+
+    @classmethod
+    def getInstance(cls):
+        if cls._instance is None:
+            raise Exception("Root directory not set")
+        return cls._instance
+
+    @classmethod
+    def clearInstance(cls):
+        cls._instance = None
+
+# project dir only updates at add_subdir, thats where we update tree link
+# class TreeLink:
+#     # A framework for linking dir_tree to nodes
+#     def __init__(self, root, cls):
+#         self.tree_root = cls.getInstance()
+#         self.variables = {} # node: var mapping
+#         self.var
+#         ConcatNode -> global def node
+
+#         # To keep track of definitions
+#         # if definition is added to specific target, this wouldnt matter ..
+#         dir -> subdir -> pop subdir -> dir
+#         self.definitions_stack = [(Directory, definition)]
+#         self.directories_stack = [Directory NODE -> ]
+
+#     def augment(self):
+#         pass
+
+#     flatten after done.

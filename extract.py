@@ -302,13 +302,11 @@ class CMakeExtractorListener(CMakeListener):
 
         # add_definitions(-DFOO -DBAR ...)
         elif commandId == 'add_definitions':
-            addCompileOptionsCommand(arguments)
+            addCompileDefinitionsCommand(arguments)
 
         # remove_definitions(-DFOO -DBAR ...)
         elif commandId == 'remove_definitions':
-            fileNode = CustomCommandNode('remove_definitions')
-            fileNode.commands.append(vmodel.expand(arguments))
-            vmodel.nodes.append(util_handleConditions(fileNode, fileNode.name))
+            removeCompileDefinitionsCommand(arguments)
 
         # load_cache(pathToCacheFile READ_WITH_PREFIX
         #    prefix entry1...)
@@ -1064,10 +1062,18 @@ class CMakeExtractorListener(CMakeListener):
 
             print('start new file',os.path.join(project_dir, 'CMakeLists.txt'))
             possible_paths = flattenAlgorithmWithConditions(vmodel.expand([project_dir]))
+            # First 0 for getting the only element in possible path,
+            # Second 0 for getting the key (path)
             project_dir = possible_paths[0][0]
             util_create_and_add_refNode_for_variable('CMAKE_CURRENT_SOURCE_DIR',
-                                                     LiteralNode(possible_paths[0][0], possible_paths[0][0]))
-            parseFile(os.path.join(possible_paths[0][0], 'CMakeLists.txt'))
+                                                     LiteralNode(project_dir, project_dir))
+            directory = Directory.getInstance()
+            parent_dir = directory.find(temo_project_dir)
+            child_dir = directory.find(project_dir)
+            if child_dir is None:
+                child_dir = DirectoryNode(project_dir)
+            directory.addChild(parent_dir, child_dir)
+            parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
             lookupTable.dropScope()
             project_dir = tempProjectDir
 

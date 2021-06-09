@@ -62,6 +62,7 @@ class VModel:
         # A new property to support nested if statements
         self.ifLevel = 0
 
+
     def pushSystemState(self, rule: Rule):
         self.systemState.append(rule)
 

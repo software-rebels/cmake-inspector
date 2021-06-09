@@ -801,6 +801,7 @@ class TestVariableDefinitions(unittest.TestCase):
         get_directory_property(baz SOMETHING)
         """
         self.runTool(text)
+        self.vmodel.export()
         johnVar = self.lookup.getKey("${john}")
         doeVar = self.lookup.getKey("${doe}")
         bazVar = self.lookup.getKey("${baz}")
@@ -1234,18 +1235,37 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual('DIRECTORY /bar PROPERTY LABELS val1 val2',
                          " ".join(getFlattedArguments(setProperty.commands[0])))
 
+        # if(AMD)
+        #     add_definitions(-Djohn -Dtest)
+        #     add_definitions(-Dfoo)
+        # else()
+        #     add_library(foo bar.cxx car.cxx far.cxx)
+        #     add_definitions(-Dbar)
+        #     remove_definitions(-Djohn -Dbar)
+        # endif(AMD)
+
     def test_remove_definitions(self):
         text = """
-        add_definitions(-Djohn)
-        add_library(foo bar.cxx)
         if(AMD)
-            remove_definitions(-Djohn)
+            remove_definitions(-Djohn -Dbar)
+            add_definitions(-Dfoo)
+        else()
+            add_definitions(-Dbar)
+            add_library(foo bar.cxx car.cxx far.cxx)
         endif(AMD)
+        add_definitions(-Djohn -Dtest)
+        add_library(boo bar.cxx car.cxx far.cxx)
+
         """
         self.runTool(text)
+        self.vmodel.export()
+        # print(defn := self.lookup.getKey('t:foo').definitions)
+        # print(defn.getChildren())
+        # print(flattenAlgorithmWithConditions(self.lookup.getKey('t:foo').definitions))
+        print(f"Flatten Result: {flattenAlgorithmWithConditions(self.vmodel.findNode('remove_definitions'))}")
         commandNode = self.vmodel.findNode('remove_definitions')
         self.assertIsInstance(commandNode, CustomCommandNode)
-        self.assertEqual('-Djohn', commandNode.commands[0].getValue())
+        # self.assertEqual('-Djohn', commandNode.commands[0].getValue())
 
     def test_load_cache(self):
         text = """
