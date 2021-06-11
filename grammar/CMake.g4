@@ -57,7 +57,7 @@ functionStatement
     ;
 
 functionBody
-    : (body=.*)
+    : (body=.*?)
     ;
 
 endFunctionStatement
