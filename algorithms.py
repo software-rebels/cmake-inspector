@@ -10,6 +10,8 @@ from datastructs import Node, LiteralNode, RefNode, CustomCommandNode, SelectNod
 from vmodel import VModel
 
 
+definition_stack = set()
+
 def flattenAlgorithm(node: Node):
     if isinstance(node, LiteralNode):
         return [node.getValue()]
@@ -115,6 +117,9 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                 s = Solver()
                 s.add(priorKnowledge)
                 s.add(conditions)
+                # Why did we not add this here?
+                if s.check() == unsat:
+                    continue
                 falseAssertion = simplify(Not(assertion))
                 if falseAssertion not in s.assertions():
                     s.add(falseAssertion)
@@ -237,10 +242,36 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
         for argument in arguments:
             del result[argument.getValue()]
 
+    # Using in is a horrible idea :(
+    elif 'local_definitions' in node.getName().lower():
+        # There is only one dependent for each definition node
+        print(f"definition: {node.depends[0].name}")
+        result = flattenAlgorithmWithConditions(node.depends[0], conditions, recStack=recStack)
+
+    elif 'add_definitions' in node.getName().lower():
+        global definition_stack
+        result = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
+        flags_to_add = [flag[0] for flag in result]
+        for flag in flags_to_add:
+            definition_stack.add(flag)
+        print(f"Add definition: {flags_to_add}")
+
     elif 'remove_definitions' in node.getName().lower():
+        # if already added, then add the negation of the remove condition
+        # otherwise, dont do anything
         # print(result := flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack))
-        
-        return result
+        result = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
+        flags_to_remove = [flag[0] for flag in result]
+
+        for flag in flags_to_remove:
+            if flag not in definition_stack:
+                # Since the flags have not been introduced by add_definitions, 
+                # there is nothing we need to do
+                continue
+            else:
+                # take the negation of all the nodes condition?
+                pass
+        print(f"remove definition {result}")
     return result
 
 

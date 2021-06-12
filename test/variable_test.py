@@ -9,7 +9,7 @@ from extract import CMakeExtractorListener
 from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
 from datastructs import Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, \
-    CustomCommandNode, TargetNode, TestNode, OptionNode, Node
+    CustomCommandNode, TargetNode, TestNode, OptionNode, Node, Directory
 from algorithms import flattenAlgorithm, flattenAlgorithmWithConditions, getFlattedArguments, flattenCustomCommandNode, \
     CycleDetectedException, postprocessZ3Output
 from vmodel import VModel
@@ -1258,13 +1258,17 @@ class TestVariableDefinitions(unittest.TestCase):
 
         """
         self.runTool(text)
+        directory = Directory.getInstance()
+        from extract import linkDirectory
+        linkDirectory()
+        print(directory.map)
         self.vmodel.export()
         # print(defn := self.lookup.getKey('t:foo').definitions)
         # print(defn.getChildren())
-        # print(flattenAlgorithmWithConditions(self.lookup.getKey('t:foo').definitions))
+        print(flattenAlgorithmWithConditions(self.lookup.getKey('t:foo').definitions))
         print(f"Flatten Result: {flattenAlgorithmWithConditions(self.vmodel.findNode('remove_definitions'))}")
-        commandNode = self.vmodel.findNode('remove_definitions')
-        self.assertIsInstance(commandNode, CustomCommandNode)
+        # commandNode = self.vmodel.findNode('remove_definitions')
+        # self.assertIsInstance(commandNode, CustomCommandNode)
         # self.assertEqual('-Djohn', commandNode.commands[0].getValue())
 
     def test_load_cache(self):

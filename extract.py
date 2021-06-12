@@ -29,7 +29,7 @@ from commands import *
 logging.basicConfig(filename='cmakeInspector.log', level=logging.DEBUG)
 config.DATABASE_URL = 'bolt://neo4j:123@localhost:7687'
 
-project_dir = ""
+project_dir = "."
 
 vmodel = VModel.getInstance()
 lookupTable = Lookup.getInstance()
@@ -42,8 +42,11 @@ class CMakeExtractorListener(CMakeListener):
     def __init__(self):
         global vmodel
         global lookupTable
+        global directoryTree
         vmodel = VModel.getInstance()
         lookupTable = Lookup.getInstance()
+        directoryTree = Directory.getInstance()
+        directoryTree.setRoot(project_dir)
         self.rule = None
         self.logicalExpressionStack = []
 
@@ -1096,6 +1099,7 @@ class CMakeExtractorListener(CMakeListener):
             directory_node = directoryTree.find(project_dir)
             target_node = addTarget(arguments, False)
             directory_node.targets.append(target_node)
+            print(directory_node)
 
         elif commandId == 'add_executable':
             directory_node = directoryTree.find(project_dir)
@@ -1291,7 +1295,6 @@ def parseFile(filePath):
 def getGraph(directory):
     global project_dir
     project_dir = directory
-    directoryTree.setRoot(project_dir)
     util_create_and_add_refNode_for_variable('CMAKE_CURRENT_SOURCE_DIR', LiteralNode(project_dir, project_dir))
     util_create_and_add_refNode_for_variable('CMAKE_SOURCE_DIR', LiteralNode(project_dir, project_dir))
     parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
@@ -1301,30 +1304,34 @@ def getGraph(directory):
 
 def linkDirectory():
     topological_order = directoryTree.getTopologicalOrder()
-    # Setting the correct definition depedency based on directory
+    # Setting the correct definition dependency based on directory
     for dir_node in topological_order:
         cur_dir = dir_node.name
+        print(vmodel.directory_to_properties)
         definition_node = vmodel.directory_to_properties.get(cur_dir).getOwnKey('COMPILE_DEFINITIONS')
         # For root node, the concat node is pointless, but added for consistency.
         local_definition_node = ConcatNode('inherit_definition_{}'.format(vmodel.getNextCounter()))
-        local_definition_node.addChild(definition_node)
+        local_definition_node.addNode(definition_node)
         for parent_node in dir_node.depended_by:
             # if there is a parent dir, we add concat parent COMPILE DEF.
             parent_dir = parent_node.name
             parent_definition_node = vmodel.directory_to_properties.get(parent_dir).getOwnKey('COMPILE_DEFINITIONS')
-            local_definition_node.append(parent_definition_node)
+            local_definition_node.addNode(parent_definition_node)
         vmodel.directory_to_properties.get(cur_dir).setKey('COMPILE_DEFINITIONS', local_definition_node)
     
-        # Need to use concat node for target_add_definition, 
+        # Need to use concat node for target_compile_definitions, 
         # then we can concat our directory definitions to it
         for target in dir_node.targets:
             if target.definitions is None:
                 target.setDefinition(local_definition_node)
             elif isinstance(target.definitions, DefinitionNode):
                 # this is for cases when we add definition directly to target
-                local_definition_node.addChild(target.definitions)
-                target.setDefinition(local_definition_node)
+                target_definition_node = ConcatNode('merge_inherit_definition_{}'.format(vmodel.getNextCounter()))
+                target_definition_node.addNode(target.definitions)
+                target_definition_node.addChild(local_definition_node)
+                target.setDefinition(target_definition_node)
             else:
+                # maybe target definitions can be concat node?
                 raise ValueError("Definition type mismatch")
     
 

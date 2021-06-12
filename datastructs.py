@@ -1,8 +1,6 @@
 from typing import Optional, List
 import copy
 
-from numpy import positive
-
 from condition_data_structure import Rule
 
 created_commands = dict()
@@ -52,6 +50,9 @@ class Node:
         if other is None:
             return False
         return self.name == other.name
+    
+    # def __repr__(self):
+    #     return str(self.__dict__)
 
 
 class TargetNode(Node):
@@ -387,12 +388,16 @@ class DirectoryNode(LiteralNode):
         self.depended_by = [] # parent
         self.targets = []
 
+class DefinitionPair:
+    def __init__(self, head, tail=None):
+        self.head = head
+        self.tail = tail
 
 # Not much for now, but might have more in the future
-class DefinitionNode(Node):
-    def __init__(self, index):
-        super().__init__('definition_{}'.format(index))
-        self.depends = []
+# Technically not really a custom command, but the depends attribute is useful
+class DefinitionNode(CustomCommandNode):
+    def __init__(self):
+        super().__init__('local_definitions')
 
 # Need a stack of project dirs.
 # Targets related to the dirs
@@ -403,7 +408,7 @@ class DefinitionNode(Node):
 # Might have unsatisfiable path in the graph for definitions.
 class AddDefinitionNode(CustomCommandNode):
     def __init__(self):
-        super().__init__('add_definition')
+        super().__init__('add_definitions')
 
     def handle(self):
         pass
@@ -411,7 +416,7 @@ class AddDefinitionNode(CustomCommandNode):
 
 class RemoveDefinitionNode(CustomCommandNode):
     def __init__(self):
-        super().__init__('remove_definition')
+        super().__init__('remove_definitions')
     
     def handle(self):
         pass
@@ -436,6 +441,7 @@ class Directory:
     def addChild(self, node, child):
         node.depended_by.append(child)
         child.depends_on.append(node)
+        self.map[child.name] = child
 
     def getTopologicalOrder(self, force=False):
         if self.topologicalOrder is not None and not force:
@@ -449,7 +455,7 @@ class Directory:
     def _dfs(self, node):
         def _visit(node):
             node.isVisited = True 
-            for child in node.children:
+            for child in node.depends_on:
                 if not child.isVisited:
                     _visit(child)
             _post(node)
@@ -465,7 +471,8 @@ class Directory:
     @classmethod
     def getInstance(cls):
         if cls._instance is None:
-            return Directory()
+            cls._instance = Directory()
+
         return cls._instance
 
     @classmethod
