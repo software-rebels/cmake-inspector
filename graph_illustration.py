@@ -1,4 +1,5 @@
 from datastructs import *
+from functools import reduce
 
 
 def getNodeShape(node: Node):
@@ -51,9 +52,10 @@ def getEdgeLabel(firstNode: Node, secondNode: Node):
         elif firstNode.args == secondNode:
             return "CONDITION"
     if isinstance(firstNode, CustomCommandNode):
-        if firstNode.commands and firstNode.commands[0] == secondNode:
+        # Why cant we just do this
+        if firstNode.commands and reduce(lambda x, y: x or y == secondNode, firstNode.commands, False):
             return "COMMANDS"
-        elif firstNode.depends and firstNode.depends[0] == secondNode:
+        elif firstNode.depends and reduce(lambda x, y: x or y == secondNode, firstNode.depends, False):
             return "DEPENDS"
     if isinstance(firstNode, OptionNode):
         if firstNode.depends == secondNode:

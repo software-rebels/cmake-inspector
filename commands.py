@@ -217,7 +217,7 @@ def addCompileOptionsCommand(arguments):
     vmodel.DIRECTORY_PROPERTIES.setKey('COMPILE_OPTIONS', newCompileOptions)
     newCompileOptions.addNode(targetNode)
 
-
+# We can probably merge both add and remove compile definition functions together
 def addCompileDefinitionsCommand(arguments):
     vmodel = VModel.getInstance()
     definitionNode = DefinitionNode()
@@ -225,17 +225,14 @@ def addCompileDefinitionsCommand(arguments):
     targetNode = util_handleConditions(nextNode, nextNode.name, None)
     newCompileOptions = AddDefinitionNode()
     
+    # To link a new definition node below the last added definition node, thus perserving 
+    # the command ordering in the cmake file    
     if last_definition_pair := vmodel.DIRECTORY_PROPERTIES.getOwnKey('COMPILE_DEFINITIONS_PAIRS'):
-        # this returns the latest Definition node
         last_definition_pair.tail.depends.append(definitionNode)
-        # newCompileOptions.depends.append(last_definition_pair.tail)
-    else:
-        # if we are adding a head node
+    else: # if we are adding a head node
         last_definition_pair = DefinitionPair(definitionNode)
-        vmodel.DIRECTORY_PROPERTIES.setKey('COMPILE_DEFINITIONS', last_definition_pair.head)
-
-        # Just for testing, adding head node
         vmodel.nodes.append(definitionNode)
+        vmodel.DIRECTORY_PROPERTIES.setKey('COMPILE_DEFINITIONS', last_definition_pair.head)
 
     newCompileOptions.commands.append(targetNode)
     definitionNode.depends.append(newCompileOptions)
@@ -249,40 +246,18 @@ def removeCompileDefinitionsCommand(arguments):
     nextNode = vmodel.expand(arguments)
     targetNode = util_handleConditions(nextNode, nextNode.name, None)
     newCompileOptions = RemoveDefinitionNode()
-    
-    if last_definition_pair := vmodel.DIRECTORY_PROPERTIES.getOwnKey('COMPILE_DEFINITIONS_PAIRS'):
-        # this returns the latest Definition node
-        last_definition_pair.tail.depends.append(definitionNode)
-        # newCompileOptions.depends.append(last_definition_pair.tail)
-    else:
-        # if we are adding a head node
-        last_definition_pair = DefinitionPair(definitionNode)
-        vmodel.DIRECTORY_PROPERTIES.setKey('COMPILE_DEFINITIONS', last_definition_pair.head)
 
-        # Just for testing, adding head node
+    if last_definition_pair := vmodel.DIRECTORY_PROPERTIES.getOwnKey('COMPILE_DEFINITIONS_PAIRS'):
+        last_definition_pair.tail.depends.append(definitionNode)
+    else:
+        last_definition_pair = DefinitionPair(definitionNode)
         vmodel.nodes.append(definitionNode)
+        vmodel.DIRECTORY_PROPERTIES.setKey('COMPILE_DEFINITIONS', last_definition_pair.head)
 
     newCompileOptions.commands.append(targetNode)
     definitionNode.depends.append(newCompileOptions)
     last_definition_pair.tail = definitionNode
     vmodel.DIRECTORY_PROPERTIES.setKey('COMPILE_DEFINITIONS_PAIRS', last_definition_pair)
-
-
-
-    # definitionNode = DefinitionNode()
-    # nextNode = vmodel.expand(arguments)
-    # targetNode = util_handleConditions(nextNode, nextNode.name, None)
-    # newCompileOptions = RemoveDefinitionNode()
-
-    # if last_definition_node := vmodel.DIRECTORY_PROPERTIES.getOwnKey('COMPILE_DEFINITIONS'):
-    #     # this returns the latest Definition node
-    #     newCompileOptions.depends.append(last_definition_node)
-    # newCompileOptions.commands.append(targetNode)
-    # definitionNode.depends.append(newCompileOptions)
-    # vmodel.DIRECTORY_PROPERTIES.setKey('COMPILE_DEFINITIONS', definitionNode)
-
-    # # Just for testing
-    # vmodel.nodes.append(definitionNode)
 
 
 def addLinkLibraries(arguments):
