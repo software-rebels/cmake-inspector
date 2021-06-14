@@ -270,6 +270,8 @@ class ComparisonExpression(LogicalExpression):
             return operator.lt
         elif self.logicType in ('EQUAL', 'STREQUAL', 'MATCHES'):
             return operator.eq
+        elif self.logicType in ('GREATER_EQUAL'):
+            return operator.ge
 
     def getAssertions(self):
         return simplify(self.returnOperator()(self.leftExpression.getAssertions(),
