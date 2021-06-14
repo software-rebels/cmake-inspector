@@ -51,7 +51,7 @@ class CycleDetectedException(Exception):
     pass
 
 
-def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=True, recStack=None):
+def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=True, recStack=None,ignoreSymbols=False):
     if conditions is None:
         conditions = set()
     if recStack is None:
@@ -82,8 +82,10 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
     elif isinstance(node, RefNode):
         # If RefNode is a symbolic node, it may not have point to attribute
         if node.getPointTo() is None:
-            flattedResult = [(node.rawName, conditions)]
-            # flattedResult = []
+            if ignoreSymbols:
+                flattedResult = []
+            else:
+                flattedResult = [(node.rawName, conditions)]
         else:
             flattedResult = flattenAlgorithmWithConditions(node.getPointTo(), conditions,
                                                            debug, recStack)

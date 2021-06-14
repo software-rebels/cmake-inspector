@@ -2317,5 +2317,26 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual('/usr/share/ECM/cmake/../../..', a[0][0])
         self.assertEqual('{APPLE}', str(a[0][1]))
         self.assertEqual(1, len(a))
+
+
+    def test_dependent_include(self):
+        text = """    
+        cmake_minimum_required( VERSION 3.0 )
+        
+        set(SNORE_VERSION_MAJOR 0)
+        set(SNORE_VERSION_MINOR 7)
+        set(SNORE_VERSION_PATCH 1)
+        
+        project( SnoreNotify VERSION "${SNORE_VERSION_MAJOR}.${SNORE_VERSION_MINOR}.${SNORE_VERSION_PATCH}" )
+        
+        include(FeatureSummary)
+        
+        find_package(ECM 1.7.0 REQUIRED NO_MODULE)
+        
+        set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${ECM_KDE_MODULE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules )
+        """
+        self.runTool(text)
+        print("done!")
+
 if __name__ == '__main__':
     unittest.main()

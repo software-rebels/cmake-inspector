@@ -158,7 +158,7 @@ class VModel:
                 continue
             nodes.add(node)
             if node.getChildren() is not None:
-                nodesToVisit += node.getChildren()
+                nodesToVisit += [childNode for childNode in node.getChildren() if childNode is not None]
                 # nodes.update(node.getChildren())
         return nodes
 

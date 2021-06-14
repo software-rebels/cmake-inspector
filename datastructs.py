@@ -330,7 +330,7 @@ class Lookup:
             self.variableHistory[key] = []
 
         self.variableHistory[key].append(value)
-        if parentScope:
+        if parentScope and len(self.items) > 1:
             self.items[-2][key] = value
         else:
             self.items[-1][key] = value

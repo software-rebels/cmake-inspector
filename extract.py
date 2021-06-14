@@ -41,7 +41,7 @@ find_package_lookup_directories=['cmake','CMake',':name',':name/cmake',':name/CM
                                  'share/:name/cmake','share/:name/CMake',':name/lib/cmake/:name',
                                  ':name/share/cmake/:name',':name/lib/:name',':name/share/:name',
                                  ':name/lib/:name/cmake',':name/lib/:name/CMake',':name/share/:name/cmake',
-                                 ':name/share/:name/CMake']
+                                 ':name/share/:name/CMake','lib/x86_64-linux-gnu/cmake/:name']
 find_package_prefix='/usr'
 includes_paths=[]
 
@@ -80,7 +80,10 @@ class CMakeExtractorListener(CMakeListener):
         self.logicalExpressionStack.append(orLogic)
 
     def exitLogicalEntity(self, ctx:CMakeParser.LogicalEntityContext):
-        variableLookedUp = lookupTable.getKey(f'${{{ctx.getText()}}}')
+        if len(ctx.getText()) and ctx.getText()[0]=="$":
+            variableLookedUp = lookupTable.getKey(f'${ctx.getText()}')
+        else:
+            variableLookedUp = lookupTable.getKey(f'${{{ctx.getText()}}}')
         localVariable = LocalVariable(ctx.getText())
         if variableLookedUp:
             try:
@@ -105,8 +108,16 @@ class CMakeExtractorListener(CMakeListener):
         ctx_left_get_text: str = ctx.left.getText()
         ctx_right_get_text: str = ctx.right.getText()
 
-        leftVariableLookedUp = lookupTable.getKey(f'${{{ctx_left_get_text}}}')
-        rightVariableLookedUp = lookupTable.getKey(f'${{{ctx_right_get_text}}}')
+        if ctx_left_get_text[0]=="$":
+            leftVariableLookedUp = lookupTable.getKey(f'{ctx_left_get_text}')
+        else:
+            leftVariableLookedUp = lookupTable.getKey(f'${{{ctx_left_get_text}}}')
+
+        if ctx_right_get_text[0]== "$":
+            rightVariableLookedUp = lookupTable.getKey(f'{ctx_right_get_text}')
+        else:
+            rightVariableLookedUp = lookupTable.getKey(f'${{{ctx_right_get_text}}}')
+
         operator = ctx.operator.getText().upper()
 
         localVariableType = 'string' if operator in ('STRLESS', 'STREQUAL', 'STRGREATER', 'MATCHES') else 'int'
@@ -118,27 +129,29 @@ class CMakeExtractorListener(CMakeListener):
             leftExpression = LocalVariable(ctx_left_get_text, localVariableType)
             self.flattenVariableInConditionExpression(leftExpression, leftVariableLookedUp)
         else:
-            if ctx_left_get_text.upper().startswith('CMAKE_'):
+            realVar = ctx_left_get_text.strip('"').lstrip('${').rstrip('}')
+            if realVar.upper().startswith('CMAKE_') or realVar.upper().startswith('${CMAKE_'):
                 # Reserved variable for CMake
-                variable_name = "${{{}}}".format(ctx_left_get_text)
+                variable_name = "${{{}}}".format(realVar)
                 variableNode = RefNode("{}".format(variable_name), None)
                 lookupTable.setKey(variable_name, variableNode)
-                leftExpression = LocalVariable(ctx_left_get_text, localVariableType)
+                leftExpression = LocalVariable(realVar, localVariableType)
             else:
-                leftExpression = ConstantExpression(ctx_left_get_text, constantExpressionType)
+                leftExpression = ConstantExpression(realVar, constantExpressionType)
 
         if rightVariableLookedUp:
             rightExpression = LocalVariable(ctx_right_get_text, localVariableType)
             self.flattenVariableInConditionExpression(rightExpression, rightVariableLookedUp)
         else:
-            if ctx_right_get_text.upper().startswith('CMAKE_'):
+            realVar = ctx_right_get_text.strip('"').lstrip('${').rstrip('}')
+            if realVar.upper().startswith('CMAKE_'):
                 # Reserved variable for CMake
-                variable_name = "${{{}}}".format(ctx_right_get_text)
+                variable_name = "${{{}}}".format(realVar)
                 variableNode = RefNode("{}".format(variable_name), None)
                 lookupTable.setKey(variable_name, variableNode)
-                rightExpression = LocalVariable(ctx_right_get_text, localVariableType)
+                rightExpression = LocalVariable(realVar, localVariableType)
             else:
-                rightExpression = ConstantExpression(ctx_right_get_text, constantExpressionType)
+                rightExpression = ConstantExpression(realVar, constantExpressionType)
 
         self.logicalExpressionStack.append(
             ComparisonExpression(leftExpression, rightExpression, operator)
@@ -146,7 +159,7 @@ class CMakeExtractorListener(CMakeListener):
 
     def flattenVariableInConditionExpression(self, expression: LocalVariable, variable: Node):
         # Flattening the variable used inside the condition, like [(True, {bar}), (False, {Not bar, john > 2})]
-        flattened = flattenAlgorithmWithConditions(variable) or []
+        flattened = flattenAlgorithmWithConditions(variable, ignoreSymbols=True) or []
         # We need to add an assertion to the solver, like {bar, foo == True} and {Not bar, john > 2, foo == False}
         temp_result = []
         for item in flattened:
@@ -295,9 +308,10 @@ class CMakeExtractorListener(CMakeListener):
         functionName = arguments.pop(0)
         vmodel.functions[functionName] = {'arguments': arguments, 'commands': bodyText, 'isMacro': isMacro}
 
+
     def includeCommand(self,arguments):
 
-
+        print(arguments)
         commandNode = CustomCommandNode("include")
         if 'RESULT_VARIABLE' in arguments:
             varIndex = arguments.index('RESULT_VARIABLE')
@@ -314,10 +328,10 @@ class CMakeExtractorListener(CMakeListener):
         # clean the include path
         while includedFile.find('//') != -1:
             includedFile = includedFile.replace('//','/')
-
         # We execute the command if we can find the CMake file and there is no condition to execute it
         if os.path.isfile(includedFile):
             parseFile(includedFile,True)
+
             # for item in vmodel.nodes:
             #     if item not in prevNodeStack:
             #         commandNode.commands.append(item)
@@ -326,16 +340,25 @@ class CMakeExtractorListener(CMakeListener):
                                                      LiteralNode(f"include_{includedFile}", includedFile))
             parseFile(os.path.join(includedFile, 'CMakeLists.txt'),True)
         else:
-            paths = [os.path.join(path,argsVal).replace('//','/')+'.cmake' for path in includes_paths]
-            paths += [os.path.join(path,argsVal).replace('//','/') for path in includes_paths]
-            foundModule = False
-            for path in paths:
-                if os.path.isfile(path):
-                    parseFile(path, True)
-                    foundModule = True
-            if not foundModule:
-                logging.error("[enterCommand_invocation] Cannot Find : {} to include".format(arguments))
-                vmodel.nodes.append(util_handleConditions(commandNode, commandNode.getName()))
+            cmake_module_paths = flattenAlgorithmWithConditions(vmodel.expand(["${CMAKE_MODULE_PATH}"]))
+            for cmake_module_path in cmake_module_paths:
+                if os.path.exists(os.path.join(cmake_module_path[0], f'{argsVal}.cmake').replace('//','/')):
+                    includePath = os.path.join(cmake_module_path[0], f'{argsVal}.cmake').replace('//','/')
+                    if os.path.isfile(includePath):
+                        parseFile(includePath, True)
+                        break
+                assert len(cmake_module_path[1]) == 0 # check if we have multiple conditions
+            else:
+                paths = [os.path.join(path,argsVal).replace('//','/')+'.cmake' for path in includes_paths]
+                paths += [os.path.join(path,argsVal).replace('//','/') for path in includes_paths]
+                foundModule = False
+                for path in paths:
+                    if os.path.isfile(path):
+                        parseFile(path, True)
+                        foundModule = True
+                if not foundModule:
+                    logging.error("[enterCommand_invocation] Cannot Find : {} to include".format(arguments))
+                    vmodel.nodes.append(util_handleConditions(commandNode, commandNode.getName()))
 
     def enterCommand_invocation(self, ctx: CMakeParser.Command_invocationContext):
         global project_dir
@@ -345,6 +368,12 @@ class CMakeExtractorListener(CMakeListener):
 
         commandId = ctx.Identifier().getText().lower()
         arguments = [child.getText() for child in ctx.argument().getChildren() if not isinstance(child, TerminalNode)]
+
+        # a hacky fix for consecutive double quotes
+        regex = r"^\"\"(.*?)\"\"$"
+        for idx, argument in enumerate(arguments):
+            arguments[idx] = argument.replace(regex,"")
+
 
         if vmodel.currentFunctionCommand is not None and commandId not in ('endfunction', 'endmacro'):
             vmodel.currentFunctionCommand.append((commandId, arguments))
@@ -419,12 +448,21 @@ class CMakeExtractorListener(CMakeListener):
             flattened_packageName = flattenAlgorithmWithConditions(packageName)
             for possible_include in flattened_packageName:
                 includePath = None
-                for index,path in enumerate(find_package_lookup_directories):
-                    if os.path.exists(os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0]}Config.cmake')):
-                        includePath = os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0]}Config.cmake')
-                    if os.path.exists(os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0].lower()}-config.cmake')):
-                        includePath = os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0].lower()}-config.cmake')
-
+                # First we check CMAKE_MODULE_PATH
+                cmake_module_paths = flattenAlgorithmWithConditions(vmodel.expand(["${CMAKE_MODULE_PATH}"]))
+                for cmake_module_path in cmake_module_paths:
+                    if os.path.exists(os.path.join(cmake_module_path[0],f'{possible_include[0]}Config.cmake')):
+                        includePath = os.path.exists(os.path.join(cmake_module_path[0],f'{possible_include[0]}Config.cmake'))
+                        break
+                    assert len(cmake_module_path[1]) == 0 and len(possible_include[1]) == 0 # check if we have multiple conditions
+                else:
+                    # If not found, then, we search in default directories
+                    for index,path in enumerate(find_package_lookup_directories):
+                        if os.path.exists(os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0]}Config.cmake')):
+                            includePath = os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0]}Config.cmake')
+                        if os.path.exists(os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0].lower()}-config.cmake')):
+                            includePath = os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0].lower()}-config.cmake')
+                    
                 if includePath:
                     util_create_and_add_refNode_for_variable(packageName.getValue() + "_CONFIG", LiteralNode(includePath, includePath))
                     if len(possible_include[1]):
@@ -463,7 +501,7 @@ class CMakeExtractorListener(CMakeListener):
                         project_dir = tempProjectDir
 
                 elif requiredPackage:
-                    raise Exception("Required package not found: {}".format(packageName))
+                    logging.error("Required package not found: {}".format(packageName.getValue()))
 
             # capitalArguments = [x.upper() for x in arguments]
             # projectVersion = None
@@ -685,7 +723,13 @@ class CMakeExtractorListener(CMakeListener):
             commandNode.commands.append(otherArgs)
 
             pathVariable = vmodel.expand([arguments[0]])
-            pathValue = flattenAlgorithmWithConditions(pathVariable)[0][0].rstrip('/')
+            tmp = flattenAlgorithmWithConditions(pathVariable)
+            if tmp:
+                pathValue = tmp[0][0].rstrip('/')
+            else:
+                pathValue = pathVariable
+
+
             capitalArguments = [x.upper() for x in arguments]
 
             if 'DIRECTORY' in capitalArguments or 'PATH' in capitalArguments:
@@ -735,7 +779,6 @@ class CMakeExtractorListener(CMakeListener):
                 if not len(pathValue) or pathValue[0]!='/':
                     base_dir_idx = capitalArguments.index('BASE_DIR') + 1
                     pathValue = os.path.join(arguments[base_dir_idx],pathValue).rstrip('/')
-
             setCommand([varName,pathValue])
 
         # build_command(<variable>
@@ -1140,6 +1183,8 @@ class CMakeExtractorListener(CMakeListener):
             elif commandType in ('COMPARE', 'SUBSTRING'):
                 outVar = arguments.pop(4)
             elif commandType in ('ASCII', 'RANDOM'):
+                outVar = arguments.pop()
+            elif commandType in ('APPEND', 'PREPEND'):
                 outVar = arguments.pop()
             elif commandType in ('CONFIGURE', 'TOUPPER', 'TOLOWER', 'LENGTH', 'STRIP',
                                  'MAKE_C_IDENTIFIER', 'GENEX_STRIP'):
@@ -1972,7 +2017,8 @@ class CMakeExtractorListener(CMakeListener):
             functionBody:str = customFunction.get('commands')
 
             for arg in functionArguments:
-                functionBody = functionBody.replace("${{{}}}".format(arg), arguments[functionArguments.index(arg)])
+                # strip is a hacky fix for consecutive double quotes when input is pass multiple times as function inputs
+                functionBody = functionBody.replace("${{{}}}".format(arg), arguments[functionArguments.index(arg)].strip('"'))
 
             lexer = CMakeLexer(InputStream(functionBody))
             stream = CommonTokenStream(lexer)
@@ -2005,6 +2051,8 @@ def initialize(input,isPath):
     util_create_and_add_refNode_for_variable('CMAKE_CURRENT_SOURCE_DIR', LiteralNode(project_dir, project_dir))
     util_create_and_add_refNode_for_variable('CMAKE_SOURCE_DIR', LiteralNode(project_dir, project_dir))
     util_create_and_add_refNode_for_variable('CMAKE_CURRENT_LIST_DIR', LiteralNode(project_dir, project_dir))
+    util_create_and_add_refNode_for_variable('CMAKE_VERSION', LiteralNode('cmakeVersion', '3.16'))
+    util_create_and_add_refNode_for_variable('CMAKE_MODULE_PATH', ConcatNode('cmakeVersion'))
     if isPath:
         parseFile(os.path.join(project_dir, 'CMakeLists.txt'),True)
     else:
@@ -2015,8 +2063,11 @@ def initialize(input,isPath):
 def parseFile(fileInput,isPath=True):
     if isPath:
         inputFile = FileStream(fileInput, encoding='utf-8')
+        util_create_and_add_refNode_for_variable('CMAKE_CURRENT_LIST_FILE',LiteralNode(fileInput, fileInput))
     else:
         inputFile = InputStream(fileInput)
+        util_create_and_add_refNode_for_variable('CMAKE_CURRENT_LIST_FILE',LiteralNode('no_file', ''))
+
 
     lexer = CMakeLexer(inputFile)
     stream = CommonTokenStream(lexer)
@@ -2034,7 +2085,7 @@ def getGraph(directory):
     # util_create_and_add_refNode_for_variable('CMAKE_SOURCE_DIR', LiteralNode(project_dir, project_dir))
     # util_create_and_add_refNode_for_variable('CMAKE_CURRENT_LIST_DIR', LiteralNode(project_dir, project_dir))
     # parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
-    initialize(os.path.join(project_dir, 'CMakeLists.txt'),True)
+    initialize(project_dir,True)
     vmodel.findAndSetTargets()
     return vmodel, lookupTable
 
