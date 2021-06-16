@@ -1,3 +1,0 @@
-/home/lazypanda/Code/URF/cmake-inspector/test/test_cmake_file/test_directory/CMakeFiles/rebuild_cache.dir
-/home/lazypanda/Code/URF/cmake-inspector/test/test_cmake_file/test_directory/CMakeFiles/edit_cache.dir
-/home/lazypanda/Code/URF/cmake-inspector/test/test_cmake_file/test_directory/CMakeFiles/foo.dir
