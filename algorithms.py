@@ -10,7 +10,7 @@ from datastructs import Node, LiteralNode, RefNode, CustomCommandNode, SelectNod
 from vmodel import VModel
 
 
-definition_stack = set()
+directory_definition_stack = set()
 
 def flattenAlgorithm(node: Node):
     if isinstance(node, LiteralNode):
@@ -241,37 +241,41 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
         result = flattenAlgorithmWithConditions(node.depends[0], conditions, recStack=recStack)
         for argument in arguments:
             del result[argument.getValue()]
+    
+    elif 'target_compile_definition' in node.getName().lower():
+        result = []
 
-    # Using in is a horrible idea :(
     elif 'local_definitions' in node.getName().lower():
-        # There is only one dependent for each definition node
-        print(f"definition: {node.depends[0].name}")
-        result = flattenAlgorithmWithConditions(node.depends[0], conditions, recStack=recStack)
+        # Normally, there are 2 dependents for each definition node: local_definition_(i+1) and a 
+        # definition command like add_definition. Sometimes, we also have to concat
+        # Also, the ordering here is important because index 0 is the command, index 1 is 
+        # the local_definitions_(i+1)
+        result = []
+        for dependent in node.depends:
+            result += flattenAlgorithmWithConditions(dependent, conditions, recStack=recStack)
 
     elif 'add_definitions' in node.getName().lower():
-        global definition_stack
+        global directory_definition_stack
         result = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
         flags_to_add = [flag[0] for flag in result]
         for flag in flags_to_add:
-            definition_stack.add(flag)
-        print(f"Add definition: {flags_to_add}")
+            directory_definition_stack.add(flag)
 
     elif 'remove_definitions' in node.getName().lower():
-        # if already added, then add the negation of the remove condition
-        # otherwise, dont do anything
-        # print(result := flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack))
         result = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
         flags_to_remove = [flag[0] for flag in result]
 
-        for flag in flags_to_remove:
-            if flag not in definition_stack:
+        for idx, flag in enumerate(flags_to_remove):
+            if flag not in directory_definition_stack:
                 # Since the flags have not been introduced by add_definitions, 
                 # there is nothing we need to do
+                print(f"REMOVE: flags {flag} not yet added")
                 continue
             else:
-                # take the negation of all the nodes condition?
-                pass
-        print(f"remove definition {result}")
+                # take the negation of all of the nodes' condition
+                old_flag, old_condition = result[idx]
+                new_condition = {Not(And(*old_condition))}
+                result[idx] = (old_flag, new_condition)
     return result
 
 

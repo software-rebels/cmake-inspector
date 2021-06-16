@@ -305,11 +305,11 @@ class CMakeExtractorListener(CMakeListener):
 
         # add_definitions(-DFOO -DBAR ...)
         elif commandId == 'add_definitions':
-            addCompileDefinitionsCommand(arguments)
+            handleCompileDefinitionCommand(arguments, command='add', is_option=False)
 
         # remove_definitions(-DFOO -DBAR ...)
         elif commandId == 'remove_definitions':
-            removeCompileDefinitionsCommand(arguments)
+            handleCompileDefinitionCommand(arguments, command='remove', is_option=False)
 
         # load_cache(pathToCacheFile READ_WITH_PREFIX
         #    prefix entry1...)
@@ -1171,11 +1171,14 @@ class CMakeExtractorListener(CMakeListener):
             handleProperty(interfaceSystemIncludeDirectories, 'interfaceSystemIncludeDirectories')
 
         elif commandId == 'add_compile_definitions':
-            addCompileDefinitionsCommand(arguments)
+            handleCompileDefinitionCommand(arguments, command='add', is_option=False)
 
         elif commandId == 'add_compile_options':
-            addCompileOptionsCommand(arguments)
+            handleCompileDefinitionCommand(arguments, command='add', is_option=False)
 
+        elif commandId == 'target_compile_definitions':
+            addCompileTargetDefinitionsCommand(arguments)
+        
         # link_libraries([item1 [item2 [...]]]
         #        [[debug|optimized|general] <item>] ...)
         elif commandId == 'link_libraries':
@@ -1302,6 +1305,7 @@ def getGraph(directory):
     linkDirectory()
     return vmodel, lookupTable
 
+
 def linkDirectory():
     topological_order = directoryTree.getTopologicalOrder()
     # Setting the correct definition dependency based on directory
@@ -1333,12 +1337,6 @@ def linkDirectory():
             else:
                 # maybe target definitions can be concat node?
                 raise ValueError("Definition type mismatch")
-    
-
-# TODO: deduplicate definitions, shrink the graph, and resolve satisfiability stuff
-# un-bloat the graph
-def deduplicateAndShrinkDefinitions():
-    pass
 
 
 def getFlattenedFilesForTarget(target: str):

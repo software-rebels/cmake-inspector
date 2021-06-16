@@ -1247,15 +1247,14 @@ class TestVariableDefinitions(unittest.TestCase):
     def test_remove_definitions(self):
         text = """
         if(AMD)
-            remove_definitions(-Djohn -Dbar)
-            add_definitions(-Dfoo)
-        else()
+        if(BMD)
             add_definitions(-Dbar)
+            remove_definitions(-Djohn -Dbar)
+            target_compile_definition(foo PUBLIC test)
             add_library(foo bar.cxx car.cxx far.cxx)
+        endif(BMD)
         endif(AMD)
         add_definitions(-Djohn -Dtest)
-        add_library(boo bar.cxx car.cxx far.cxx)
-
         """
         self.runTool(text)
         directory = Directory.getInstance()

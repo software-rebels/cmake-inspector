@@ -1,3 +1,4 @@
+from operator import is_
 from typing import Optional, List
 import copy
 
@@ -388,38 +389,29 @@ class DirectoryNode(LiteralNode):
         self.depended_by = [] # parent
         self.targets = []
 
+
 class DefinitionPair:
     def __init__(self, head, tail=None):
         self.head = head
         self.tail = tail
 
+
 # Not much for now, but might have more in the future
 # Technically not really a custom command, but the depends attribute is useful
 class DefinitionNode(CustomCommandNode):
-    def __init__(self):
+    def __init__(self, is_option=False, from_dir=True):
         super().__init__('local_definitions')
+        self.is_option = is_option
+        self.from_dir = from_dir
 
-# Need a stack of project dirs.
-# Targets related to the dirs
-# A stack of definition nodes to concat
-# Not by directory but by targets
+
 # Repeated flags need to be taken care of
-
 # Might have unsatisfiable path in the graph for definitions.
-class AddDefinitionNode(CustomCommandNode):
-    def __init__(self):
-        super().__init__('add_definitions')
-
-    def handle(self):
-        pass
-
-
-class RemoveDefinitionNode(CustomCommandNode):
-    def __init__(self):
-        super().__init__('remove_definitions')
-    
-    def handle(self):
-        pass
+class CommandDefinitionNode(CustomCommandNode):
+    def __init__(self, command):
+        if not command in ['add', 'remove']:
+            raise ValueError(f'CommandDefinitionNode given wrong initialization input: {command}')
+        super().__init__(f'{command}_definitions')
 
 
 class Directory:
