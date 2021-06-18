@@ -305,11 +305,11 @@ class CMakeExtractorListener(CMakeListener):
 
         # add_definitions(-DFOO -DBAR ...)
         elif commandId == 'add_definitions':
-            handleCompileDefinitionCommand(arguments, command='add', is_option=False)
+            handleCompileDefinitionCommand(arguments, command='add')
 
         # remove_definitions(-DFOO -DBAR ...)
         elif commandId == 'remove_definitions':
-            handleCompileDefinitionCommand(arguments, command='remove', is_option=False)
+            handleCompileDefinitionCommand(arguments, command='remove')
 
         # load_cache(pathToCacheFile READ_WITH_PREFIX
         #    prefix entry1...)

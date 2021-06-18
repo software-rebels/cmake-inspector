@@ -262,10 +262,11 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
             directory_definition_stack.add(flag)
 
     elif 'remove_definitions' in node.getName().lower():
-        result = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
-        flags_to_remove = [flag[0] for flag in result]
-
-        for idx, flag in enumerate(flags_to_remove):
+        temp_result = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
+        print(f'REMOVE LOG: {temp_result}, {directory_definition_stack}')
+        result = []
+        for e in temp_result:
+            flag, condition = e[0], e[1]
             if flag not in directory_definition_stack:
                 # Since the flags have not been introduced by add_definitions, 
                 # there is nothing we need to do
@@ -273,9 +274,14 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
                 continue
             else:
                 # take the negation of all of the nodes' condition
-                old_flag, old_condition = result[idx]
-                new_condition = {Not(And(*old_condition))}
-                result[idx] = (old_flag, new_condition)
+                if len(condition) == 0:
+                    new_condition = {}
+                elif len(condition) == 1:
+                    new_condition = {Not(*condition)}
+                else:
+                    new_condition = {Not(And(*condition))}
+                
+                result.append((flag, new_condition))
     return result
 
 

@@ -401,6 +401,7 @@ class DefinitionPair:
 class DefinitionNode(CustomCommandNode):
     def __init__(self, is_option=False, from_dir=True):
         super().__init__('local_definitions')
+        # For now, is_option is useless
         self.is_option = is_option
         self.from_dir = from_dir
 
@@ -408,10 +409,17 @@ class DefinitionNode(CustomCommandNode):
 # Repeated flags need to be taken care of
 # Might have unsatisfiable path in the graph for definitions.
 class CommandDefinitionNode(CustomCommandNode):
-    def __init__(self, command):
+    def __init__(self, command, is_option):
         if not command in ['add', 'remove']:
             raise ValueError(f'CommandDefinitionNode given wrong initialization input: {command}')
-        super().__init__(f'{command}_definitions')
+        name = ''
+        if is_option is None:
+            name = f'{command}_definitions'
+        elif is_option:
+            name = f'{command}_compile_options'
+        else:
+            name = f'{command}_compile_definitions'
+        super().__init__(name)
 
 
 class Directory:
