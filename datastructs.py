@@ -73,6 +73,7 @@ class TargetNode(Node):
         self.interfaceIncludeDirectories = None  # Property of Target
         self.interfaceSystemIncludeDirectories = None  # Property of Target
         self.definitions = None
+        self.interfaceDefinitions = None  # Not sure if we need this yet
         self.linkLibraries = None
 
         self.scope = None
@@ -103,6 +104,8 @@ class TargetNode(Node):
             result.append(self.sources)
         if self.definitions:
             result.append(self.definitions)
+        if self.interfaceDefinitions:
+            result.append(self.interfaceDefinitions)
         if self.linkLibraries:
             result.append(self.linkLibraries)
         if self.interfaceSources:
@@ -399,27 +402,29 @@ class DefinitionPair:
 # Not much for now, but might have more in the future
 # Technically not really a custom command, but the depends attribute is useful
 class DefinitionNode(CustomCommandNode):
-    def __init__(self, is_option=False, from_dir=True):
-        super().__init__('local_definitions')
-        # For now, is_option is useless
-        self.is_option = is_option
+    def __init__(self, from_dir=True, is_flag=False):
+        super().__init__(f"{'directory' if from_dir else 'target'}_definitions")
+        self.is_flag = is_flag
         self.from_dir = from_dir
 
 
 # Repeated flags need to be taken care of
 # Might have unsatisfiable path in the graph for definitions.
 class CommandDefinitionNode(CustomCommandNode):
-    def __init__(self, command, is_option):
+    def __init__(self, command, specific=False):
         if not command in ['add', 'remove']:
             raise ValueError(f'CommandDefinitionNode given wrong initialization input: {command}')
         name = ''
-        if is_option is None:
-            name = f'{command}_definitions'
-        elif is_option:
-            name = f'{command}_compile_options'
-        else:
+        if specific:
             name = f'{command}_compile_definitions'
+        else:
+            name = f'{command}_definitions'
         super().__init__(name)
+
+
+class TargetCompileDefinitionNode(CustomCommandNode):
+    def __init__(self):
+        super().__init__('target_compile_definitions')
 
 
 class Directory:

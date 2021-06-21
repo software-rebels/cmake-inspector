@@ -305,11 +305,11 @@ class CMakeExtractorListener(CMakeListener):
 
         # add_definitions(-DFOO -DBAR ...)
         elif commandId == 'add_definitions':
-            handleCompileDefinitionCommand(arguments, command='add')
+            handleCompileDefinitionCommand(arguments, command='add', specific=False)
 
         # remove_definitions(-DFOO -DBAR ...)
         elif commandId == 'remove_definitions':
-            handleCompileDefinitionCommand(arguments, command='remove')
+            handleCompileDefinitionCommand(arguments, command='remove', specific=False)
 
         # load_cache(pathToCacheFile READ_WITH_PREFIX
         #    prefix entry1...)
@@ -1094,13 +1094,11 @@ class CMakeExtractorListener(CMakeListener):
             node = util_create_and_add_refNode_for_variable(variable_name, vmodel.expand(files))
             vmodel.nodes.append(node)
 
-
         elif commandId == 'add_library':
             directory_node = directoryTree.find(project_dir)
             target_node = addTarget(arguments, False)
             directory_node.targets.append(target_node)
-            print(directory_node)
-
+            
         elif commandId == 'add_executable':
             directory_node = directoryTree.find(project_dir)
             target_node = addTarget(arguments, True)
@@ -1171,11 +1169,11 @@ class CMakeExtractorListener(CMakeListener):
             handleProperty(interfaceSystemIncludeDirectories, 'interfaceSystemIncludeDirectories')
 
         elif commandId == 'add_compile_definitions':
-            handleCompileDefinitionCommand(arguments, command='add', is_option=False)
+            handleCompileDefinitionCommand(arguments, command='add', specific=True)
 
         elif commandId == 'add_compile_options':
-            handleCompileDefinitionCommand(arguments, command='add', is_option=False)
-
+            addCompileOptionsCommand(arguments)
+        
         elif commandId == 'target_compile_definitions':
             addCompileTargetDefinitionsCommand(arguments)
         
@@ -1188,18 +1186,19 @@ class CMakeExtractorListener(CMakeListener):
         elif commandId == 'link_directories':
             addLinkDirectories(arguments)
 
-        elif commandId == 'target_compile_definitions':
-            # This command add a definition to the current ones. So we should add it in all the possible paths
-            targetName = arguments.pop(0)
-            targetName = flattenAlgorithmWithConditions(vmodel.expand([targetName]))[0][0]
-            scope = None
-            targetNode = lookupTable.getKey('t:{}'.format(targetName))
-            assert isinstance(targetNode, TargetNode)
-            nextNode = vmodel.expand(arguments)
-            if scope:
-                nextNode.name = scope + "_" + nextNode.name
-            # vmodel.addNode(nextNode)
-            targetNode.setDefinition(util_handleConditions(nextNode, nextNode, targetNode.getDefinition()))
+        # elif commandId == 'target_compile_definitions':
+        #     # This command add a definition to the current ones. So we should add it in all the possible paths
+        #     targetName = arguments.pop(0)
+        #     targetName = flattenAlgorithmWithConditions(vmodel.expand([targetName]))[0][0]
+        #     scope = None
+        #     targetNode = lookupTable.getKey('t:{}'.format(targetName))
+        #     assert isinstance(targetNode, TargetNode)
+        #     nextNode = vmodel.expand(arguments)
+        #     if scope:
+        #         nextNode.name = scope + "_" + nextNode.name
+        #     print(nextNode)
+        #     vmodel.addNode(nextNode)
+        #     targetNode.setDefinition(util_handleConditions(nextNode, nextNode, targetNode.getDefinition()))
 
         elif commandId in ('target_link_libraries', 'add_dependencies'):
             customCommand = CustomCommandNode(commandId)
@@ -1311,9 +1310,9 @@ def linkDirectory():
     # Setting the correct definition dependency based on directory
     for dir_node in topological_order:
         cur_dir = dir_node.name
-        print(vmodel.directory_to_properties)
         definition_node = vmodel.directory_to_properties.get(cur_dir).getOwnKey('COMPILE_DEFINITIONS')
         # For root node, the concat node is pointless, but added for consistency.
+        # The reason we need this extra concat node is for subdirectory to inherit from it
         local_definition_node = ConcatNode('inherit_definition_{}'.format(vmodel.getNextCounter()))
         local_definition_node.addNode(definition_node)
         for parent_node in dir_node.depended_by:
@@ -1323,8 +1322,7 @@ def linkDirectory():
             local_definition_node.addNode(parent_definition_node)
         vmodel.directory_to_properties.get(cur_dir).setKey('COMPILE_DEFINITIONS', local_definition_node)
     
-        # Need to use concat node for target_compile_definitions, 
-        # then we can concat our directory definitions to it
+        # Merging target definitions and directory definitions for each single target, over all directories
         for target in dir_node.targets:
             if target.definitions is None:
                 target.setDefinition(local_definition_node)
@@ -1332,7 +1330,7 @@ def linkDirectory():
                 # this is for cases when we add definition directly to target
                 target_definition_node = ConcatNode('merge_inherit_definition_{}'.format(vmodel.getNextCounter()))
                 target_definition_node.addNode(target.definitions)
-                target_definition_node.addChild(local_definition_node)
+                target_definition_node.addNode(local_definition_node)
                 target.setDefinition(target_definition_node)
             else:
                 # maybe target definitions can be concat node?

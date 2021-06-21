@@ -241,18 +241,24 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
         result = flattenAlgorithmWithConditions(node.depends[0], conditions, recStack=recStack)
         for argument in arguments:
             del result[argument.getValue()]
-    
-    elif 'target_compile_definition' in node.getName().lower():
-        result = []
-
-    elif 'local_definitions' in node.getName().lower():
-        # Normally, there are 2 dependents for each definition node: local_definition_(i+1) and a 
+ 
+    elif 'directory_definitions' in node.getName().lower():
+        # Normally, there are 2 dependents for each definition node: 'directory_definition_(i+1) and a 
         # definition command like add_definition. Sometimes, we also have to concat
         # Also, the ordering here is important because index 0 is the command, index 1 is 
-        # the local_definitions_(i+1)
+        # the directory_definitions_(i+1)
         result = []
         for dependent in node.depends:
             result += flattenAlgorithmWithConditions(dependent, conditions, recStack=recStack)
+    
+    elif 'target_definitions' in node.getName().lower():
+        # Similar to the directory_definitions
+        result = []
+        for dependent in node.depends:
+            result += flattenAlgorithmWithConditions(dependent, conditions, recStack=recStack)
+
+    elif 'target_compile_definitions' in node.getName().lower():
+        result = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
 
     elif 'add_definitions' in node.getName().lower():
         global directory_definition_stack
@@ -263,7 +269,6 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
 
     elif 'remove_definitions' in node.getName().lower():
         temp_result = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
-        print(f'REMOVE LOG: {temp_result}, {directory_definition_stack}')
         result = []
         for e in temp_result:
             flag, condition = e[0], e[1]

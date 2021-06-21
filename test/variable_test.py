@@ -1238,8 +1238,11 @@ class TestVariableDefinitions(unittest.TestCase):
     def test_remove_definitions(self):
         text = """
         if(AMD)
-            add_definitions(-Dbar -Wall -Werror)
+            add_definitions(/Dbar -Wall -Werror)
             add_library(foo bar.cxx car.cxx far.cxx)
+            target_compile_definitions(foo PUBLIC bar)
+            target_compile_definitions(foo PRIVATE test2)
+            target_compile_definitions(foo INTERFACE test3)
         else()
             remove_definitions(-Djohn -Dbar)
         endif(AMD)
@@ -1248,7 +1251,6 @@ class TestVariableDefinitions(unittest.TestCase):
         directory = Directory.getInstance()
         from extract import linkDirectory
         linkDirectory()
-        print(directory.map)
         self.vmodel.export()
         # print(defn := self.lookup.getKey('t:foo').definitions)
         print(f"Flattened result: {flattenAlgorithmWithConditions(self.lookup.getKey('t:foo').definitions)}")

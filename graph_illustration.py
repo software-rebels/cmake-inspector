@@ -24,6 +24,8 @@ def getEdgeLabel(firstNode: Node, secondNode: Node):
     if isinstance(firstNode, TargetNode):
         if firstNode.definitions == secondNode:
             return "Definitions"
+        if firstNode.interfaceDefinitions == secondNode:
+            return "Interface_definitions"
         if firstNode.linkLibraries == secondNode:
             return "Libraries"
         if firstNode.sources == secondNode:
@@ -36,7 +38,7 @@ def getEdgeLabel(firstNode: Node, secondNode: Node):
             return "Interface_compile_features"
         if firstNode.compileOptions == secondNode:
             return "Compile_options"
-        if firstNode.interfaceCompileFeatures == secondNode:
+        if firstNode.interfaceCompileOptions == secondNode:
             return "Interface_compile_options"
         if firstNode.includeDirectories == secondNode:
             return "INCLUDE_DIRECTORIES"

@@ -1,7 +1,11 @@
+from operator import concat
+from re import L
+
+from z3.z3 import Concat
 from algorithms import flattenAlgorithmWithConditions
 from condition_data_structure import Rule
 from datastructs import Lookup, CustomCommandNode, TargetNode, ConcatNode, \
-WhileCommandNode, DefinitionNode, CommandDefinitionNode, DefinitionPair
+WhileCommandNode, DefinitionNode, CommandDefinitionNode, DefinitionPair, TargetCompileDefinitionNode
 from grammar.CMakeLexer import CMakeLexer, CommonTokenStream, InputStream
 from grammar.CMakeParser import CMakeParser
 from utils import *
@@ -204,34 +208,92 @@ def fileCommand(arguments, project_dir):
     vmodel.nodes.append(fileCommandNode)
 
 
-# def addCompileOptionsCommand(arguments):
-#     vmodel = VModel.getInstance()
+def addCompileOptionsCommand(arguments):
+    vmodel = VModel.getInstance()
 
-#     nextNode = vmodel.expand(arguments)
-#     targetNode = util_handleConditions(nextNode, nextNode.name, None)
+    nextNode = vmodel.expand(arguments)
+    targetNode = util_handleConditions(nextNode, nextNode.name, None)
 
-#     newCompileOptions = ConcatNode("COMPILE_OPTIONS_{}".format(vmodel.getNextCounter()))
-#     if vmodel.DIRECTORY_PROPERTIES.getOwnKey('COMPILE_OPTIONS'):
-#         newCompileOptions.listOfNodes = list(vmodel.DIRECTORY_PROPERTIES.getKey('COMPILE_OPTIONS').listOfNodes)
+    newCompileOptions = ConcatNode("COMPILE_OPTIONS_{}".format(vmodel.getNextCounter()))
+    if vmodel.DIRECTORY_PROPERTIES.getOwnKey('COMPILE_OPTIONS'):
+        newCompileOptions.listOfNodes = list(vmodel.DIRECTORY_PROPERTIES.getKey('COMPILE_OPTIONS').listOfNodes)
 
-#     vmodel.DIRECTORY_PROPERTIES.setKey('COMPILE_OPTIONS', newCompileOptions)
-#     newCompileOptions.addNode(targetNode)
+    vmodel.DIRECTORY_PROPERTIES.setKey('COMPILE_OPTIONS', newCompileOptions)
+    newCompileOptions.addNode(targetNode)
 
 
 def addCompileTargetDefinitionsCommand(arguments):
-    pass
-
-
-def handleCompileDefinitionCommand(arguments, command, is_option=None):
-    # This handles add and remove commands for both preprocessor definitions and options
-    # Currently, is_option does nothing
-    # KEY_PREFIX = 'COMPILE_OPTIONS' if is_option else 'COMPILE_DEFINITIONS'
+    # This command add a definition to the current ones. So we should add it in all the possible paths
+    vmodel = VModel.getInstance()
+    lookup = Lookup.getInstance()
     
+    targetName = arguments.pop(0)
+    targetName = flattenAlgorithmWithConditions(vmodel.expand([targetName]))[0][0]
+    targetNode = lookup.getKey('t:{}'.format(targetName))
+    assert isinstance(targetNode, TargetNode)
+
+    scope = arguments.pop(0)
+    to_interface = to_definition = False
+
+    if scope == 'PUBLIC':
+        to_interface = to_definition = True
+    elif scope == 'PRIVATE':
+        to_definition = True
+    elif scope == 'INTERFACE':
+        to_interface = True
+        pass
+    else:
+        raise ValueError(f'target_compile_definitions is given an invalid scope: {scope}')
+    
+    definition_names = util_preprocess_definition_names(arguments, force=True)
+
+    if to_definition:
+        # similar to the directory definition case, but since ordering here does not matter
+        # we do not have to use DefinitionPair for flipping the path.
+        new_definition_node = DefinitionNode(from_dir=False)
+        new_target_command_node = TargetCompileDefinitionNode()
+        next_node = vmodel.expand(definition_names)
+        depended_node = util_handleConditions(next_node, next_node.name, None)
+        new_target_command_node.commands.append(depended_node)
+        new_definition_node.depends.append(new_target_command_node)
+        
+        current_definition = targetNode.definitions
+        if current_definition is not None:
+            assert isinstance(current_definition, DefinitionNode)
+            new_definition_node.depends.append(targetNode.definitions)
+        
+        vmodel.nodes.append(new_definition_node)
+        targetNode.definitions = new_definition_node
+
+    # Although the code is very similar to above, it has to be separated 
+    # because, we do not want interface definition nodes to be dependent 
+    # on definition nodes, or vice versa.
+    if to_interface:
+        new_definition_node = DefinitionNode(from_dir=False)
+        new_target_command_node = TargetCompileDefinitionNode()
+        next_node = vmodel.expand(definition_names)
+        depended_node = util_handleConditions(next_node, next_node.name, None)
+        new_target_command_node.commands.append(depended_node)
+        new_definition_node.depends.append(new_target_command_node)
+        
+        current_definition = targetNode.interfaceDefinitions
+        if current_definition is not None:
+            assert isinstance(current_definition, DefinitionNode)
+            new_definition_node.depends.append(targetNode.interfaceDefinitions)
+
+        vmodel.nodes.append(new_definition_node)
+        targetNode.interfaceDefinitions = new_definition_node
+
+
+def handleCompileDefinitionCommand(arguments, command, specific):
+    # This handles add and remove commands for both preprocessor definitions
     KEY_PREFIX = 'COMPILE_DEFINITIONS'
 
     vmodel = VModel.getInstance()
-    newCompileOptions = CommandDefinitionNode(command=command, is_option=is_option)
-    definitionNode = DefinitionNode(is_option=is_option)
+    newDefinitionCommand = CommandDefinitionNode(command=command, specific=specific)
+    definitionNode = DefinitionNode()
+    arguments = util_preprocess_definition_names(arguments)
+    # print(f"Arguments: {arguments}")
     nextNode = vmodel.expand(arguments)
     targetNode = util_handleConditions(nextNode, nextNode.name, None)
     
@@ -244,8 +306,8 @@ def handleCompileDefinitionCommand(arguments, command, is_option=None):
         vmodel.nodes.append(definitionNode)
         vmodel.DIRECTORY_PROPERTIES.setKey(f'{KEY_PREFIX}', last_definition_pair.head)
 
-    newCompileOptions.commands.append(targetNode)
-    definitionNode.depends.append(newCompileOptions)
+    newDefinitionCommand.commands.append(targetNode)
+    definitionNode.depends.append(newDefinitionCommand)
     last_definition_pair.tail = definitionNode
     vmodel.DIRECTORY_PROPERTIES.setKey(f'{KEY_PREFIX}_PAIRS', last_definition_pair)
 
