@@ -133,9 +133,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
 
     elif isinstance(node, ConcatNode):
         result = list()
-        children = node.getChildren()
-        
-        for idx, item in enumerate(children):
+        for idx, item in enumerate(node.getChildren()):
 
             childSet = flattenAlgorithmWithConditions(item, conditions, debug, recStack)
             tempSet = list()
@@ -180,6 +178,10 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                             tempSet.append((str1[0], str1[1]))
 
             result = list(tempSet)
+        for idx,res in enumerate(result):
+            if isinstance(res[0],str):
+                result[idx] = (res[0].replace('//', '/'), res[1])
+
         flattedResult = result if result != [''] else []
     recStack.remove(node)
     return flattedResult
@@ -191,7 +193,12 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
     if conditions is None:
         conditions = set()
     result = None
-    if 'file' in node.getName().lower():
+    if 'get_filename_component' in node.getName().lower():
+        arguments = node.commands[0].getChildren()
+        result = flattenAlgorithmWithConditions(arguments[0])
+        if (len(result)):
+            return result
+    elif 'file' in node.getName().lower():
         arguments = node.commands[0].getChildren()
         fileCommandType = arguments[0].getValue()
         if fileCommandType.upper() == 'GLOB':
@@ -244,12 +251,13 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
                 if item[0] == argument[0]:
                     result = [i for i in result if i != item]
 
-    elif 'remove_at' in node.getName().lower():
+    elif 'string_' in node.getName().lower():
         arguments = node.commands[0].getChildren()
-        result = flattenAlgorithmWithConditions(node.depends[0], conditions, recStack=recStack)
-        for argument in arguments:
-            del result[argument.getValue()]
- 
+        if(node.commands[0].getChildren()[0].getName().lower()=='regex'):
+            result = flattenAlgorithmWithConditions(node.commands[0].getChildren()[4], conditions, recStack=recStack)
+        else: #TODO: add other cases!
+            print('string_ need to be completed!')
+
     elif 'directory_definitions' in node.getName().lower():
         # Normally, there are 2 dependents for each definition node: 'directory_definition_(i+1) and a 
         # definition command like add_definition. Sometimes, we also have to concat
@@ -297,6 +305,15 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
                 else:
                     new_condition = {Not(And(*condition))}
             result.append((flag, new_condition))
+    else:
+        # TODO: check for future
+        print(node.getName().lower())
+        print(node)
+        print("hey! do not ignore me!")
+        pass
+        result = flattenAlgorithmWithConditions(node.depends[0], conditions, recStack=recStack)
+        for argument in arguments:
+            del result[argument.getValue()]
     return result
 
 
@@ -324,7 +341,6 @@ def getFlattenedDefinitionsFromNode(node: Node, conditions: Set = None, debug=Tr
     # we have to reconcile the data with the target side.
     result = mergeDirectoryAndTargetDefinitions(dir_result, target_result)
     return result
-
 
 def find_name(to_find, name):
     res = []

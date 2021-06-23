@@ -37,15 +37,23 @@ lookupTable = Lookup.getInstance()
 directoryTree = Directory.getInstance()
 extension_type= "ECM"
 
-no_op_commands=['cmake_policy','enable_testing','fltk_wrap_ui','install','mark_as_advanced','message','qt_wrap_cpp','source_group','variable_watch']
+no_op_commands=['cmake_policy','enable_testing','fltk_wrap_ui','install','mark_as_advanced','message','qt_wrap_cpp',
+                'source_group','variable_watch','include_guard','install_icon']
 find_package_lookup_directories=['cmake','CMake',':name',':name/cmake',':name/CMake','lib/cmake/:name',
                                  'share/cmake/:name','lib/:name','share/:name','lib/:name/cmake','lib/:name/CMake',
                                  'share/:name/cmake','share/:name/CMake',':name/lib/cmake/:name',
                                  ':name/share/cmake/:name',':name/lib/:name',':name/share/:name',
                                  ':name/lib/:name/cmake',':name/lib/:name/CMake',':name/share/:name/cmake',
-                                 ':name/share/:name/CMake','lib/x86_64-linux-gnu/cmake/:name']
-find_package_prefix='/usr'
-includes_paths=[]
+                                 ':name/share/:name/CMake','lib/x86_64-linux-gnu/cmake/:name',
+                                 '/opt/homebrew/Cellar/extra-cmake-modules/5.83.0/share/ECM/cmake',
+                                 '/opt/homebrew/Cellar/extra-cmake-modules/5.83.0/share/ECM/modules',
+                                 '/opt/homebrew/Cellar/extra-cmake-modules/5.83.0/share/ECM/kde-modules'
+                                 '/opt/homebrew/Cellar/qt@5/5.15.2/bin',
+                                 '/Applications/CMake.app/Contents/share/cmake-3.20/Modules',
+                                 '/opt/homebrew/Cellar/cmake/3.20.4/share/cmake/Modules/',
+                                 '/opt/homebrew/Cellar/qt@5/5.15.2/lib/cmake/Qt5']
+find_package_prefix=''
+includes_paths=['/Applications/CMake.app/Contents/share/cmake-3.20/Modules']
 
 class CMakeExtractorListener(CMakeListener):
     rule: Optional[Rule] = None
@@ -125,9 +133,12 @@ class CMakeExtractorListener(CMakeListener):
 
         operator = ctx.operator.getText().upper()
 
-        localVariableType = 'string' if operator in ('STRLESS', 'STREQUAL', 'STRGREATER', 'MATCHES') else 'int'
+        localVariableType = 'string' if operator in ('STRLESS', 'STREQUAL', 'STRGREATER', 'MATCHES',"VERSION_LESS",
+                                                     "VERSION_GREATER","VERSION_GREATER_EQUAL","VERSION_EQUAL") else 'int'
         constantExpressionType = ConstantExpression.Z3_STR if operator in ('STRLESS', 'STREQUAL',
-                                                                           'STRGREATER', 'MATCHES') \
+                                                                           'STRGREATER', 'MATCHES',"VERSION_LESS",
+                                                                           "VERSION_GREATER","VERSION_GREATER_EQUAL" ,
+                                                                           "VERSION_EQUAL") \
             else ConstantExpression.PYTHON_STR
 
         if leftVariableLookedUp:
@@ -315,8 +326,6 @@ class CMakeExtractorListener(CMakeListener):
 
 
     def includeCommand(self,arguments):
-
-        print(arguments)
         commandNode = CustomCommandNode("include")
         if 'RESULT_VARIABLE' in arguments:
             varIndex = arguments.index('RESULT_VARIABLE')
@@ -325,45 +334,65 @@ class CMakeExtractorListener(CMakeListener):
                                                      relatedProperty='RESULT_VARIABLE')
 
         args = vmodel.expand(arguments)
-        argsVal=flattenAlgorithmWithConditions(args)[0][0]
+        include_possibilities=flattenAlgorithmWithConditions(args)
         commandNode.depends.append(args)
+        for include_possibility in include_possibilities:
+            argsVal = include_possibility[0]
+            includedFile = os.path.join(project_dir, argsVal)
 
-        includedFile = os.path.join(project_dir, argsVal)
+            # clean the include path
+            while includedFile.find('//') != -1:
+                includedFile = includedFile.replace('//','/')
 
-        # clean the include path
-        while includedFile.find('//') != -1:
-            includedFile = includedFile.replace('//','/')
-        # We execute the command if we can find the CMake file and there is no condition to execute it
-        if os.path.isfile(includedFile):
-            parseFile(includedFile,True)
-
-            # for item in vmodel.nodes:
-            #     if item not in prevNodeStack:
-            #         commandNode.commands.append(item)
-        elif os.path.isdir(includedFile):
-            util_create_and_add_refNode_for_variable('CMAKE_CURRENT_LIST_DIR',
-                                                     LiteralNode(f"include_{includedFile}", includedFile))
-            parseFile(os.path.join(includedFile, 'CMakeLists.txt'),True)
-        else:
-            cmake_module_paths = flattenAlgorithmWithConditions(vmodel.expand(["${CMAKE_MODULE_PATH}"]))
-            for cmake_module_path in cmake_module_paths:
-                if os.path.exists(os.path.join(cmake_module_path[0], f'{argsVal}.cmake').replace('//','/')):
-                    includePath = os.path.join(cmake_module_path[0], f'{argsVal}.cmake').replace('//','/')
-                    if os.path.isfile(includePath):
-                        parseFile(includePath, True)
-                        break
-                assert len(cmake_module_path[1]) == 0 # check if we have multiple conditions
+            currentPath = flattenAlgorithmWithConditions(vmodel.expand(['${CMAKE_CURRENT_LIST_DIR}']))
+            if len(currentPath):
+                currentPath = currentPath[0][0];
             else:
-                paths = [os.path.join(path,argsVal).replace('//','/')+'.cmake' for path in includes_paths]
-                paths += [os.path.join(path,argsVal).replace('//','/') for path in includes_paths]
-                foundModule = False
-                for path in paths:
-                    if os.path.isfile(path):
-                        parseFile(path, True)
-                        foundModule = True
-                if not foundModule:
-                    logging.error("[enterCommand_invocation] Cannot Find : {} to include".format(arguments))
-                    vmodel.nodes.append(util_handleConditions(commandNode, commandNode.getName()))
+                currentPath = '';
+
+            # We execute the command if we can find the CMake file and there is no condition to execute it
+            if os.path.isfile(includedFile):
+                parseFile(includedFile,True)
+
+                # for item in vmodel.nodes:
+                #     if item not in prevNodeStack:
+                #         commandNode.commands.append(item)
+            elif os.path.isdir(includedFile):
+                util_create_and_add_refNode_for_variable('CMAKE_CURRENT_LIST_DIR',
+                                                         LiteralNode(f"include_{includedFile}", includedFile))
+                parseFile(os.path.join(includedFile, 'CMakeLists.txt'),True)
+            else:
+                cmake_module_paths = flattenAlgorithmWithConditions(vmodel.expand(["${CMAKE_MODULE_PATH}"]))
+                for cmake_module_path in cmake_module_paths:
+                    if os.path.exists(os.path.join(cmake_module_path[0], f'{argsVal}.cmake').replace('//','/')):
+                        includePath = os.path.join(cmake_module_path[0], f'{argsVal}.cmake').replace('//','/')
+                        if os.path.isfile(includePath):
+                            pathDir =  os.path.dirname(includePath)
+                            util_create_and_add_refNode_for_variable('CMAKE_CURRENT_LIST_DIR',
+                                                                     LiteralNode(f"include_{includedFile}", pathDir));
+                            parseFile(includePath, True)
+                            break
+                    # assert len(cmake_module_path[1]) == 0 # check if we have multiple conditions
+                    if not(len(cmake_module_path[1]) == 0):
+                        print('Something might go wrong, conditional module path exist!')
+                else:
+                    paths = [os.path.join(path,argsVal).replace('//','/')+'.cmake' for path in includes_paths]
+                    paths += [os.path.join(path,argsVal).replace('//','/') for path in includes_paths]
+                    foundModule = False
+                    for path in paths:
+                        if os.path.isfile(path):
+                            pathDir =  os.path.dirname(path)
+                            util_create_and_add_refNode_for_variable('CMAKE_CURRENT_LIST_DIR',
+                                                                     LiteralNode(f"include_{includedFile}", pathDir));
+                            parseFile(path, True)
+                            foundModule = True
+                    if not foundModule:
+                        print("[error][enterCommand_invocation] Cannot Find : {} to include".format(arguments))
+                        vmodel.nodes.append(util_handleConditions(commandNode, commandNode.getName()))
+                # now we turn the current list dir back
+                util_create_and_add_refNode_for_variable('CMAKE_CURRENT_LIST_DIR',
+                                                         LiteralNode(f"original_{currentPath}", currentPath))
+
 
     def enterCommand_invocation(self, ctx: CMakeParser.Command_invocationContext):
         global project_dir
@@ -449,6 +478,7 @@ class CMakeExtractorListener(CMakeListener):
 
 
             flattened_packageName = flattenAlgorithmWithConditions(packageName)
+            version='';
             for possible_include in flattened_packageName:
                 includePath = None
                 # First we check CMAKE_MODULE_PATH
@@ -456,18 +486,32 @@ class CMakeExtractorListener(CMakeListener):
                 for cmake_module_path in cmake_module_paths:
                     if os.path.exists(os.path.join(cmake_module_path[0],f'{possible_include[0]}Config.cmake')):
                         includePath = os.path.exists(os.path.join(cmake_module_path[0],f'{possible_include[0]}Config.cmake'))
+                        version = os.path.exists(os.path.join(cmake_module_path[0],f'{possible_include[0]}ConfigVersion.cmake'))
                         break
-                    assert len(cmake_module_path[1]) == 0 and len(possible_include[1]) == 0 # check if we have multiple conditions
+                    if os.path.exists(os.path.join(cmake_module_path[0], f'{possible_include[0]}-config.cmake')):
+                        includePath = os.path.exists(
+                            os.path.join(cmake_module_path[0], f'{possible_include[0]}-config.cmake'))
+                        version = os.path.exists(os.path.join(cmake_module_path[0],f'{possible_include[0]}-config-version.cmake'))
+
+                        break
+                    if not(len(cmake_module_path[1]) == 0 and len(possible_include[1]) == 0):
+                        print("something might go wrong, conditional module path exist!")
+                    # assert len(cmake_module_path[1]) == 0 and len(possible_include[1]) == 0 # check if we have multiple conditions
                 else:
                     # If not found, then, we search in default directories
                     for index,path in enumerate(find_package_lookup_directories):
                         if os.path.exists(os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0]}Config.cmake')):
                             includePath = os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0]}Config.cmake')
+                            version = os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0]}ConfigVersion.cmake')
+
                         if os.path.exists(os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0].lower()}-config.cmake')):
                             includePath = os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0].lower()}-config.cmake')
-                    
+                            version = os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0].lower()}-config-version.cmake')
+
                 if includePath:
                     util_create_and_add_refNode_for_variable(packageName.getValue() + "_CONFIG", LiteralNode(includePath, includePath))
+                    util_create_and_add_refNode_for_variable('PACKAGE_FIND_NAME',
+                                                             LiteralNode(f"name_{packageName.getValue()}", packageName.getValue()))
                     if len(possible_include[1]):
                         vmodel = VModel.getInstance()
 
@@ -486,6 +530,13 @@ class CMakeExtractorListener(CMakeListener):
 
                         tempProjectDir = project_dir
                         project_dir = os.path.dirname(includePath)
+                        # load_version
+                        if(os.path.exists(version)):
+                            self.includeCommand([version])
+                            package_version = flattenAlgorithmWithConditions(vmodel.expand(['PACKAGE_VERSION']))
+                            if len(package_version):
+                                setCommand([f"{packageName.getValue()}_FIND_VERSION",package_version[0][0]]);
+                        # end load version
                         setCommand(['CMAKE_CURRENT_LIST_DIR', project_dir])
                         self.includeCommand([includePath])
                         project_dir = tempProjectDir
@@ -499,12 +550,23 @@ class CMakeExtractorListener(CMakeListener):
                     else:
                         tempProjectDir = project_dir
                         project_dir = os.path.dirname(includePath)
+                        # load_version
+                        if(os.path.exists(version)):
+                            self.includeCommand([version])
+                            package_version = flattenAlgorithmWithConditions(vmodel.expand(['PACKAGE_VERSION']))
+                            if len(package_version):
+                                setCommand([f"{packageName.getValue()}_FIND_VERSION",package_version[0][0]]);
+                        # end load version
+
                         setCommand(['CMAKE_CURRENT_LIST_DIR',project_dir])
                         self.includeCommand([includePath])
                         project_dir = tempProjectDir
 
                 elif requiredPackage:
+                    # raise Exception("Required package not found: {}".format(packageName.getValue()))
+                    print("Required package not found: {}".format(packageName.getValue()))
                     logging.error("Required package not found: {}".format(packageName.getValue()))
+
 
             # capitalArguments = [x.upper() for x in arguments]
             # projectVersion = None
@@ -516,7 +578,7 @@ class CMakeExtractorListener(CMakeListener):
 
         # include( < file | module > [OPTIONAL][RESULT_VARIABLE < VAR >]
         #          [NO_POLICY_SCOPE])
-        elif commandId == 'include':
+        elif commandId in ('include'):
             self.includeCommand(arguments)
 
         elif commandId == 'find_file':
@@ -712,21 +774,24 @@ class CMakeExtractorListener(CMakeListener):
         # get_filename_component(<var> <FileName> <mode> [BASE_DIR <dir>] [CACHE])
         # -------------------------------------------------------
         # get_filename_component(<var> <FileName> PROGRAM [PROGRAM_ARGS <arg_var>] [CACHE])
+        # TODO: WE do not support ABSOLUTE at this point
         elif commandId == 'get_filename_component':
             varName = arguments.pop(0)
 
-            # currentPath = vmodel.expand(['${CMAKE_CURRENT_LIST_DIR}'])
-            # currentPathValue = flattenAlgorithmWithConditions(currentPath)[0][0]
+            currentPath = flattenAlgorithmWithConditions(vmodel.expand(['${CMAKE_CURRENT_LIST_DIR}']))
+            if len(currentPath):
+                currentPath = currentPath[0][0];
+            else:
+                currentPath = '';
+
             # print(os.path.join(currentPathValue,arguments[0].strip('"')))
             commandNode = CustomCommandNode("get_filename_component_{}".format(vmodel.getNextCounter()))
-            refNode = RefNode("{}_{}".format(varName, vmodel.getNextCounter()), commandNode)
-            lookupTable.setKey("${{{}}}".format(varName), refNode)
-            vmodel.nodes.append(refNode)
             otherArgs = vmodel.expand(arguments)
             commandNode.commands.append(otherArgs)
 
             pathVariable = vmodel.expand([arguments[0]])
             tmp = flattenAlgorithmWithConditions(pathVariable)
+            # TODO: We need to support multiple file conditions here!
             if tmp:
                 pathValue = tmp[0][0].rstrip('/')
             else:
@@ -782,7 +847,11 @@ class CMakeExtractorListener(CMakeListener):
                 if not len(pathValue) or pathValue[0]!='/':
                     base_dir_idx = capitalArguments.index('BASE_DIR') + 1
                     pathValue = os.path.join(arguments[base_dir_idx],pathValue).rstrip('/')
-            setCommand([varName,pathValue])
+            if isinstance(pathValue,RefNode):
+                pathValue = flattenAlgorithmWithConditions(pathValue)
+            util_create_and_add_refNode_for_variable(varName,commandNode,relatedProperty=pathValue)
+            # setCommand([varName,pathValue])
+
 
         # build_command(<variable>
         #       [CONFIGURATION <config>]
@@ -1196,7 +1265,6 @@ class CMakeExtractorListener(CMakeListener):
             util_create_and_add_refNode_for_variable(outVar, stringCommandNode)
             stringCommandNode.commands.append(vmodel.expand(arguments))
 
-
         # get_cmake_property(VAR property)
         elif commandId == 'get_cmake_property':
             varName = arguments.pop(0)
@@ -1594,7 +1662,8 @@ class CMakeExtractorListener(CMakeListener):
             for targetDependency in arguments:
                 targetDependencyNode = vmodel.lookupTable.getKey("t:{}".format(targetDependency))
                 assert isinstance(targetDependencyNode, TargetNode)
-                targetNode.depends.append(targetDependencyNode)
+                # targetNode.depends.append(targetDependencyNode)
+                targetNode.addLinkLibrary(targetDependencyNode)
 
         # https://cmake.org/cmake/help/latest/command/cmake_policy.html
         elif commandId == 'cmake_policy':
@@ -2002,6 +2071,29 @@ class CMakeExtractorListener(CMakeListener):
             vmodel.nodes.append(commandNode)
 
 
+        elif commandId=='cmake_parse_arguments':
+            prefix = arguments.pop(0)
+            options = arguments.pop(0).strip('"').split(';')
+            oneValueKeywords = arguments.pop(0).strip('"').split(';')
+            multiValueKeywords = arguments.pop(0).strip('"').split(';')
+            args = flattenAlgorithmWithConditions(vmodel.expand(arguments))
+            for idx,arg in enumerate(args):
+                # TODO: add conditions!
+                if arg[0] in oneValueKeywords:
+                    if idx+1 < len(args):
+                        setCommand([arg[0], args[idx+1][0]])
+                elif arg[0] in options:
+                    if idx + 1 < len(args):
+                        setCommand([arg[0], args[idx+1][0]])
+                elif arg[0] in multiValueKeywords:
+                    valIdx = idx+1;
+                    val=[];
+                    while valIdx < len(args) and (args[valIdx][0] not in multiValueKeywords) and (args[valIdx][0] not in oneValueKeywords) \
+                            and (args[valIdx][0] not in options):
+                        val.append(args[valIdx][0])
+                        valIdx += 1
+                    setCommand([arg[0]]+val)
+
         elif commandId in no_op_commands:
             customCommand = CustomCommandNode("{}".format(commandId))
             customCommand.commands.append(vmodel.expand(arguments))
@@ -2062,6 +2154,16 @@ def initialize(input,isPath):
     util_create_and_add_refNode_for_variable('CMAKE_CURRENT_LIST_DIR', LiteralNode(project_dir, project_dir))
     util_create_and_add_refNode_for_variable('CMAKE_VERSION', LiteralNode('cmakeVersion', '3.16'))
     util_create_and_add_refNode_for_variable('CMAKE_MODULE_PATH', ConcatNode('cmakeVersion'))
+    # TODO: get these from the environment variables
+    util_create_and_add_refNode_for_variable('CMAKE_PROJECT_VERSION_MAJOR', LiteralNode('VERSION_MAJOR', 3))
+    util_create_and_add_refNode_for_variable('CMAKE_PROJECT_VERSION_MINOR', LiteralNode('VERSION_MINOR', 20))
+    util_create_and_add_refNode_for_variable('CMAKE_PROJECT_VERSION_PATCH', LiteralNode('VERSOIN_PATCH', 0))
+    util_create_and_add_refNode_for_variable('CMAKE_PROJECT_VERSION_TWAEK', LiteralNode('VERSION_TWEAK', 0))
+
+    util_create_and_add_refNode_for_variable('HUPNP_VERSION_MAJOR', LiteralNode('HUPNP_VERSION_MAJOR', 1))
+    util_create_and_add_refNode_for_variable('HUPNP_VERSION_MINOR', LiteralNode('VERSION_TWEAK', 1))
+    util_create_and_add_refNode_for_variable('HUPNP_VERSION_PATCH', LiteralNode('VERSION_TWEAK', 1))
+
     if isPath:
         parseFile(os.path.join(project_dir, 'CMakeLists.txt'),True)
     else:
@@ -2073,10 +2175,11 @@ def parseFile(fileInput,isPath=True):
     if isPath:
         inputFile = FileStream(fileInput, encoding='utf-8')
         util_create_and_add_refNode_for_variable('CMAKE_CURRENT_LIST_FILE',LiteralNode(fileInput, fileInput))
+        util_create_and_add_refNode_for_variable('CMAKE_CURRENT_SOURCE_DIR',
+                                                 LiteralNode(f"parse_{fileInput}", fileInput))
     else:
         inputFile = InputStream(fileInput)
         util_create_and_add_refNode_for_variable('CMAKE_CURRENT_LIST_FILE',LiteralNode('no_file', ''))
-
 
     lexer = CMakeLexer(inputFile)
     stream = CommonTokenStream(lexer)
@@ -2183,8 +2286,12 @@ def exportFlattenedListToCSV(flattened: Dict, fileName: str):
 def main(argv):
     global extension_type
     extension_type = "ECM"
+    if len(argv) > 2 and argv[2]=='find_package_dir':
+        dirs = argv[3].split(',')
+        find_package_lookup_directories.append(dirs)
+
     getGraph(argv[1])
-    vmodel.export()
+    # vmodel.export()
     # vmodel.checkIntegrity()
     # vmodel.findAndSetTargets()
     # doGitAnalysis(project_dir)
