@@ -53,8 +53,10 @@ def getEdgeLabel(firstNode: Node, secondNode: Node):
             return "FALSE"
         elif firstNode.args == secondNode:
             return "CONDITION"
+    if isinstance(firstNode, DefinitionNode):
+        if firstNode.inherits and reduce(lambda x, y: x or y == secondNode, firstNode.inherits, False):
+            return "INHERITS"
     if isinstance(firstNode, CustomCommandNode):
-        # Why cant we just do this
         if firstNode.commands and reduce(lambda x, y: x or y == secondNode, firstNode.commands, False):
             return "COMMANDS"
         elif firstNode.depends and reduce(lambda x, y: x or y == secondNode, firstNode.depends, False):
