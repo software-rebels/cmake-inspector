@@ -13,12 +13,12 @@ def setCommand(arguments):
     # TODO: @Farshad: Why did you add this line?
     if len(arguments) == 1:
         arguments.append('')
-    rawVarName = arguments.pop(0)
+    rawVarName = arguments.pop(0).strip('"')
     variable_name = "${{{}}}".format(rawVarName)
     parentScope = False
     if 'PARENT_SCOPE' in arguments:
         parentScope = True
-        arguments.pop()
+        arguments.pop(arguments.index('PARENT_SCOPE'))
     # Remove arguments related to cache
     if 'CACHE' in arguments:
         idx = arguments.index('CACHE')
@@ -327,7 +327,7 @@ def addTarget(arguments, isExecutable=True):
         interfaceLibrary = None
 
         # These values may exist in add_library only. There is a type property in TargetNode that we can set
-        if arguments[0] in ('STATIC', 'SHARED', 'MODULE'):
+        if arguments and arguments[0] in ('STATIC', 'SHARED', 'MODULE'):
             libraryType = arguments.pop(0)
 
         # Object libraries just contains list of files, so there is small change in behaviour

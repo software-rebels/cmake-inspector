@@ -264,13 +264,13 @@ class ComparisonExpression(LogicalExpression):
         return [(False, {})]
 
     def returnOperator(self):
-        if self.logicType in ('GREATER', 'STRGREATER'):
+        if self.logicType in ('GREATER', 'STRGREATER','VERSION_GREATER'):
             return operator.gt
-        elif self.logicType in ('LESS', 'STRLESS'):
+        elif self.logicType in ('LESS', 'STRLESS','VERSION_LESS'):
             return operator.lt
-        elif self.logicType in ('EQUAL', 'STREQUAL', 'MATCHES'):
+        elif self.logicType in ('EQUAL', 'STREQUAL', 'MATCHES','VERSION_EQUAL'):
             return operator.eq
-        elif self.logicType in ('GREATER_EQUAL'):
+        elif self.logicType in ('GREATER_EQUAL','VERSION_GREATER_EQUAL'):
             return operator.ge
 
     def getAssertions(self):

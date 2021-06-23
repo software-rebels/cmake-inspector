@@ -26,6 +26,7 @@ Django = "==1.11.29"
 GitPython = "==3.1.8"
 PyDriller = "==1.15.2"
 Shapely = "==1.7.1"
+z3-solver = "*"
 
 [dev-packages]
 
