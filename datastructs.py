@@ -1,5 +1,5 @@
 from operator import is_
-from typing import Optional, List
+from typing import Optional, List, Type
 import copy
 
 from condition_data_structure import Rule
@@ -388,8 +388,8 @@ class DirectoryNode(LiteralNode):
     def __init__(self, name):
         super().__init__(name)
         self._post_num = 0 # for linearization
-        self.depends_on = [] # child
-        self.depended_by = [] # parent
+        self.depends_on = [] # child depends on parent
+        self.depended_by = [] # parent depended by child
         self.targets = []
 
 
@@ -410,11 +410,11 @@ class DefinitionNode(CustomCommandNode):
         self.ordering = ordering
         self.inherits = []
 
-    # def getName(self):
-        # super().getName()
-        # self.name =  f"{self.name}, order: {self.ordering}"
-        # return self.name
-
+    def addInheritance(self, node):
+        if not isinstance(node, DefinitionNode):
+            raise TypeError("Inherited node is not of type DefinitionNode.")
+        self.inherits.append(node)
+    
     def getChildren(self) -> Optional[List]:
         result = []
         result.extend(self.inherits)

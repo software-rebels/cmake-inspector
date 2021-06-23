@@ -11,7 +11,7 @@ from grammar.CMakeParser import CMakeParser
 from datastructs import Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, \
     CustomCommandNode, TargetNode, TestNode, OptionNode, Node, Directory
 from algorithms import flattenAlgorithm, flattenAlgorithmWithConditions, getFlattedArguments, flattenCustomCommandNode, \
-    CycleDetectedException, postprocessZ3Output
+    CycleDetectedException, getFlattenedDefinitionsFromNode, postprocessZ3Output
 from vmodel import VModel
 
 
@@ -1241,7 +1241,7 @@ class TestVariableDefinitions(unittest.TestCase):
             add_definitions(/Dbar -Wall -Werror)
             add_library(foo bar.cxx car.cxx far.cxx)
             target_compile_definitions(foo PUBLIC bar)
-            # add_subdirectory(/home/lazypanda/Code/URF/cmake-inspector/test/test_directory_definition)
+            add_subdirectory(/home/lazypanda/Code/URF/cmake-inspector/test/test_directory_definition)
         else()
             add_definitions(-Djohn)
             remove_definitions(-Djohn -Dbar)
@@ -1253,8 +1253,8 @@ class TestVariableDefinitions(unittest.TestCase):
         linkDirectory()
         self.vmodel.export()
         # print(defn := self.lookup.getKey('t:foo').definitions)
-        print(f"Flattened result: {getFlattenedDefintionsForTarget('foo')}")
-        # print(f"Flatten Result: {flattenAlgorithmWithConditions(self.vmodel.findNode('remove_definitions'))}")
+        # print(f"Flattened result: {getFlattenedDefintionsForTarget('garrrrr')}")
+        print(f"Flatten Result: {getFlattenedDefinitionsFromNode(self.lookup.getKey('t:foo').definitions)}")
         # commandNode = self.vmodel.findNode('remove_definitions')
         # self.assertIsInstance(commandNode, CustomCommandNode)
         # self.assertEqual('-Djohn', commandNode.commands[0].getValue())

@@ -87,6 +87,7 @@ def printDefinitionsForATarget(vmodel: VModel, lookup: Lookup, target: str, outp
     targetNode = lookup.getKey("t:{}".format(target))
     if targetNode is None:
         targetNode = vmodel.findNode(target)
+
     assert isinstance(targetNode, TargetNode)
     flattenedDefinitions = flattenAlgorithmWithConditions(targetNode.definitions)
 
@@ -123,6 +124,7 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
     targetNode = lookup.getKey("t:{}".format(target))
     if targetNode is None:
         targetNode = vmodel.findNode(target)
+
     assert isinstance(targetNode, TargetNode)
     flattenedFiles = flattenAlgorithmWithConditions(targetNode.sources)
     # for library, conditions in targetNode.linkLibrariesConditions.items():

@@ -255,7 +255,7 @@ def addCompileTargetDefinitionsCommand(arguments):
         next_node = vmodel.expand(definition_names)
         depended_node = util_handleConditions(next_node, next_node.name, None)
         new_target_command_node.commands.append(depended_node)
-        new_definition_node.depends.append(new_target_command_node)
+        new_definition_node.commands.append(new_target_command_node)
         
         current_definition = targetNode.definitions
         if current_definition is not None:
@@ -274,7 +274,7 @@ def addCompileTargetDefinitionsCommand(arguments):
         next_node = vmodel.expand(definition_names)
         depended_node = util_handleConditions(next_node, next_node.name, None)
         new_target_command_node.commands.append(depended_node)
-        new_definition_node.depends.append(new_target_command_node)
+        new_definition_node.commands.append(new_target_command_node)
         
         current_definition = targetNode.interfaceDefinitions
         if current_definition is not None:
@@ -309,7 +309,7 @@ def handleCompileDefinitionCommand(arguments, command, specific, project_dir):
         project_dir_lookup.setKey(f'{KEY_PREFIX}', last_definition_pair.head)
 
     newDefinitionCommand.commands.append(targetNode)
-    definitionNode.depends.append(newDefinitionCommand)
+    definitionNode.commands.append(newDefinitionCommand)
     last_definition_pair.tail = definitionNode
     project_dir_lookup.setKey(f'{KEY_PREFIX}_PAIRS', last_definition_pair)
 

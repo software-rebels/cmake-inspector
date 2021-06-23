@@ -1,5 +1,6 @@
 if(testing)
     add_definitions(-Dtest)
+    add_library(garrrrr subdir.cxx)
 else()
     remove_definitions(-Dtest2)
 endif(testing)

@@ -1316,11 +1316,11 @@ def linkDirectory():
         # # The reason we need this extra concat node is for subdirectory to inherit from it
         # local_definition_node = ConcatNode('inherit_definition_{}'.format(vmodel.getNextCounter()))
         # local_definition_node.addNode(definition_node)
-        for parent_node in dir_node.depended_by:
+        for parent_node in dir_node.depends_on:
             # if there is a parent dir, we add concat parent COMPILE DEF.
             parent_dir = parent_node.rawName
             parent_definition_node = vmodel.directory_to_properties.get(parent_dir).getOwnKey('COMPILE_DEFINITIONS')
-            local_definition_node.inherits.append(parent_definition_node)
+            local_definition_node.addInheritance(parent_definition_node)
         
         # vmodel.directory_to_properties.get(cur_dir).setKey('COMPILE_DEFINITIONS', local_definition_node)
     
@@ -1336,7 +1336,7 @@ def linkDirectory():
                 target.setDefinition(target_definition_node)
             else:
                 # maybe target definitions can be concat node?
-                raise ValueError("Definition type mismatch")
+                raise TypeError(f"Definition type mismatch, we got {type(target.definitions)}.")
 
 
 def getFlattenedDefintionsForTarget(target: str):

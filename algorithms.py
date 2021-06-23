@@ -303,18 +303,86 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
 
 # Flatten Definition requires a very convoluted traversal ordering that requires parent's 
 # information recursively, so we cannot just recurse normally
-def getFlattenedDefinitions(node: Node, conditions: Set = None, debug=True, recStack=None):
-    result = list()
-    # To handle the directory_definition and target_definition traversal ordering.
+def getFlattenedDefinitionsFromNode(node: Node, conditions: Set = None, debug=True, recStack=None):
+    # There are only type of nodes following a definition edge.
     children = node.getChildren()
-    
-    if len(children) == 2 and isinstance(children[0], DefinitionNode):
-        # Traversal ordering is wrong, it needs to be flipped
-        print("Reversing Traversal Ordering")
-        children = reversed(children)
-    
-    # children = [direct_def, target_def]
-    # first go through all its inheritence
+    directory_node, target_node = None, None
+    if len(children) == 1:
+        if children[0].from_dir:
+            directory_node = children[0]
+        else:
+            target_node = children[0]
+    elif len(children) == 2:
+        if children[0].from_dir:
+            directory_node = children[0]
+            target_node = children[1]
+        else:
+            target_node = children[0]
+            directory_node = children[1]
+    dir_result = flattenDirectoryDefinitions(directory_node, conditions, recStack)
+    # target_result = flattenTargetDefinitions(target_node, conditions, recStack)
+    # Now this gives us all the flattened result for the directory side,
+    # we have to reconcile the data with the target side.
+    # result = mergeDirectoryAndTargetDefinitions(dir_result, target_result)
+    return dir_result
+
+
+def mergeDirectoryAndTargetDefinitions(directory_result, target_result):
+    result = []
+    return result
+
+
+def flattenTargetDefinitions(node: CustomCommandNode, conditions: Set, recStack, lookup=None):
+    if node is None:
+        return []
+    result = []
+    return result
+
+
+def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recStack, lookup=None):
+    if node is None:
+        return []
+    result = []
+    # first recurse through all its inheritance
+    # currently we only inherit from one parent, and I don't think this will 
+    # change in the forseeable future.
+    cur_node = node
+    inheritance_path = [cur_node]
+    while cur_node.inherits:
+        cur_node = cur_node.inherits[0]
+        inheritance_path.append(cur_node)
+    # Now, we recurse down from the parent until the end of the current directory.
+    # we can now use _reverse_inherits here until we reach node
+    cur_root_node = inheritance_path.pop()
+    while cur_root_node:
+        flattedResult = flattenCustomCommandNode(cur_node, conditions, recStack)
+        if flattedResult is None:
+            flattedResult = []
+        if not cur_node.depends:
+            if inheritance_path:
+                # jump to the next subdirectory
+                cur_root_node = inheritance_path.pop()        
+                cur_node = cur_root_node
+            else:
+                cur_root_node = None
+                continue
+        else:
+            next_node = cur_node.depends[0]
+            assert isinstance(next_node, DefinitionNode)
+            if next_node.ordering > cur_node.ordering + 1:
+                # jump to the subdirectory
+                cur_root_node = inheritance_path.pop()
+                cur_node = cur_root_node
+            else:
+                # first work on the commands side
+                # then, we simply traverse to the next dependent
+                cur_node = cur_node.depends[0]
+        cur_command = cur_node.commands[0] # This is a custom command like add_definitions/remove_definitions
+        cur_result = flattenCustomCommandNode(cur_command, conditions, recStack)
+        # merge cur_result with result
+        print("Current result:", cur_result)
+    return result
+
 
 
 # Given a Node (often a ConcatNode) this algorithm will return flatted arguments
