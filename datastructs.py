@@ -402,11 +402,28 @@ class DefinitionPair:
 # Not much for now, but might have more in the future
 # Technically not really a custom command, but the depends attribute is useful
 class DefinitionNode(CustomCommandNode):
-    def __init__(self, from_dir=True, is_flag=False):
+    def __init__(self, from_dir=True, is_flag=False, ordering=-1):
         super().__init__(f"{'directory' if from_dir else 'target'}_definitions")
         self.is_flag = is_flag
         self.from_dir = from_dir
+        # This ordering is needed to figure out the add/remove dependency ordering issue.
+        self.ordering = ordering
+        self.inherits = []
 
+    # def getName(self):
+        # super().getName()
+        # self.name =  f"{self.name}, order: {self.ordering}"
+        # return self.name
+
+    def getChildren(self) -> Optional[List]:
+        result = []
+        result.extend(self.inherits)
+        if r := super().getChildren():
+            result.extend(r)
+        return result if result else None
+
+    def getNodeName(self):
+        return f"{self.name}, order: {self.ordering}"
 
 # Repeated flags need to be taken care of
 # Might have unsatisfiable path in the graph for definitions.

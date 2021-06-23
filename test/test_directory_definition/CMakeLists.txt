@@ -1,0 +1,5 @@
+if(testing)
+    add_definitions(-Dtest)
+else()
+    remove_definitions(-Dtest2)
+endif(testing)

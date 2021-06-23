@@ -6,11 +6,11 @@ from collections import Set, defaultdict
 from typing import Dict, List
 from z3 import *
 
-from datastructs import Node, LiteralNode, RefNode, CustomCommandNode, SelectNode, ConcatNode, TargetNode, OptionNode
+from datastructs import DefinitionNode, Node, LiteralNode, RefNode, CustomCommandNode, SelectNode, ConcatNode, TargetNode, OptionNode
 from vmodel import VModel
 
 
-directory_definition_stack = set()
+directory_definition_stack = {}
 
 def flattenAlgorithm(node: Node):
     if isinstance(node, LiteralNode):
@@ -129,7 +129,15 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                                                                     debug, recStack)
     elif isinstance(node, ConcatNode):
         result = list()
-        for idx, item in enumerate(node.getChildren()):
+        # To handle the directory_definition and target_definition traversal ordering.
+        children = node.getChildren()
+        
+        if len(children) == 2 and isinstance(children[0], DefinitionNode):
+            # Traversal ordering is wrong, it needs to be flipped
+            print("Reversing Traversal Ordering")
+            children = reversed(children)
+        
+        for idx, item in enumerate(children):
             childSet = flattenAlgorithmWithConditions(item, conditions, debug, recStack)
             tempSet = list()
             # The flattened values for a child could be empty, skipping ...
@@ -262,10 +270,13 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
 
     elif 'add_definitions' in node.getName().lower():
         global directory_definition_stack
+        # There is only one parent for each CommandDefinitionNode,
+        # and it has the ordering value within
+        ordering = node.parent[0].ordering 
         result = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
         flags_to_add = [flag[0] for flag in result]
         for flag in flags_to_add:
-            directory_definition_stack.add(flag)
+            directory_definition_stack[flag] = ordering
 
     elif 'remove_definitions' in node.getName().lower():
         temp_result = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
@@ -288,6 +299,22 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
                 
                 result.append((flag, new_condition))
     return result
+
+
+# Flatten Definition requires a very convoluted traversal ordering that requires parent's 
+# information recursively, so we cannot just recurse normally
+def getFlattenedDefinitions(node: Node, conditions: Set = None, debug=True, recStack=None):
+    result = list()
+    # To handle the directory_definition and target_definition traversal ordering.
+    children = node.getChildren()
+    
+    if len(children) == 2 and isinstance(children[0], DefinitionNode):
+        # Traversal ordering is wrong, it needs to be flipped
+        print("Reversing Traversal Ordering")
+        children = reversed(children)
+    
+    # children = [direct_def, target_def]
+    # first go through all its inheritence
 
 
 # Given a Node (often a ConcatNode) this algorithm will return flatted arguments

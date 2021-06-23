@@ -21,7 +21,7 @@ from grammar.CMakeListener import CMakeListener
 # Our own library
 from datastructs import RefNode, TargetNode, Lookup, SelectNode, ConcatNode, \
     CustomCommandNode, TestNode, LiteralNode, Node, OptionNode, Directory, DirectoryNode, DefinitionNode
-from analyze import printSourceFiles, printFilesForATarget, checkForCyclesAndPrint
+from analyze import printDefinitionsForATarget, printSourceFiles, printFilesForATarget, checkForCyclesAndPrint
 from utils import util_handleConditions, util_getStringFromList,\
     util_create_and_add_refNode_for_variable, util_extract_variable_name
 from commands import *
@@ -305,11 +305,11 @@ class CMakeExtractorListener(CMakeListener):
 
         # add_definitions(-DFOO -DBAR ...)
         elif commandId == 'add_definitions':
-            handleCompileDefinitionCommand(arguments, command='add', specific=False)
+            handleCompileDefinitionCommand(arguments, command='add', specific=False, project_dir=project_dir)
 
         # remove_definitions(-DFOO -DBAR ...)
         elif commandId == 'remove_definitions':
-            handleCompileDefinitionCommand(arguments, command='remove', specific=False)
+            handleCompileDefinitionCommand(arguments, command='remove', specific=False, project_dir=project_dir)
 
         # load_cache(pathToCacheFile READ_WITH_PREFIX
         #    prefix entry1...)
@@ -1075,6 +1075,7 @@ class CMakeExtractorListener(CMakeListener):
             if child_dir is None:
                 child_dir = DirectoryNode(project_dir)
             directoryTree.addChild(parent_dir, child_dir)
+            print(f"PROJECT DIR: {project_dir}")
             parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
             lookupTable.dropScope()
             project_dir = tempProjectDir
@@ -1169,7 +1170,7 @@ class CMakeExtractorListener(CMakeListener):
             handleProperty(interfaceSystemIncludeDirectories, 'interfaceSystemIncludeDirectories')
 
         elif commandId == 'add_compile_definitions':
-            handleCompileDefinitionCommand(arguments, command='add', specific=True)
+            handleCompileDefinitionCommand(arguments, command='add', specific=True, project_dir=project_dir)
 
         elif commandId == 'add_compile_options':
             addCompileOptionsCommand(arguments)
@@ -1309,18 +1310,19 @@ def linkDirectory():
     topological_order = directoryTree.getTopologicalOrder()
     # Setting the correct definition dependency based on directory
     for dir_node in topological_order:
-        cur_dir = dir_node.name
-        definition_node = vmodel.directory_to_properties.get(cur_dir).getOwnKey('COMPILE_DEFINITIONS')
-        # For root node, the concat node is pointless, but added for consistency.
-        # The reason we need this extra concat node is for subdirectory to inherit from it
-        local_definition_node = ConcatNode('inherit_definition_{}'.format(vmodel.getNextCounter()))
-        local_definition_node.addNode(definition_node)
+        cur_dir = dir_node.rawName
+        local_definition_node = vmodel.directory_to_properties.get(cur_dir).getOwnKey('COMPILE_DEFINITIONS')
+        # # For root node, the concat node is pointless, but added for consistency.
+        # # The reason we need this extra concat node is for subdirectory to inherit from it
+        # local_definition_node = ConcatNode('inherit_definition_{}'.format(vmodel.getNextCounter()))
+        # local_definition_node.addNode(definition_node)
         for parent_node in dir_node.depended_by:
             # if there is a parent dir, we add concat parent COMPILE DEF.
-            parent_dir = parent_node.name
+            parent_dir = parent_node.rawName
             parent_definition_node = vmodel.directory_to_properties.get(parent_dir).getOwnKey('COMPILE_DEFINITIONS')
-            local_definition_node.addNode(parent_definition_node)
-        vmodel.directory_to_properties.get(cur_dir).setKey('COMPILE_DEFINITIONS', local_definition_node)
+            local_definition_node.inherits.append(parent_definition_node)
+        
+        # vmodel.directory_to_properties.get(cur_dir).setKey('COMPILE_DEFINITIONS', local_definition_node)
     
         # Merging target definitions and directory definitions for each single target, over all directories
         for target in dir_node.targets:
@@ -1335,6 +1337,10 @@ def linkDirectory():
             else:
                 # maybe target definitions can be concat node?
                 raise ValueError("Definition type mismatch")
+
+
+def getFlattenedDefintionsForTarget(target: str):
+    return printDefinitionsForATarget(vmodel, lookupTable, target)
 
 
 def getFlattenedFilesForTarget(target: str):

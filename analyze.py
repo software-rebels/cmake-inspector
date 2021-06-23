@@ -82,6 +82,42 @@ def checkForCyclesAndPrint(vmodel: VModel, lookup: Lookup, node: Node, visited=[
     return False
 
 
+def printDefinitionsForATarget(vmodel: VModel, lookup: Lookup, target: str, output=False):
+    logging.info("[FLATTEN] Start flattening target " + target)
+    targetNode = lookup.getKey("t:{}".format(target))
+    if targetNode is None:
+        targetNode = vmodel.findNode(target)
+    assert isinstance(targetNode, TargetNode)
+    flattenedDefinitions = flattenAlgorithmWithConditions(targetNode.definitions)
+
+    logging.info("[FLATTEN] Start postprocessing 1 " + target)
+    postprocessZ3Output(flattenedDefinitions)
+
+    result = defaultdict(set)
+    for item in flattenedDefinitions:
+        result[str(item[1])].add(item[0])
+
+
+    logging.info("[FLATTEN] Start postprocessing 2 " + target)
+    # Post-processing
+    # 1. Resolve wildcard path
+    for key in list(result):
+        for item in list(result[key]):
+            if '*' in item:
+                result[key].update(set(glob.glob(item)))
+                result[key].remove(item)
+
+    def set_default(obj):
+        if isinstance(obj, set):
+            return list(obj)
+        raise TypeError
+
+    if output:
+        print(json.dumps(result, default=set_default, sort_keys=True, indent=4))
+
+    return result
+
+
 def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=False):
     logging.info("[FLATTEN] Start flattening target " + target)
     targetNode = lookup.getKey("t:{}".format(target))
