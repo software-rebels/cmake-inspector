@@ -223,7 +223,6 @@ def addCompileOptionsCommand(arguments):
 
 
 def addCompileTargetDefinitionsCommand(arguments):
-    # This command add a definition to the current ones. So we should add it in all the possible paths
     vmodel = VModel.getInstance()
     lookup = Lookup.getInstance()
     
@@ -246,16 +245,16 @@ def addCompileTargetDefinitionsCommand(arguments):
         raise ValueError(f'target_compile_definitions is given an invalid scope: {scope}')
     
     definition_names = util_preprocess_definition_names(arguments, force=True)
-
+    
+    # Similar to the directory definition case, but since ordering here does not matter
+    # we do not have to use DefinitionPair for flipping the path.
     if to_definition:
-        # similar to the directory definition case, but since ordering here does not matter
-        # we do not have to use DefinitionPair for flipping the path.
         new_definition_node = DefinitionNode(from_dir=False)
         new_target_command_node = TargetCompileDefinitionNode()
         next_node = vmodel.expand(definition_names)
         depended_node = util_handleConditions(next_node, next_node.name, None)
         new_target_command_node.commands.append(depended_node)
-        new_definition_node.depends.append(new_target_command_node)
+        new_definition_node.commands.append(new_target_command_node)
         
         current_definition = targetNode.definitions
         if current_definition is not None:
@@ -274,7 +273,7 @@ def addCompileTargetDefinitionsCommand(arguments):
         next_node = vmodel.expand(definition_names)
         depended_node = util_handleConditions(next_node, next_node.name, None)
         new_target_command_node.commands.append(depended_node)
-        new_definition_node.depends.append(new_target_command_node)
+        new_definition_node.commands.append(new_target_command_node)
         
         current_definition = targetNode.interfaceDefinitions
         if current_definition is not None:
@@ -285,31 +284,32 @@ def addCompileTargetDefinitionsCommand(arguments):
         targetNode.interfaceDefinitions = new_definition_node
 
 
-def handleCompileDefinitionCommand(arguments, command, specific):
+def handleCompileDefinitionCommand(arguments, command, specific, project_dir):
     # This handles add and remove commands for both preprocessor definitions
-    KEY_PREFIX = 'COMPILE_DEFINITIONS'
-
     vmodel = VModel.getInstance()
     newDefinitionCommand = CommandDefinitionNode(command=command, specific=specific)
-    definitionNode = DefinitionNode()
+    definitionNode = DefinitionNode(ordering=vmodel.getDefinitionOrder())
     arguments = util_preprocess_definition_names(arguments)
-    # print(f"Arguments: {arguments}")
     nextNode = vmodel.expand(arguments)
     targetNode = util_handleConditions(nextNode, nextNode.name, None)
     
+    if vmodel.directory_to_properties.get(project_dir) is None:
+        vmodel.directory_to_properties[project_dir] = Lookup()
+    project_dir_lookup = vmodel.directory_to_properties.get(project_dir)
+    
     # To link a new definition node below the last added definition node, thus perserving 
-    # the command ordering in the cmake file    
-    if last_definition_pair := vmodel.DIRECTORY_PROPERTIES.getOwnKey(f'{KEY_PREFIX}_PAIRS'):
+    # the command ordering in the CMAKE file 
+    if last_definition_pair := project_dir_lookup.getOwnKey('COMPILE_DEFINITIONS_PAIRS'):
         last_definition_pair.tail.depends.append(definitionNode)
     else: # if we are adding a head node
         last_definition_pair = DefinitionPair(definitionNode)
         vmodel.nodes.append(definitionNode)
-        vmodel.DIRECTORY_PROPERTIES.setKey(f'{KEY_PREFIX}', last_definition_pair.head)
+        project_dir_lookup.setKey('COMPILE_DEFINITIONS', last_definition_pair.head)
 
     newDefinitionCommand.commands.append(targetNode)
-    definitionNode.depends.append(newDefinitionCommand)
+    definitionNode.commands.append(newDefinitionCommand)
     last_definition_pair.tail = definitionNode
-    vmodel.DIRECTORY_PROPERTIES.setKey(f'{KEY_PREFIX}_PAIRS', last_definition_pair)
+    project_dir_lookup.setKey('COMPILE_DEFINITIONS_PAIRS', last_definition_pair)
 
 
 def addLinkLibraries(arguments):

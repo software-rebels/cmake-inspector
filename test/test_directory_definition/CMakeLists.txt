@@ -1,0 +1,12 @@
+if(BMD)
+    add_definitions(-Dtest222)
+else()
+    remove_definitions(-Dtest222)
+endif(BMD)
+
+if(testing)
+    add_definitions(-Dtest)
+    add_library(tar subdir.cxx)
+else()
+    remove_definitions(-Dtest)
+endif(testing)

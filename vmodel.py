@@ -61,7 +61,7 @@ class VModel:
         self.nodeStack = []
         # A new property to support nested if statements
         self.ifLevel = 0
-
+        self.definitionOrder = 0
 
     def pushSystemState(self, rule: Rule):
         self.systemState.append(rule)
@@ -88,6 +88,10 @@ class VModel:
 
     def getNextCounter(self):
         return str(next(self.COUNTER))
+
+    def getDefinitionOrder(self):
+        self.definitionOrder += 1
+        return self.definitionOrder
 
     def addOption(self, optionName, initialValue):
         self.options[optionName] = initialValue

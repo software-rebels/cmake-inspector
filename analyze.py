@@ -1,7 +1,7 @@
 import logging
 import pickle
 
-from algorithms import flattenAlgorithmWithConditions, recursivelyResolveReference, mergeFlattedList, \
+from algorithms import flattenAlgorithmWithConditions, getFlattenedDefinitionsFromNode, recursivelyResolveReference, mergeFlattedList, \
     removeDuplicatesFromFlattedList, postprocessZ3Output
 from datastructs import Lookup, RefNode, TargetNode, LiteralNode, CustomCommandNode, Node
 from pydriller import RepositoryMining
@@ -82,11 +82,50 @@ def checkForCyclesAndPrint(vmodel: VModel, lookup: Lookup, node: Node, visited=[
     return False
 
 
+def printDefinitionsForATarget(vmodel: VModel, lookup: Lookup, target: str, output=False):
+    logging.info("[FLATTEN] Start flattening target for definitions " + target)
+    targetNode = lookup.getKey("t:{}".format(target))
+    if targetNode is None:
+        # not sure if this is against the norm
+        targetNode = lookup.getVariableHistory(f't:{target}')[0]
+    if targetNode is None:
+        targetNode = vmodel.findNode(target)
+    assert isinstance(targetNode, TargetNode)
+    flattenedDefinitions = getFlattenedDefinitionsFromNode(targetNode.definitions)
+
+    logging.info("[FLATTEN] Start postprocessing " + target)
+    postprocessZ3Output(flattenedDefinitions)
+
+    result = defaultdict(set)
+    for item in flattenedDefinitions:
+        result[str(item[1])].add(item[0])
+
+    # logging.info("[FLATTEN] Start postprocessing 2 " + target)
+    # # Post-processing
+    # # 1. Resolve wildcard path
+    # for key in list(result):
+    #     for item in list(result[key]):
+    #         if '*' in item:
+    #             result[key].update(set(glob.glob(item)))
+    #             result[key].remove(item)
+
+    def set_default(obj):
+        if isinstance(obj, set):
+            return list(obj)
+        raise TypeError
+
+    if output:
+        print(json.dumps(result, default=set_default, sort_keys=True, indent=4))
+
+    return result
+
+
 def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=False):
     logging.info("[FLATTEN] Start flattening target " + target)
     targetNode = lookup.getKey("t:{}".format(target))
     if targetNode is None:
         targetNode = vmodel.findNode(target)
+
     assert isinstance(targetNode, TargetNode)
     flattenedFiles = flattenAlgorithmWithConditions(targetNode.sources)
     # for library, conditions in targetNode.linkLibrariesConditions.items():

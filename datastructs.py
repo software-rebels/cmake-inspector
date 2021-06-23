@@ -1,5 +1,5 @@
 from operator import is_
-from typing import Optional, List
+from typing import Optional, List, Type
 import copy
 
 from condition_data_structure import Rule
@@ -388,8 +388,8 @@ class DirectoryNode(LiteralNode):
     def __init__(self, name):
         super().__init__(name)
         self._post_num = 0 # for linearization
-        self.depends_on = [] # child
-        self.depended_by = [] # parent
+        self.depends_on = [] # child depends on parent
+        self.depended_by = [] # parent depended by child
         self.targets = []
 
 
@@ -399,19 +399,31 @@ class DefinitionPair:
         self.tail = tail
 
 
-# Not much for now, but might have more in the future
-# Technically not really a custom command, but the depends attribute is useful
+# Technically not really a custom command, but node type integrates well
 class DefinitionNode(CustomCommandNode):
-    def __init__(self, from_dir=True, is_flag=False):
+    def __init__(self, from_dir=True, is_flag=False, ordering=-1):
         super().__init__(f"{'directory' if from_dir else 'target'}_definitions")
         self.is_flag = is_flag
         self.from_dir = from_dir
+        self.ordering = ordering # For figuring out add/remove dependencies.
+        self.inherits = []
+
+    def addInheritance(self, node):
+        if not isinstance(node, DefinitionNode):
+            raise TypeError("Inherited node is not of type DefinitionNode.")
+        self.inherits.append(node)
+    
+    def getChildren(self) -> Optional[List]:
+        result = []
+        result.extend(self.inherits)
+        if r := super().getChildren():
+            result.extend(r)
+        return result if result else None
 
 
-# Repeated flags need to be taken care of
-# Might have unsatisfiable path in the graph for definitions.
 class CommandDefinitionNode(CustomCommandNode):
     def __init__(self, command, specific=False):
+        self.command_type = command
         if not command in ['add', 'remove']:
             raise ValueError(f'CommandDefinitionNode given wrong initialization input: {command}')
         name = ''
@@ -442,7 +454,7 @@ class Directory:
     def find(self, name):
         return self.map.get(name, None) 
 
-    # Should also check for circular dependency when adding new child
+    # TODO: Should also check for circular dependency when adding new child
     def addChild(self, node, child):
         node.depended_by.append(child)
         child.depends_on.append(node)

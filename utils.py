@@ -121,8 +121,8 @@ def util_getNegativeOfPrevLogics():
 def util_preprocess_definition_names(names, force=False):
     results = []
     if force:
-        # this is for the usecase of target_compile_definition, where definitions are added
-        # without specifying -D
+        # this is for the usecase of target_compile_definition, 
+        # where definitions are added without specifying -D
         results = [f"-D{name}" for name in names]
     else:
         results = list(map(lambda x: f"-D{x[2:]}" if x[0:2] == '/D' else x, names))
