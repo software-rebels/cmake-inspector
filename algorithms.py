@@ -321,6 +321,29 @@ def getFlattenedDefinitionsFromNode(node: Node, conditions: Set = None, debug=Tr
     return dir_result
 
 
+def mergeFlattenedDefinitionResults(global_result, local_result, to_add):
+    # Can clearly be optimized with the use of a dictionary, but I don't think the scale requires it
+    def find_name(to_find, name):
+        res = []
+        for idx, t in enumerate(to_find):
+            if t[0] == name:
+                res.append(idx)
+        return res
+    result = global_result
+    for r in local_result:
+        name, cond = r
+        indices = find_name(global_result, name)
+        if indices:
+            for idx in indices:
+                g_name, g_cond = global_result[idx]
+                if to_add:
+                    result[idx] = (g_name, Or(g_cond, cond))
+                else:
+                    result[idx] = (g_name, And(g_cond, cond))
+        else:
+            result.append((name, cond))
+    return result
+
 def mergeDirectoryAndTargetDefinitions(directory_result, target_result):
     result = []
     return result
@@ -372,7 +395,8 @@ def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recSta
         cur_command = cur_node.commands[0] # This is a custom command like add_definitions/remove_definitions
         cur_result = flattenCustomCommandNode(cur_command, conditions, recStack)
         # merge cur_result with result
-        print("Current result:", cur_result)
+        result = mergeFlattenedDefinitionResults(result, cur_result)
+        print("Current result:", result)
     # if this is the last node in the inheritance path, just loop through dependents, because 
     # there you are in the lowest level and no longer have to go down the stack.
     while cur_node:
@@ -382,10 +406,8 @@ def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recSta
             cur_node = None
         else:
             cur_node = cur_node.depends[0]
-        # merge result (i.e. if command is remove, we AND, if add, we do nested OR)
-        print(cur_result)
+        result = mergeFlattenedDefinitionResults(result, cur_result)
     return result
-
 
 
 # Given a Node (often a ConcatNode) this algorithm will return flatted arguments
