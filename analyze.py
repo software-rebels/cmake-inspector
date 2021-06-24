@@ -1,7 +1,7 @@
 import logging
 import pickle
 
-from algorithms import flattenAlgorithmWithConditions, recursivelyResolveReference, mergeFlattedList, \
+from algorithms import flattenAlgorithmWithConditions, getFlattenedDefinitionsFromNode, recursivelyResolveReference, mergeFlattedList, \
     removeDuplicatesFromFlattedList, postprocessZ3Output
 from datastructs import Lookup, RefNode, TargetNode, LiteralNode, CustomCommandNode, Node
 from pydriller import RepositoryMining
@@ -86,10 +86,12 @@ def printDefinitionsForATarget(vmodel: VModel, lookup: Lookup, target: str, outp
     logging.info("[FLATTEN] Start flattening target " + target)
     targetNode = lookup.getKey("t:{}".format(target))
     if targetNode is None:
+        # not sure if this is against the norm
+        targetNode = lookup.getVariableHistory(f't:{target}')[0]
+    if targetNode is None:
         targetNode = vmodel.findNode(target)
-
     assert isinstance(targetNode, TargetNode)
-    flattenedDefinitions = flattenAlgorithmWithConditions(targetNode.definitions)
+    flattenedDefinitions = getFlattenedDefinitionsFromNode(targetNode.definitions)
 
     logging.info("[FLATTEN] Start postprocessing 1 " + target)
     postprocessZ3Output(flattenedDefinitions)

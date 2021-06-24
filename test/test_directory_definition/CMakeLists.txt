@@ -1,6 +1,6 @@
 if(testing)
     add_definitions(-Dtest)
-    add_library(garrrrr subdir.cxx)
+    add_library(tar subdir.cxx)
 else()
-    remove_definitions(-Dtest2)
+    remove_definitions(-Dtest)
 endif(testing)

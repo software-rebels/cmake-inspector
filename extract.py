@@ -1075,7 +1075,6 @@ class CMakeExtractorListener(CMakeListener):
             if child_dir is None:
                 child_dir = DirectoryNode(project_dir)
             directoryTree.addChild(parent_dir, child_dir)
-            print(f"PROJECT DIR: {project_dir}")
             parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
             lookupTable.dropScope()
             project_dir = tempProjectDir
@@ -1312,32 +1311,19 @@ def linkDirectory():
     for dir_node in topological_order:
         cur_dir = dir_node.rawName
         local_definition_node = vmodel.directory_to_properties.get(cur_dir).getOwnKey('COMPILE_DEFINITIONS')
-        # # For root node, the concat node is pointless, but added for consistency.
-        # # The reason we need this extra concat node is for subdirectory to inherit from it
-        # local_definition_node = ConcatNode('inherit_definition_{}'.format(vmodel.getNextCounter()))
-        # local_definition_node.addNode(definition_node)
         for parent_node in dir_node.depends_on:
-            # if there is a parent dir, we add concat parent COMPILE DEF.
             parent_dir = parent_node.rawName
             parent_definition_node = vmodel.directory_to_properties.get(parent_dir).getOwnKey('COMPILE_DEFINITIONS')
             local_definition_node.addInheritance(parent_definition_node)
-        
-        # vmodel.directory_to_properties.get(cur_dir).setKey('COMPILE_DEFINITIONS', local_definition_node)
     
         # Merging target definitions and directory definitions for each single target, over all directories
         for target in dir_node.targets:
-            if target.definitions is None:
-                target.setDefinition(local_definition_node)
-            elif isinstance(target.definitions, DefinitionNode):
-                # this is for cases when we add definition directly to target
-                target_definition_node = ConcatNode('merge_inherit_definition_{}'.format(vmodel.getNextCounter()))
-                target_definition_node.addNode(target.definitions)
-                target_definition_node.addNode(local_definition_node)
-                target.setDefinition(target_definition_node)
-            else:
-                # maybe target definitions can be concat node?
-                raise TypeError(f"Definition type mismatch, we got {type(target.definitions)}.")
-
+            concat_node = ConcatNode('merge_target_definition_{}'.format(vmodel.getNextCounter()))
+            concat_node.addNode(local_definition_node)
+            if target.definitions and isinstance(target.definitions, DefinitionNode):
+                concat_node.addNode(target.definitions)
+            target.setDefinition(concat_node)
+            
 
 def getFlattenedDefintionsForTarget(target: str):
     return printDefinitionsForATarget(vmodel, lookupTable, target)

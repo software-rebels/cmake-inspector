@@ -4,7 +4,7 @@ from collections import defaultdict
 
 from antlr4 import CommonTokenStream, ParseTreeWalker, InputStream
 
-from analyze import printFilesForATarget
+from analyze import printDefinitionsForATarget, printFilesForATarget
 from extract import CMakeExtractorListener, getFlattenedDefintionsForTarget
 from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
@@ -1253,8 +1253,9 @@ class TestVariableDefinitions(unittest.TestCase):
         linkDirectory()
         self.vmodel.export()
         # print(defn := self.lookup.getKey('t:foo').definitions)
-        # print(f"Flattened result: {getFlattenedDefintionsForTarget('garrrrr')}")
-        print(f"Flatten Result: {getFlattenedDefinitionsFromNode(self.lookup.getKey('t:foo').definitions)}")
+        # print(self.lookup.__dict__)
+        print(f"Flattened result: {printDefinitionsForATarget(self.vmodel, self.lookup, 'tar', output=True)}")
+        # print(f"Flatten Result: {getFlattenedDefinitionsFromNode(self.vmodel.findNode('tar_2').definitions)}")
         # commandNode = self.vmodel.findNode('remove_definitions')
         # self.assertIsInstance(commandNode, CustomCommandNode)
         # self.assertEqual('-Djohn', commandNode.commands[0].getValue())

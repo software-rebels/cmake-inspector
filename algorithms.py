@@ -254,6 +254,13 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
             result += flattenAlgorithmWithConditions(dependent, conditions, recStack=recStack)
     
     elif 'target_definitions' in node.getName().lower():
+        result = []
+        result += flattenCustomCommandNode(node.commands[0], conditions, recStack=recStack)
+        if node.depends:
+            result += flattenAlgorithmWithConditions(node.depends[0], conditions, recStack=recStack)
+        return result
+
+    elif 'target_definitions' in node.getName().lower():
         # Similar to the directory_definitions
         result = []
         for dependent in node.depends:
@@ -284,14 +291,19 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
                 continue
             else:
                 # take the negation of all of the nodes' condition
+                if flag == '-Dtest':
+                    print('-Dtest', condition)
                 if len(condition) == 0:
                     new_condition = {}
                 elif len(condition) == 1:
                     new_condition = {Not(*condition)}
                 else:
                     new_condition = {Not(And(*condition))}
-                
+                if flag == '-Dtest':
+                    print('-Dtest new', new_condition)
                 result.append((flag, new_condition))
+                if flag == '-Dtest':
+                    print('-Dtest res', result)
     return result
 
 
@@ -314,21 +326,24 @@ def getFlattenedDefinitionsFromNode(node: Node, conditions: Set = None, debug=Tr
             target_node = children[0]
             directory_node = children[1]
     dir_result = flattenDirectoryDefinitions(directory_node, conditions, recStack)
-    # target_result = flattenTargetDefinitions(target_node, conditions, recStack)
+    target_result = flattenTargetDefinitions(target_node, conditions, recStack)
     # Now this gives us all the flattened result for the directory side,
     # we have to reconcile the data with the target side.
-    # result = mergeDirectoryAndTargetDefinitions(dir_result, target_result)
-    return dir_result
+    result = mergeDirectoryAndTargetDefinitions(dir_result, target_result)
+    return result
 
 
-def mergeFlattenedDefinitionResults(global_result, local_result, to_add):
+def find_name(to_find, name):
+    res = []
+    for idx, t in enumerate(to_find):
+        if t[0] == name:
+            res.append(idx)
+    return res
+
+
+def mergeFlattenedDefinitionResults(global_result, local_result, command_type):
     # Can clearly be optimized with the use of a dictionary, but I don't think the scale requires it
-    def find_name(to_find, name):
-        res = []
-        for idx, t in enumerate(to_find):
-            if t[0] == name:
-                res.append(idx)
-        return res
+    to_add = True if command_type == 'add' else False
     result = global_result
     for r in local_result:
         name, cond = r
@@ -336,23 +351,36 @@ def mergeFlattenedDefinitionResults(global_result, local_result, to_add):
         if indices:
             for idx in indices:
                 g_name, g_cond = global_result[idx]
+                g_cond = {And(*g_cond)} if len(g_cond) > 1 else g_cond
+                cond = {And(*cond)} if len(cond) > 1 else cond
                 if to_add:
-                    result[idx] = (g_name, Or(g_cond, cond))
+                    result[idx] = (g_name, {Or(*g_cond, *cond)})
                 else:
-                    result[idx] = (g_name, And(g_cond, cond))
+                    result[idx] = (g_name, {And(*g_cond, *cond)})
         else:
             result.append((name, cond))
     return result
 
+
 def mergeDirectoryAndTargetDefinitions(directory_result, target_result):
-    result = []
+    # something need to be fixed here
+    result = directory_result 
+    for tar in target_result:
+        flag, cond = tar
+        indices = find_name(result, flag)
+        if not indices:
+            result.append((flag, cond))
+            continue
+        for idx in indices:
+            r_flag, r_cond = result[idx]
+            result[idx] = (r_flag, {Or(*r_cond, *cond)})
     return result
 
 
 def flattenTargetDefinitions(node: CustomCommandNode, conditions: Set, recStack, lookup=None):
     if node is None:
         return []
-    result = []
+    result = flattenCustomCommandNode(node, conditions, recStack, lookup)
     return result
 
 
@@ -368,10 +396,16 @@ def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recSta
     while cur_node.inherits:
         cur_node = cur_node.inherits[0]
         inheritance_path.append(cur_node)
+    # print("IP:", [d.__dict__ for d in inheritance_path])
     # Now, we recurse down from the parent until the end of the current directory.
     # we can now use _reverse_inherits here until we reach node
     cur_root_node = inheritance_path.pop()
+    # print("CRN:" , cur_root_node.__dict__)
     while inheritance_path:
+        cur_command = cur_node.commands[0] # This is a custom command like add_definitions/remove_definitions
+        cur_result = flattenCustomCommandNode(cur_command, conditions, recStack)
+        # merge cur_result with result
+        result = mergeFlattenedDefinitionResults(result, cur_result, cur_command.command_type)
         if not cur_node.depends:
             if inheritance_path:
                 # jump to the next subdirectory
@@ -385,18 +419,14 @@ def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recSta
             assert isinstance(next_node, DefinitionNode)
             if next_node.ordering > cur_node.ordering + 1:
                 # jump to the subdirectory
-                print("Ordering", cur_node.ordering, next_node.ordering)
                 cur_root_node = inheritance_path.pop()
                 cur_node = cur_root_node
             else:
                 # first work on the commands side
                 # then, we simply traverse to the next dependent
                 cur_node = cur_node.depends[0]
-        cur_command = cur_node.commands[0] # This is a custom command like add_definitions/remove_definitions
-        cur_result = flattenCustomCommandNode(cur_command, conditions, recStack)
-        # merge cur_result with result
-        result = mergeFlattenedDefinitionResults(result, cur_result)
-        print("Current result:", result)
+        
+        # print("Current result:", result)
     # if this is the last node in the inheritance path, just loop through dependents, because 
     # there you are in the lowest level and no longer have to go down the stack.
     while cur_node:
@@ -406,7 +436,10 @@ def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recSta
             cur_node = None
         else:
             cur_node = cur_node.depends[0]
-        result = mergeFlattenedDefinitionResults(result, cur_result)
+        print("OLD RESULT", result)
+        print("CUR RESULT", cur_result)
+        result = mergeFlattenedDefinitionResults(result, cur_result, cur_command.command_type)
+    # print(result)
     return result
 
 

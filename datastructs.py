@@ -422,13 +422,14 @@ class DefinitionNode(CustomCommandNode):
             result.extend(r)
         return result if result else None
 
-    def getNodeName(self):
-        return f"{self.name}, order: {self.ordering}"
+    # def getNodeName(self):
+    #     return f"{self.name}, order: {self.ordering}"
 
 # Repeated flags need to be taken care of
 # Might have unsatisfiable path in the graph for definitions.
 class CommandDefinitionNode(CustomCommandNode):
     def __init__(self, command, specific=False):
+        self.command_type = command
         if not command in ['add', 'remove']:
             raise ValueError(f'CommandDefinitionNode given wrong initialization input: {command}')
         name = ''
