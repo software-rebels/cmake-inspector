@@ -129,13 +129,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                                                                     debug, recStack)
     elif isinstance(node, ConcatNode):
         result = list()
-        # To handle the directory_definition and target_definition traversal ordering.
         children = node.getChildren()
-        
-        if len(children) == 2 and isinstance(children[0], DefinitionNode):
-            # Traversal ordering is wrong, it needs to be flipped
-            print("Reversing Traversal Ordering")
-            children = reversed(children)
         
         for idx, item in enumerate(children):
             childSet = flattenAlgorithmWithConditions(item, conditions, debug, recStack)
@@ -354,10 +348,7 @@ def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recSta
     # Now, we recurse down from the parent until the end of the current directory.
     # we can now use _reverse_inherits here until we reach node
     cur_root_node = inheritance_path.pop()
-    while cur_root_node:
-        flattedResult = flattenCustomCommandNode(cur_node, conditions, recStack)
-        if flattedResult is None:
-            flattedResult = []
+    while inheritance_path:
         if not cur_node.depends:
             if inheritance_path:
                 # jump to the next subdirectory
@@ -371,6 +362,7 @@ def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recSta
             assert isinstance(next_node, DefinitionNode)
             if next_node.ordering > cur_node.ordering + 1:
                 # jump to the subdirectory
+                print("Ordering", cur_node.ordering, next_node.ordering)
                 cur_root_node = inheritance_path.pop()
                 cur_node = cur_root_node
             else:
@@ -381,6 +373,17 @@ def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recSta
         cur_result = flattenCustomCommandNode(cur_command, conditions, recStack)
         # merge cur_result with result
         print("Current result:", cur_result)
+    # if this is the last node in the inheritance path, just loop through dependents, because 
+    # there you are in the lowest level and no longer have to go down the stack.
+    while cur_node:
+        cur_command = cur_node.commands[0] # This is a custom command like add_definitions/remove_definitions
+        cur_result = flattenCustomCommandNode(cur_command, conditions, recStack)
+        if not cur_node.depends:
+            cur_node = None
+        else:
+            cur_node = cur_node.depends[0]
+        # merge result (i.e. if command is remove, we AND, if add, we do nested OR)
+        print(cur_result)
     return result
 
 
