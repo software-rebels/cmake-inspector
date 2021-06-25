@@ -5,10 +5,10 @@ from collections import defaultdict
 from antlr4 import CommonTokenStream, ParseTreeWalker, InputStream
 
 from analyze import printDefinitionsForATarget, printFilesForATarget
-from extract import CMakeExtractorListener, getFlattenedDefintionsForTarget
+from extract import CMakeExtractorListener, getFlattenedDefintionsForTarget, linkDirectory
 from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
-from datastructs import Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, \
+from datastructs import CommandDefinitionNode, DefinitionNode, Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, \
     CustomCommandNode, TargetNode, TestNode, OptionNode, Node, Directory
 from algorithms import flattenAlgorithm, flattenAlgorithmWithConditions, getFlattedArguments, flattenCustomCommandNode, \
     CycleDetectedException, getFlattenedDefinitionsFromNode, postprocessZ3Output
@@ -24,7 +24,10 @@ class TestVariableDefinitions(unittest.TestCase):
         tree = parser.cmakefile()
         extractor = CMakeExtractorListener()
         walker = ParseTreeWalker()
+        # root_dir = '.'
+        # Directory().getInstance().setRoot(root_dir)
         walker.walk(extractor, tree)
+        linkDirectory()
 
     def setUp(self) -> None:
         self.vmodel = VModel.getInstance()
@@ -1235,30 +1238,87 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual('DIRECTORY /bar PROPERTY LABELS val1 val2',
                          " ".join(getFlattedArguments(setProperty.commands[0])))
 
-    def test_remove_definitions(self):
+    def test_definition_directory_dependency(self):
         text = """
+        add_library(foo foo.cpp)
         if(AMD)
-            add_definitions(/Dbar -Wall -Werror)
-            add_library(foo bar.cxx car.cxx far.cxx)
-            target_compile_definitions(foo PUBLIC bar)
-            add_subdirectory(/home/lazypanda/Code/URF/cmake-inspector/test/test_directory_definition)
-        else()
-            add_definitions(-Djohn)
-            remove_definitions(-Djohn -Dbar)
+            add_definitions(-Dboo)
+            add_subdirectory(test/test_directory_definition)
         endif(AMD)
         """
         self.runTool(text)
-        directory = Directory.getInstance()
-        from extract import linkDirectory
-        linkDirectory()
-        self.vmodel.export()
-        # print(defn := self.lookup.getKey('t:foo').definitions)
-        # print(self.lookup.__dict__)
-        print(f"Flattened result: {printDefinitionsForATarget(self.vmodel, self.lookup, 'tar', output=True)}")
-        # print(f"Flatten Result: {getFlattenedDefinitionsFromNode(self.vmodel.findNode('tar_2').definitions)}")
-        # commandNode = self.vmodel.findNode('remove_definitions')
-        # self.assertIsInstance(commandNode, CustomCommandNode)
-        # self.assertEqual('-Djohn', commandNode.commands[0].getValue())
+        targetNode = self.vmodel.findNode('goo_2')
+        commandNode = self.vmodel.findNode('add_definitions')
+        self.assertIsInstance(commandNode, CommandDefinitionNode)
+        self.assertEqual({'-Dboo', '-Dtest'}, set(map(lambda x: x[0], getFlattenedDefinitionsFromNode(targetNode.definitions))))
+        flattened_result = printDefinitionsForATarget(self.vmodel, self.lookup, 'goo', output=True)
+        self.assertSetEqual({'-Dboo'}, flattened_result['[AMD]'])
+        self.assertSetEqual({'-Dtest'}, flattened_result['[AT_SUB, AMD]'])
+
+    def test_add_definitions(self):
+        text = """
+        add_library(foo foo.cpp)
+        if(ABC)
+            add_definitions(-Dboo)
+        endif(ABC)
+        if(AMD)
+            target_compile_definitions(foo PUBLIC boo)
+        endif(AMD)
+        """
+        self.runTool(text)
+        targetNode = self.lookup.getKey('t:foo')
+        commandNode = self.vmodel.findNode('add_definitions')
+        self.assertIsInstance(commandNode, CommandDefinitionNode)
+        self.assertEqual({'-Dboo'}, set(map(lambda x: x[0], getFlattenedDefinitionsFromNode(targetNode.definitions))))
+        flattened_result = printDefinitionsForATarget(self.vmodel, self.lookup, 'foo', output=False)
+        self.assertSetEqual({'-Dboo'}, flattened_result['[Or(ABC, AMD)]'])
+
+    def test_target_definitions(self):
+        text = """
+        add_library(foo foo.cpp)
+        target_compile_definitions(foo PUBLIC bar)
+        target_compile_definitions(foo PRIVATE car)
+        target_compile_definitions(foo INTERFACE far) 
+        """
+        self.runTool(text)
+        targetNode = self.lookup.getKey('t:foo')
+        self.assertIsInstance(targetNode, TargetNode)
+        target_def = targetNode.definitions.getChildren()[0]
+        interface_def = targetNode.interfaceDefinitions.getChildren()[0]
+        self.assertIsInstance(target_def, DefinitionNode)
+        self.assertIsInstance(interface_def, DefinitionNode)
+        self.assertSetEqual({'-Dbar', '-Dcar'}, set(map(lambda x: x[0], getFlattenedDefinitionsFromNode(targetNode.definitions))))
+        self.assertSetEqual({'-Dbar', '-Dfar'}, set(map(lambda x: x[0], getFlattenedDefinitionsFromNode(targetNode.interfaceDefinitions))))
+
+    def test_remove_definitions(self):
+        text = """
+        add_library(foo foo.cpp)
+        if(ABC)
+        target_compile_definitions(foo PUBLIC bar)
+        endif(ABC)
+        add_definitions(/Dcar)
+        if(AMD)
+            remove_definitions(-Dbar -Dcar)
+        endif(AMD)
+        """
+        self.runTool(text)
+        targetNode = self.lookup.getKey('t:foo')
+        commandNode = self.vmodel.findNode('remove_definitions')
+        self.assertIsInstance(commandNode, CommandDefinitionNode)
+        self.assertEqual({'-Dbar', '-Dcar'}, set(map(lambda x: x[0], getFlattenedDefinitionsFromNode(targetNode.definitions))))
+        flattened_result = printDefinitionsForATarget(self.vmodel, self.lookup, 'foo', output=False)
+        self.assertSetEqual({'-Dbar'}, flattened_result['[ABC]'])
+        self.assertSetEqual({'-Dcar'}, flattened_result['[Not(AMD)]'])
+
+
+    def test_adding_subdirectory(self):
+        text = """
+        add_library(foo foo.cpp)
+        add_subdirectory(test/test_subdirectory)        
+        """
+        self.runTool(text)
+        targetNode = self.lookup.getVariableHistory('t:bar')[0]
+        self.assertIsInstance(targetNode, TargetNode)
 
     def test_load_cache(self):
         text = """

@@ -1296,20 +1296,54 @@ def linkDirectory():
     # Setting the correct definition dependency based on directory
     for dir_node in topological_order:
         cur_dir = dir_node.rawName
-        local_definition_node = vmodel.directory_to_properties.get(cur_dir).getOwnKey('COMPILE_DEFINITIONS')
+        cur_dir_props = vmodel.directory_to_properties.get(cur_dir)
+
+        # If there are directories that it depends on and they have directory-based definitions, 
+        # it has to create an auxillary node that inherits parents' directory-based definitions.
+        # Or if it is a root, then by definition, it is dependent on nothing.
+        if not (dir_node == directoryTree.root or dir_node.depends_on):
+            continue
+        
+        has_inheritance = False # to keep track of whether to remove the local_definitions_node later
+        if cur_dir_props and (local_definition_node := cur_dir_props.getOwnKey('COMPILE_DEFINITIONS')):
+            has_inheritance = True
+        else:
+            local_definition_node = DefinitionNode(from_dir=True, ordering=math.inf)
+            if not cur_dir_props:
+                vmodel.directory_to_properties[cur_dir] = Lookup()
+            vmodel.directory_to_properties.get(cur_dir).setKey('COMPILE_DEFINITIONS', local_definition_node)
+
         for parent_node in dir_node.depends_on:
             parent_dir = parent_node.rawName
-            parent_definition_node = vmodel.directory_to_properties.get(parent_dir).getOwnKey('COMPILE_DEFINITIONS')
+            parent_dir_props = vmodel.directory_to_properties.get(parent_dir)
+            if not parent_dir_props or not (parent_definition_node := parent_dir_props.getOwnKey('COMPILE_DEFINITIONS')):
+                # parent_definition_node = parent_dir_props.getOwnKey('COMPILE_DEFINITIONS')
+                continue
             local_definition_node.addInheritance(parent_definition_node)
-    
+            has_inheritance = True
+
+        if not has_inheritance:
+            local_definition_node = None    
+            del vmodel.directory_to_properties[cur_dir]
+
         # Merging target definitions and directory definitions for each single target, over all directories
         for target in dir_node.targets:
-            concat_node = ConcatNode('merge_target_definition_{}'.format(vmodel.getNextCounter()))
-            concat_node.addNode(local_definition_node)
+            concat_target_node = ConcatNode('merge_target_definition_{}'.format(vmodel.getNextCounter()))
+            concat_interface_node = ConcatNode('merge_target_interface_definition_{}'.format(vmodel.getNextCounter()))
+            if local_definition_node:
+                concat_target_node.addNode(local_definition_node)
+                # Depends on the exact definition, not really sure if directory definition
+                # is part of interface definition
+                # concat_interface_node.addNode(local_definition_node) 
             if target.definitions and isinstance(target.definitions, DefinitionNode):
-                concat_node.addNode(target.definitions)
-            target.setDefinition(concat_node)
-            
+                concat_target_node.addNode(target.definitions)
+            if target.interfaceDefinitions and isinstance(target.interfaceDefinitions, DefinitionNode):
+                concat_interface_node.addNode(target.interfaceDefinitions)
+            if concat_target_node.getChildren():
+                target.setDefinition(concat_target_node)
+            if concat_interface_node.getChildren():
+                target.setInterfaceDefinition(concat_interface_node)
+                            
 
 def getFlattenedDefintionsForTarget(target: str):
     return printDefinitionsForATarget(vmodel, lookupTable, target)

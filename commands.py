@@ -307,6 +307,7 @@ def handleCompileDefinitionCommand(arguments, command, specific, project_dir):
         project_dir_lookup.setKey('COMPILE_DEFINITIONS', last_definition_pair.head)
 
     newDefinitionCommand.commands.append(targetNode)
+    newDefinitionCommand.addParent(definitionNode)
     definitionNode.commands.append(newDefinitionCommand)
     last_definition_pair.tail = definitionNode
     project_dir_lookup.setKey('COMPILE_DEFINITIONS_PAIRS', last_definition_pair)
