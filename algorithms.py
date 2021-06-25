@@ -12,6 +12,7 @@ from vmodel import VModel
 
 directory_definition_stack = {}
 
+
 def flattenAlgorithm(node: Node):
     if isinstance(node, LiteralNode):
         return [node.getValue()]
@@ -287,23 +288,16 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
             if flag not in directory_definition_stack:
                 # Since the flags have not been introduced by add_definitions, 
                 # there is nothing we need to do
-                print(f"REMOVE: flags {flag} not yet added")
+                logging.info(f"REMOVE: flags {flag} not yet added")
                 continue
             else:
                 # take the negation of all of the nodes' condition
-                if flag == '-Dtest':
-                    print('-Dtest', condition)
                 if len(condition) == 0:
                     new_condition = {}
                 elif len(condition) == 1:
                     new_condition = {Not(*condition)}
                 else:
                     new_condition = {Not(And(*condition))}
-                if flag == '-Dtest':
-                    print('-Dtest new', new_condition)
-                result.append((flag, new_condition))
-                if flag == '-Dtest':
-                    print('-Dtest res', result)
     return result
 
 
@@ -396,15 +390,12 @@ def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recSta
     while cur_node.inherits:
         cur_node = cur_node.inherits[0]
         inheritance_path.append(cur_node)
-    # print("IP:", [d.__dict__ for d in inheritance_path])
     # Now, we recurse down from the parent until the end of the current directory.
     # we can now use _reverse_inherits here until we reach node
     cur_root_node = inheritance_path.pop()
-    # print("CRN:" , cur_root_node.__dict__)
     while inheritance_path:
         cur_command = cur_node.commands[0] # This is a custom command like add_definitions/remove_definitions
         cur_result = flattenCustomCommandNode(cur_command, conditions, recStack)
-        # merge cur_result with result
         result = mergeFlattenedDefinitionResults(result, cur_result, cur_command.command_type)
         if not cur_node.depends:
             if inheritance_path:
@@ -425,7 +416,6 @@ def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recSta
                 # first work on the commands side
                 # then, we simply traverse to the next dependent
                 cur_node = cur_node.depends[0]        
-        # print("Current result:", result)
     # if this is the last node in the inheritance path, just loop through dependents, because 
     # there you are in the lowest level and no longer have to go down the stack.
     while cur_node:
@@ -435,11 +425,7 @@ def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recSta
             cur_node = None
         else:
             cur_node = cur_node.depends[0]
-        print("OLD RESULT", result)
-        print("CUR RESULT", cur_result)
         result = mergeFlattenedDefinitionResults(result, cur_result, cur_command.command_type)
-        print("MERGED RESULT", result)
-    # print(result)
     return result
 
 

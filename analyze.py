@@ -83,7 +83,7 @@ def checkForCyclesAndPrint(vmodel: VModel, lookup: Lookup, node: Node, visited=[
 
 
 def printDefinitionsForATarget(vmodel: VModel, lookup: Lookup, target: str, output=False):
-    logging.info("[FLATTEN] Start flattening target " + target)
+    logging.info("[FLATTEN] Start flattening target for definitions " + target)
     targetNode = lookup.getKey("t:{}".format(target))
     if targetNode is None:
         # not sure if this is against the norm
@@ -93,22 +93,21 @@ def printDefinitionsForATarget(vmodel: VModel, lookup: Lookup, target: str, outp
     assert isinstance(targetNode, TargetNode)
     flattenedDefinitions = getFlattenedDefinitionsFromNode(targetNode.definitions)
 
-    logging.info("[FLATTEN] Start postprocessing 1 " + target)
+    logging.info("[FLATTEN] Start postprocessing " + target)
     postprocessZ3Output(flattenedDefinitions)
 
     result = defaultdict(set)
     for item in flattenedDefinitions:
         result[str(item[1])].add(item[0])
 
-
-    logging.info("[FLATTEN] Start postprocessing 2 " + target)
-    # Post-processing
-    # 1. Resolve wildcard path
-    for key in list(result):
-        for item in list(result[key]):
-            if '*' in item:
-                result[key].update(set(glob.glob(item)))
-                result[key].remove(item)
+    # logging.info("[FLATTEN] Start postprocessing 2 " + target)
+    # # Post-processing
+    # # 1. Resolve wildcard path
+    # for key in list(result):
+    #     for item in list(result[key]):
+    #         if '*' in item:
+    #             result[key].update(set(glob.glob(item)))
+    #             result[key].remove(item)
 
     def set_default(obj):
         if isinstance(obj, set):

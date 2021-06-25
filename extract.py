@@ -1186,20 +1186,6 @@ class CMakeExtractorListener(CMakeListener):
         elif commandId == 'link_directories':
             addLinkDirectories(arguments)
 
-        # elif commandId == 'target_compile_definitions':
-        #     # This command add a definition to the current ones. So we should add it in all the possible paths
-        #     targetName = arguments.pop(0)
-        #     targetName = flattenAlgorithmWithConditions(vmodel.expand([targetName]))[0][0]
-        #     scope = None
-        #     targetNode = lookupTable.getKey('t:{}'.format(targetName))
-        #     assert isinstance(targetNode, TargetNode)
-        #     nextNode = vmodel.expand(arguments)
-        #     if scope:
-        #         nextNode.name = scope + "_" + nextNode.name
-        #     print(nextNode)
-        #     vmodel.addNode(nextNode)
-        #     targetNode.setDefinition(util_handleConditions(nextNode, nextNode, targetNode.getDefinition()))
-
         elif commandId in ('target_link_libraries', 'add_dependencies'):
             customCommand = CustomCommandNode(commandId)
             customCommand.commands.append(vmodel.expand(arguments))
