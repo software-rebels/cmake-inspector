@@ -293,11 +293,12 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
             else:
                 # take the negation of all of the nodes' condition
                 if len(condition) == 0:
-                    new_condition = {}
+                    new_condition = {False}
                 elif len(condition) == 1:
                     new_condition = {Not(*condition)}
                 else:
                     new_condition = {Not(And(*condition))}
+            result.append((flag, new_condition))
     return result
 
 

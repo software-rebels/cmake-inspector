@@ -140,6 +140,9 @@ class TargetNode(Node):
     def setDefinition(self, node: Node):
         self.definitions = node
 
+    def setInterfaceDefinition(self, node: Node):
+        self.interfaceDefinitions = node
+
     def getDefinition(self):
         return self.definitions
 
@@ -445,7 +448,8 @@ class Directory:
     def __init__(self):
         self.root = None
         self.map = {}
-        self.topologicalOrder = None
+        # might want to test linearization later, but ignore for now.
+        self.topologicalOrder = None 
 
     def setRoot(self, root_dir):
         self.root = DirectoryNode(root_dir)

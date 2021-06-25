@@ -1304,12 +1304,22 @@ def linkDirectory():
     
         # Merging target definitions and directory definitions for each single target, over all directories
         for target in dir_node.targets:
-            concat_node = ConcatNode('merge_target_definition_{}'.format(vmodel.getNextCounter()))
-            concat_node.addNode(local_definition_node)
+            concat_target_node = ConcatNode('merge_target_definition_{}'.format(vmodel.getNextCounter()))
+            concat_interface_node = ConcatNode('merge_target_interface_definition_{}'.format(vmodel.getNextCounter()))
+            if local_definition_node:
+                concat_target_node.addNode(local_definition_node)
+                # Depends on the exact definition, not really sure if directory definition
+                # is part of interface definition
+                # concat_interface_node.addNode(local_definition_node) 
             if target.definitions and isinstance(target.definitions, DefinitionNode):
-                concat_node.addNode(target.definitions)
-            target.setDefinition(concat_node)
-            
+                concat_target_node.addNode(target.definitions)
+            if target.interfaceDefinitions and isinstance(target.interfaceDefinitions, DefinitionNode):
+                concat_interface_node.addNode(target.interfaceDefinitions)
+            if concat_target_node.getChildren():
+                target.setDefinition(concat_target_node)
+            if concat_interface_node.getChildren():
+                target.setInterfaceDefinition(concat_interface_node)
+                            
 
 def getFlattenedDefintionsForTarget(target: str):
     return printDefinitionsForATarget(vmodel, lookupTable, target)
