@@ -293,11 +293,12 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
             else:
                 # take the negation of all of the nodes' condition
                 if len(condition) == 0:
-                    new_condition = {}
+                    new_condition = {False}
                 elif len(condition) == 1:
                     new_condition = {Not(*condition)}
                 else:
                     new_condition = {Not(And(*condition))}
+            result.append((flag, new_condition))
     return result
 
 
@@ -394,9 +395,13 @@ def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recSta
     # we can now use _reverse_inherits here until we reach node
     cur_root_node = inheritance_path.pop()
     while inheritance_path:
-        cur_command = cur_node.commands[0] # This is a custom command like add_definitions/remove_definitions
-        cur_result = flattenCustomCommandNode(cur_command, conditions, recStack)
-        result = mergeFlattenedDefinitionResults(result, cur_result, cur_command.command_type)
+        if cur_node.commands:
+            # When the definition node is not added in retrospect to fit in with the architecture
+            # where there is actually directory-based definition defined for this specific directory
+            cur_command = cur_node.commands[0] # This is a custom command like add_definitions/remove_definitions
+            cur_result = flattenCustomCommandNode(cur_command, conditions, recStack)
+            result = mergeFlattenedDefinitionResults(result, cur_result, cur_command.command_type)
+
         if not cur_node.depends:
             if inheritance_path:
                 # jump to the next subdirectory
@@ -419,6 +424,8 @@ def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recSta
     # if this is the last node in the inheritance path, just loop through dependents, because 
     # there you are in the lowest level and no longer have to go down the stack.
     while cur_node:
+        if not cur_node.commands:
+            break
         cur_command = cur_node.commands[0] # This is a custom command like add_definitions/remove_definitions
         cur_result = flattenCustomCommandNode(cur_command, conditions, recStack)
         if not cur_node.depends:

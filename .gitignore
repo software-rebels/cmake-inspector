@@ -8,3 +8,4 @@ graph.gv.pdf
 .venv
 .idea
 *.pickle
+.vscode
