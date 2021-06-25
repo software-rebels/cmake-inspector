@@ -424,8 +424,7 @@ def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recSta
             else:
                 # first work on the commands side
                 # then, we simply traverse to the next dependent
-                cur_node = cur_node.depends[0]
-        
+                cur_node = cur_node.depends[0]        
         # print("Current result:", result)
     # if this is the last node in the inheritance path, just loop through dependents, because 
     # there you are in the lowest level and no longer have to go down the stack.
@@ -439,6 +438,7 @@ def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recSta
         print("OLD RESULT", result)
         print("CUR RESULT", cur_result)
         result = mergeFlattenedDefinitionResults(result, cur_result, cur_command.command_type)
+        print("MERGED RESULT", result)
     # print(result)
     return result
 
