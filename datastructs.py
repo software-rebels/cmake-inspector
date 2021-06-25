@@ -399,15 +399,13 @@ class DefinitionPair:
         self.tail = tail
 
 
-# Not much for now, but might have more in the future
-# Technically not really a custom command, but the depends attribute is useful
+# Technically not really a custom command, but node type integrates well
 class DefinitionNode(CustomCommandNode):
     def __init__(self, from_dir=True, is_flag=False, ordering=-1):
         super().__init__(f"{'directory' if from_dir else 'target'}_definitions")
         self.is_flag = is_flag
         self.from_dir = from_dir
-        # This ordering is needed to figure out the add/remove dependency ordering issue.
-        self.ordering = ordering
+        self.ordering = ordering # For figuring out add/remove dependencies.
         self.inherits = []
 
     def addInheritance(self, node):
@@ -422,11 +420,7 @@ class DefinitionNode(CustomCommandNode):
             result.extend(r)
         return result if result else None
 
-    # def getNodeName(self):
-    #     return f"{self.name}, order: {self.ordering}"
 
-# Repeated flags need to be taken care of
-# Might have unsatisfiable path in the graph for definitions.
 class CommandDefinitionNode(CustomCommandNode):
     def __init__(self, command, specific=False):
         self.command_type = command
@@ -460,7 +454,7 @@ class Directory:
     def find(self, name):
         return self.map.get(name, None) 
 
-    # Should also check for circular dependency when adding new child
+    # TODO: Should also check for circular dependency when adding new child
     def addChild(self, node, child):
         node.depended_by.append(child)
         child.depends_on.append(node)
