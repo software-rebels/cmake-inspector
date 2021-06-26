@@ -1247,7 +1247,6 @@ class TestVariableDefinitions(unittest.TestCase):
         endif(AMD)
         """
         self.runTool(text)
-        self.vmodel.export()
         targetNode = self.vmodel.findNode('goo_2')
         commandNode = self.vmodel.findNode('add_definitions')
         self.assertIsInstance(commandNode, CommandDefinitionNode)
