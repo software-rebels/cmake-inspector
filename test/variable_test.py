@@ -24,6 +24,8 @@ class TestVariableDefinitions(unittest.TestCase):
         tree = parser.cmakefile()
         extractor = CMakeExtractorListener()
         walker = ParseTreeWalker()
+        # root_dir = '.'
+        # Directory().getInstance().setRoot(root_dir)
         walker.walk(extractor, tree)
         linkDirectory()
 
@@ -1236,15 +1238,41 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual('DIRECTORY /bar PROPERTY LABELS val1 val2',
                          " ".join(getFlattedArguments(setProperty.commands[0])))
 
-    def test_add_definitions(self):
-        pass
-
     def test_definition_directory_dependency(self):
+        text = """
+        add_library(foo foo.cpp)
+        if(AMD)
+            add_definitions(-Dboo)
+            add_subdirectory(test/test_directory_definition)
+        endif(AMD)
+        """
+        self.runTool(text)
+        self.vmodel.export()
+        targetNode = self.vmodel.findNode('goo_2')
+        commandNode = self.vmodel.findNode('add_definitions')
+        self.assertIsInstance(commandNode, CommandDefinitionNode)
+        self.assertEqual({'-Dboo', '-Dtest'}, set(map(lambda x: x[0], getFlattenedDefinitionsFromNode(targetNode.definitions))))
+        flattened_result = printDefinitionsForATarget(self.vmodel, self.lookup, 'goo', output=True)
+        self.assertSetEqual({'-Dboo'}, flattened_result['[AMD]'])
+        self.assertSetEqual({'-Dtest'}, flattened_result['[AT_SUB, AMD]'])
 
-        pass
-
-    def test_remove_definitions(self):
-        pass
+    def test_add_definitions(self):
+        text = """
+        add_library(foo foo.cpp)
+        if(ABC)
+            add_definitions(-Dboo)
+        endif(ABC)
+        if(AMD)
+            target_compile_definitions(foo PUBLIC boo)
+        endif(AMD)
+        """
+        self.runTool(text)
+        targetNode = self.lookup.getKey('t:foo')
+        commandNode = self.vmodel.findNode('add_definitions')
+        self.assertIsInstance(commandNode, CommandDefinitionNode)
+        self.assertEqual({'-Dboo'}, set(map(lambda x: x[0], getFlattenedDefinitionsFromNode(targetNode.definitions))))
+        flattened_result = printDefinitionsForATarget(self.vmodel, self.lookup, 'foo', output=False)
+        self.assertSetEqual({'-Dboo'}, flattened_result['[Or(ABC, AMD)]'])
 
     def test_target_definitions(self):
         text = """
@@ -1278,7 +1306,6 @@ class TestVariableDefinitions(unittest.TestCase):
         targetNode = self.lookup.getKey('t:foo')
         commandNode = self.vmodel.findNode('remove_definitions')
         self.assertIsInstance(commandNode, CommandDefinitionNode)
-        # assuring the definitions are extracted correctly
         self.assertEqual({'-Dbar', '-Dcar'}, set(map(lambda x: x[0], getFlattenedDefinitionsFromNode(targetNode.definitions))))
         flattened_result = printDefinitionsForATarget(self.vmodel, self.lookup, 'foo', output=False)
         self.assertSetEqual({'-Dbar'}, flattened_result['[ABC]'])

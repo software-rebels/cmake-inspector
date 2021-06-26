@@ -395,9 +395,13 @@ def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recSta
     # we can now use _reverse_inherits here until we reach node
     cur_root_node = inheritance_path.pop()
     while inheritance_path:
-        cur_command = cur_node.commands[0] # This is a custom command like add_definitions/remove_definitions
-        cur_result = flattenCustomCommandNode(cur_command, conditions, recStack)
-        result = mergeFlattenedDefinitionResults(result, cur_result, cur_command.command_type)
+        if cur_node.commands:
+            # When the definition node is not added in retrospect to fit in with the architecture
+            # where there is actually directory-based definition defined for this specific directory
+            cur_command = cur_node.commands[0] # This is a custom command like add_definitions/remove_definitions
+            cur_result = flattenCustomCommandNode(cur_command, conditions, recStack)
+            result = mergeFlattenedDefinitionResults(result, cur_result, cur_command.command_type)
+
         if not cur_node.depends:
             if inheritance_path:
                 # jump to the next subdirectory
@@ -420,6 +424,8 @@ def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recSta
     # if this is the last node in the inheritance path, just loop through dependents, because 
     # there you are in the lowest level and no longer have to go down the stack.
     while cur_node:
+        if not cur_node.commands:
+            break
         cur_command = cur_node.commands[0] # This is a custom command like add_definitions/remove_definitions
         cur_result = flattenCustomCommandNode(cur_command, conditions, recStack)
         if not cur_node.depends:

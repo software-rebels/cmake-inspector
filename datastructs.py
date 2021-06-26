@@ -404,9 +404,8 @@ class DefinitionPair:
 
 # Technically not really a custom command, but node type integrates well
 class DefinitionNode(CustomCommandNode):
-    def __init__(self, from_dir=True, is_flag=False, ordering=-1):
+    def __init__(self, from_dir=True, ordering=-1):
         super().__init__(f"{'directory' if from_dir else 'target'}_definitions")
-        self.is_flag = is_flag
         self.from_dir = from_dir
         self.ordering = ordering # For figuring out add/remove dependencies.
         self.inherits = []
@@ -452,8 +451,9 @@ class Directory:
         self.topologicalOrder = None 
 
     def setRoot(self, root_dir):
-        self.root = DirectoryNode(root_dir)
-        self.map[root_dir] = self.root
+        if not self.root:
+            self.root = DirectoryNode(root_dir)
+            self.map[root_dir] = self.root
 
     def find(self, name):
         return self.map.get(name, None) 
@@ -462,7 +462,7 @@ class Directory:
     def addChild(self, node, child):
         node.depended_by.append(child)
         child.depends_on.append(node)
-        self.map[child.name] = child
+        self.map[child.rawName] = child
 
     def getTopologicalOrder(self, force=False):
         if self.topologicalOrder is not None and not force:
