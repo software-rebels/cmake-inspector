@@ -1682,10 +1682,10 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'test_exec_john')
         self.assertSetEqual({"another_folder_for_test/a.cxx"}, a["[]"])
-        self.assertSetEqual({"files_for_test/a.cxx"}, a['[Not(foo), Not(john)]'])
-        self.assertSetEqual({"files_for_test/c.cxx",
-                             "files_for_test/b.cxx",
-                             "files_for_test/a.cxx"}, a['[Not(john), foo]'])
+        self.assertSetEqual({"./files_for_test/a.cxx"}, a['[Not(foo), Not(john)]'])
+        self.assertSetEqual({"./files_for_test/c.cxx",
+                             "./files_for_test/b.cxx",
+                             "./files_for_test/a.cxx"}, a['[Not(john), foo]'])
 
     def test_get_files_for_a_target_with_dependency_to_other_target_concatinated_target_name(self):
         text = """
@@ -1714,10 +1714,10 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'test_exec_john')
         self.assertSetEqual({"another_folder_for_test/a.cxx"}, a["[]"])
-        self.assertSetEqual({"files_for_test/a.cxx"}, a['[Not(foo), Not(john)]'])
-        self.assertSetEqual({"files_for_test/c.cxx",
-                             "files_for_test/b.cxx",
-                             "files_for_test/a.cxx"}, a['[Not(john), foo]'])
+        self.assertSetEqual({"./files_for_test/a.cxx"}, a['[Not(foo), Not(john)]'])
+        self.assertSetEqual({"./files_for_test/c.cxx",
+                             "./files_for_test/b.cxx",
+                             "./files_for_test/a.cxx"}, a['[Not(john), foo]'])
 
     def test_cycle_detection_system_works(self):
         text = """
@@ -2197,13 +2197,12 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec')
-        print(a)
         self.assertSetEqual({'bar.cpp'}, a['[]'])
-        self.assertSetEqual({'files_for_test/a.cxx',
+        self.assertSetEqual({'./files_for_test/a.cxx',
                              'bar.cpp',
                              'CMAKE_BINARY_DIR/grpc/src/api/services/containers',
-                             'files_for_test/b.cxx',
-                             'files_for_test/c.cxx'}, a['[build_client, build_server]'])
+                             './files_for_test/b.cxx',
+                             './files_for_test/c.cxx'}, a['[build_client, build_server]'])
 
     def test_simple_target_name_as_variable(self):
         text = """
@@ -2237,7 +2236,6 @@ class TestVariableDefinitions(unittest.TestCase):
         add_executable(${EXE} bar.c)
         """
         self.runTool(text)
-        self.vmodel.export()
         self.assertIsNotNone(self.lookup.getKey('t:foo'))
         self.assertIsInstance(self.lookup.getKey('t:foo'), TargetNode)
         self.assertIsNotNone(self.lookup.getKey('t:bar'))

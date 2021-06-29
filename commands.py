@@ -346,7 +346,9 @@ def addTarget(arguments, isExecutable=True):
     vmodel = VModel.getInstance()
     lookupTable = Lookup.getInstance()
 
+    targets = []
     targetName = arguments.pop(0)
+    
     for item in flattenAlgorithmWithConditions(vmodel.expand([targetName])):
         targetName = item[0]
         condition = item[1]
@@ -414,7 +416,9 @@ def addTarget(arguments, isExecutable=True):
 
         nextNode = util_handleConditions(nextNode, targetName, prevNode, condition)
         targetNode.sources = nextNode
-        return targetNode
+        targets.append(targetNode)
+
+    return targets
 
 
 # Very similar to while command
