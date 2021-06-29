@@ -381,7 +381,7 @@ def addTarget(arguments, isExecutable=True):
         prevNode = None
         if targetNode is None:
             targetNode = TargetNode(targetName, nextNode)
-            # targetNode.setDefinition(vmodel.DIRECTORY_PROPERTIES.getKey('COMPILE_OPTIONS'))
+            targetNode.setCompileOptions(vmodel.DIRECTORY_PROPERTIES.getKey('COMPILE_OPTIONS'))
             targetNode.linkLibraries = vmodel.DIRECTORY_PROPERTIES.getKey('LINK_LIBRARIES')
             targetNode.includeDirectories = vmodel.DIRECTORY_PROPERTIES.getKey('INCLUDE_DIRECTORIES')
             lookupTable.setKey(lookupTableName, targetNode)
