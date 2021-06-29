@@ -146,6 +146,12 @@ class TargetNode(Node):
     def getDefinition(self):
         return self.definitions
 
+    def setCompileOptions(self, node: Node):
+        self.compileOptions = node
+
+    def setInterfaceCompileOptions(self, node: Node):
+        self.interfaceCompileOptions = node
+
     def getValue(self):
         return self.name
 

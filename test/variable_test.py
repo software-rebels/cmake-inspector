@@ -444,7 +444,8 @@ class TestVariableDefinitions(unittest.TestCase):
             add_executable(foo bar.c)
         """
         self.runTool(text)
-        self.assertEqual(4, len(self.lookup.getKey("t:foo").definitions.getChildren()[0].getChildren()))
+        self.vmodel.export()
+        self.assertEqual(4, len(self.lookup.getKey("t:foo").compileOptions.getChildren()[0].getChildren()))
 
     def test_add_compile_option_in_if_statement(self):
         text = """
@@ -459,9 +460,9 @@ class TestVariableDefinitions(unittest.TestCase):
             add_executable(foo bar.c)
         """
         self.runTool(text)
-        self.assertIsNone(self.lookup.getKey("t:john").definitions)
-        self.assertEqual('-Ddebug', self.lookup.getKey("t:cat").definitions.getChildren()[0].getValue())
-        self.assertEqual(3, len(self.lookup.getKey("t:foo").definitions.getChildren()))
+        self.assertIsNone(self.lookup.getKey("t:john").compileOptions)
+        self.assertEqual('-Ddebug', self.lookup.getKey("t:cat").compileOptions.getChildren()[0].getValue())
+        self.assertEqual(3, len(self.lookup.getKey("t:foo").compileOptions.getChildren()))
 
     def test_file_write_with_variable_in_filename(self):
         text = """
@@ -524,8 +525,8 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertIsInstance(fileCommand, CustomCommandNode)
         self.assertEqual(self.vmodel.findNode('FILE'), fileCommand)
         self.assertEqual("GLOB files_for_test/*.cxx", " ".join(getFlattedArguments(fileCommand.commands[0])))
-        self.assertEqual(['files_for_test/b.cxx', 'files_for_test/c.cxx', 'files_for_test/a.cxx'],
-                         [item[0] for item in flattenCustomCommandNode(fileCommand, {}, [])])
+        self.assertEqual(['./files_for_test/a.cxx', './files_for_test/b.cxx', './files_for_test/c.cxx'],
+                         sorted([item[0] for item in flattenCustomCommandNode(fileCommand, {}, [])]))
 
     def test_simple_file_remove(self):
         text = """
@@ -804,7 +805,7 @@ class TestVariableDefinitions(unittest.TestCase):
         get_directory_property(baz SOMETHING)
         """
         self.runTool(text)
-        self.vmodel.export()
+        # self.vmodel.export()
         johnVar = self.lookup.getKey("${john}")
         doeVar = self.lookup.getKey("${doe}")
         bazVar = self.lookup.getKey("${baz}")
@@ -1243,7 +1244,7 @@ class TestVariableDefinitions(unittest.TestCase):
         add_library(foo foo.cpp)
         if(AMD)
             add_definitions(-Dboo)
-            add_subdirectory(test/test_directory_definition)
+            add_subdirectory(test_cmake_file/test_directory_definition)
         endif(AMD)
         """
         self.runTool(text)
@@ -1314,7 +1315,7 @@ class TestVariableDefinitions(unittest.TestCase):
     def test_adding_subdirectory(self):
         text = """
         add_library(foo foo.cpp)
-        add_subdirectory(test/test_subdirectory)        
+        add_subdirectory(test_cmake_file/test_subdirectory)        
         """
         self.runTool(text)
         targetNode = self.lookup.getVariableHistory('t:bar')[0]
@@ -1513,6 +1514,8 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
 
+    # This is deprecated due to new target definition architecture
+    @unittest.skip("")
     def test_target_compile_definition(self):
         text = """
         add_executable(foo bar.cxx)
@@ -1649,8 +1652,8 @@ class TestVariableDefinitions(unittest.TestCase):
 
         # buildRuntimeGraph(self.vmodel, self.lookup)
         a = printFilesForATarget(self.vmodel, self.lookup, 'test_exec')
-        self.assertIn('files_for_test/a.cxx', a['[Not(foo)]'])
-        self.assertSetEqual({'files_for_test/a.cxx', "files_for_test/c.cxx", "files_for_test/b.cxx"}, a['[foo]'])
+        self.assertIn('./files_for_test/a.cxx', a['[Not(foo)]'])
+        self.assertSetEqual({'./files_for_test/a.cxx', "./files_for_test/c.cxx", "./files_for_test/b.cxx"}, a['[foo]'])
 
     def test_get_files_for_a_target_with_dependency_to_other_target(self):
         text = """
@@ -2194,6 +2197,7 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec')
+        print(a)
         self.assertSetEqual({'bar.cpp'}, a['[]'])
         self.assertSetEqual({'files_for_test/a.cxx',
                              'bar.cpp',
@@ -2233,6 +2237,7 @@ class TestVariableDefinitions(unittest.TestCase):
         add_executable(${EXE} bar.c)
         """
         self.runTool(text)
+        self.vmodel.export()
         self.assertIsNotNone(self.lookup.getKey('t:foo'))
         self.assertIsInstance(self.lookup.getKey('t:foo'), TargetNode)
         self.assertIsNotNone(self.lookup.getKey('t:bar'))

@@ -261,12 +261,6 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
             result += flattenAlgorithmWithConditions(node.depends[0], conditions, recStack=recStack)
         return result
 
-    elif 'target_definitions' in node.getName().lower():
-        # Similar to the directory_definitions
-        result = []
-        for dependent in node.depends:
-            result += flattenAlgorithmWithConditions(dependent, conditions, recStack=recStack)
-
     elif 'target_compile_definitions' in node.getName().lower():
         result = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
 
