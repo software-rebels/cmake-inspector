@@ -1096,13 +1096,15 @@ class CMakeExtractorListener(CMakeListener):
 
         elif commandId == 'add_library':
             directory_node = directoryTree.find(project_dir)
-            target_node = addTarget(arguments, False)
-            directory_node.targets.append(target_node)
-            
+            target_nodes = addTarget(arguments, False)
+            for target_node in target_nodes:
+                directory_node.targets.append(target_node)
+    
         elif commandId == 'add_executable':
             directory_node = directoryTree.find(project_dir)
-            target_node = addTarget(arguments, True)
-            directory_node.targets.append(target_node)
+            target_nodes = addTarget(arguments, True)
+            for target_node in target_nodes:
+                directory_node.targets.append(target_node)
 
         elif commandId == 'list':
             listCommand(arguments)
