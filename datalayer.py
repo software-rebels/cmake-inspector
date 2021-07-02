@@ -1,6 +1,5 @@
-from neomodel.properties import IntegerProperty
 from datastructs import CustomCommandNode
-from neomodel import StructuredNode, StringProperty, RelationshipTo, RelationshipFrom, JSONProperty
+from neomodel import StructuredNode, StringProperty, IntegerProperty, RelationshipTo, RelationshipFrom, JSONProperty
 
 
 class AbstractNode(StructuredNode):
