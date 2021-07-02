@@ -59,6 +59,8 @@ class TestConditions(unittest.TestCase):
 
     def test_and_satisfiable_false(self):
         conditions = {
+            'foo': False,
+            'bar': False
         }
         # foo AND bar
         andExpression = AndExpression(self.fooVar, self.barVar)

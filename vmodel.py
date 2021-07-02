@@ -6,8 +6,8 @@ from graphviz import Digraph
 
 import datastructs
 from condition_data_structure import Rule
-from datalayer import Literal, Reference, Target, Concat, Select, CustomCommand, Option
-from datastructs import LiteralNode, Node, Lookup, RefNode, SelectNode, TargetNode, TestNode, ConcatNode, \
+from datalayer import Definition, Literal, Reference, Target, Concat, Select, CustomCommand, Option
+from datastructs import DefinitionNode, LiteralNode, Node, Lookup, RefNode, SelectNode, TargetNode, TestNode, ConcatNode, \
     CustomCommandNode, OptionNode
 from graph_illustration import getNodeShape, getEdgeLabel
 
@@ -300,6 +300,7 @@ class VModel:
                 clusterId += 1
                 dot.subgraph(newGraph)
             dot.render('graph.gv', view=True)
+        
         # Doing DFS to create nodes in NEO4j
         if writeToNeo:
             for node in self.getNodeSet():
@@ -308,27 +309,25 @@ class VModel:
                 self.exportToNeo(node)
 
     def exportToNeo(self, node: Node):
-        if node.dbNode:
-            return node.dbNode
+        dbNode = node.dbNode
+        if dbNode:
+            return dbNode
 
         if isinstance(node, LiteralNode):
             dbNode = Literal(name=node.getName(), value=node.getValue()).save()
             node.dbNode = dbNode
-            return dbNode
-
+        
         if isinstance(node, OptionNode):
             dbNode = Option(name=node.getName()).save()
             node.dbNode = dbNode
-            return dbNode
-
+        
         if isinstance(node, RefNode):
             dbNode = Reference(name=node.getName()).save()
             if node.getPointTo():
                 refNode = self.exportToNeo(node.getPointTo())
                 dbNode.pointTo.connect(refNode)
             node.dbNode = dbNode
-            return dbNode
-
+        
         if isinstance(node, TargetNode):
             dbNode = Target(name=node.rawName, scope=node.scope).save()
             pointToDBNode = None
@@ -353,20 +352,17 @@ class VModel:
                 'isCustomTarget': node.isCustomTarget,
                 'defaultBuildTarget': node.defaultBuildTarget,
                 'libraryType': node.libraryType,
-
             }
 
             dbNode.properties = properties
             node.dbNode = dbNode
-            return dbNode
-
+        
         if isinstance(node, ConcatNode):
             dbNode = Concat(name=node.getName()).save()
             for localNode in node.getNodes():
                 dbNode.contains.connect(self.exportToNeo(localNode))
             node.dbNode = dbNode
-            return dbNode
-
+        
         if isinstance(node, SelectNode):
             dbNode = Select(name=node.getName()).save()
             if node.trueNode:
@@ -375,8 +371,7 @@ class VModel:
                 dbNode.falseNode.connect(self.exportToNeo(node.falseNode))
             dbNode.condition.connect(self.exportToNeo(node.args))
             node.dbNode = dbNode
-            return dbNode
-
+        
         if isinstance(node, CustomCommandNode):
             dbNode = CustomCommand(name=node.getName()).save()
             for localNode in node.commands:
@@ -388,9 +383,26 @@ class VModel:
                     continue
                 dbNode.depends.connect(self.exportToNeo(localNode))
             dbNode.extraInfo = node.extraInfo
-            return dbNode
-
-
+        
+        if isinstance(node, DefinitionNode):
+            dbNode = Definition(name=node.getName()).save()
+            for localNode in node.commands:
+                if localNode is None:
+                    continue
+                dbNode.commands.connect(self.exportToNeo(localNode))
+            for localNode in node.depends:
+                if localNode is None:
+                    continue
+                dbNode.depends.connect(self.exportToNeo(localNode))
+            dbNode.from_dir = node.from_dir
+            dbNode.ordering = node.ordering
+            for localNode in node.inherits:
+                if localNode is None:
+                    continue
+                dbNode.inherits.connect(self.exportToNeo(localNode))
+                
+        return dbNode
+        
 
     def checkIntegrity(self):
         nodeNames = []
