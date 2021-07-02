@@ -444,7 +444,7 @@ class TestVariableDefinitions(unittest.TestCase):
             add_executable(foo bar.c)
         """
         self.runTool(text)
-        self.vmodel.export()
+        # self.vmodel.export()
         self.assertEqual(4, len(self.lookup.getKey("t:foo").compileOptions.getChildren()[0].getChildren()))
 
     def test_add_compile_option_in_if_statement(self):
@@ -1303,6 +1303,7 @@ class TestVariableDefinitions(unittest.TestCase):
         endif(AMD)
         """
         self.runTool(text)
+        self.vmodel.export(writeToNeo=True, writeDotFile=True)
         targetNode = self.lookup.getKey('t:foo')
         commandNode = self.vmodel.findNode('remove_definitions')
         self.assertIsInstance(commandNode, CommandDefinitionNode)
