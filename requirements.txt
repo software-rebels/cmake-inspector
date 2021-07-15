@@ -21,3 +21,4 @@ Shapely==1.7.1
 six==1.15.0
 smmap==3.0.4
 toml==0.10.1
+z3-solver==4.8.12.0
