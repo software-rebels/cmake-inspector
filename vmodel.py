@@ -55,6 +55,7 @@ class VModel:
         }
         # These data structures are for properties related to a directory
         self.directory_to_properties = {'.': Lookup()}
+        self.directory_definition_stack = {}
         self.DIRECTORY_PROPERTIES = self.directory_to_properties.get('.')
         self.DIRECTORY_PROPERTIES.setKey('VARIABLES', self.lookupTable.items[-1])
         # A temp variable to keep changes between nodes
@@ -299,6 +300,7 @@ class VModel:
                             newGraph.edge(node.getName(), child.getName(), label=getEdgeLabel(node, child))
                 clusterId += 1
                 dot.subgraph(newGraph)
+            dot.unflatten()
             dot.render('graph.gv', view=True)
         
         # Doing DFS to create nodes in NEO4j
