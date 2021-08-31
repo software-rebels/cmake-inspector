@@ -1,5 +1,5 @@
-from datastructs import CustomCommandNode
-from neomodel import StructuredNode, StringProperty, IntegerProperty, RelationshipTo, RelationshipFrom, JSONProperty
+from neomodel.properties import IntegerProperty
+from neomodel import StructuredNode, StringProperty, RelationshipTo, RelationshipFrom, JSONProperty
 
 
 class AbstractNode(StructuredNode):
@@ -27,7 +27,7 @@ class CustomCommand(AbstractNode):
 
 # Might have to add more specific CustomCommandNode when the polymorphism
 # becomes more complicated
-class Definition(CustomCommand):
+class Definition(CustomCommandNode):
     from_dir = StringProperty()
     ordering = IntegerProperty()
     inherits = RelationshipTo(AbstractNode, 'INHERITS')
