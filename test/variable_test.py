@@ -1303,7 +1303,6 @@ class TestVariableDefinitions(unittest.TestCase):
         endif(AMD)
         """
         self.runTool(text)
-        self.vmodel.export(writeToNeo=True, writeDotFile=True)
         targetNode = self.lookup.getKey('t:foo')
         commandNode = self.vmodel.findNode('remove_definitions')
         self.assertIsInstance(commandNode, CommandDefinitionNode)
