@@ -94,15 +94,16 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
         # Check if conditions satisfiable before expanding the tree (Using Z3)
         assertion = node.rule.getCondition().getAssertions()
         # Add facts about the variables in the condition expression
-        for priorKnowledge in node.rule.flattenedResult:
-            s = Solver()
-            # Variables in the condition
-            s.add(priorKnowledge)
-            # Facts from the starting point to here
-            s.add(conditions)
-            if s.check() == unsat:
-                continue
-            if node.trueNode:
+        if node.trueNode:
+            # Add facts about the variables in the condition expression
+            for priorKnowledge in node.rule.flattenedResult:
+                s = Solver()
+                # Variables in the condition
+                s.add(priorKnowledge)
+                # Facts from the starting point to here
+                s.add(conditions)
+                if s.check() == unsat:
+                    continue
                 # As we simplify the assertions, there is a chance that the fact has been already added
                 if assertion not in s.assertions():
                     s.add(assertion)
@@ -110,7 +111,14 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                     flattedResult += flattenAlgorithmWithConditions(node.trueNode,
                                                                     set(s.assertions()),
                                                                     debug, recStack)
-            if node.falseNode:
+        if node.falseNode:
+            for priorKnowledge in node.rule.flattenedResult:
+                s = Solver()
+                s.add(priorKnowledge)
+                s.add(conditions)
+                # Why did we not add this here?
+                if s.check() == unsat:
+                    continue
                 falseAssertion = simplify(Not(assertion))
                 if falseAssertion not in s.assertions():
                     s.add(falseAssertion)
@@ -335,7 +343,7 @@ def mergeFlattenedDefinitionResults(global_result, local_result, command_type):
                 if to_add:
                     result[idx] = (g_name, {Or(*g_cond, *cond)})
                 else:
-                    result[idx] = (g_name, {And(*g_cond, Not(*cond))})
+                    result[idx] = (g_name, {And(*g_cond, *cond)})
         else:
             result.append((name, cond))
     return result
