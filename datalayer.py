@@ -27,7 +27,7 @@ class CustomCommand(AbstractNode):
 
 # Might have to add more specific CustomCommandNode when the polymorphism
 # becomes more complicated
-class Definition(CustomCommandNode):
+class Definition(CustomCommand):
     from_dir = StringProperty()
     ordering = IntegerProperty()
     inherits = RelationshipTo(AbstractNode, 'INHERITS')
