@@ -10,9 +10,6 @@ from datastructs import DefinitionNode, Node, LiteralNode, RefNode, CustomComman
 from vmodel import VModel
 
 
-directory_definition_stack = {}
-
-
 def flattenAlgorithm(node: Node):
     if isinstance(node, LiteralNode):
         return [node.getValue()]
@@ -96,16 +93,16 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
         flattedResult = []
         # Check if conditions satisfiable before expanding the tree (Using Z3)
         assertion = node.rule.getCondition().getAssertions()
-        if node.trueNode:
-            # Add facts about the variables in the condition expression
-            for priorKnowledge in node.rule.flattenedResult:
-                s = Solver()
-                # Variables in the condition
-                s.add(priorKnowledge)
-                # Facts from the starting point to here
-                s.add(conditions)
-                if s.check() == unsat:
-                    continue
+        # Add facts about the variables in the condition expression
+        for priorKnowledge in node.rule.flattenedResult:
+            s = Solver()
+            # Variables in the condition
+            s.add(priorKnowledge)
+            # Facts from the starting point to here
+            s.add(conditions)
+            if s.check() == unsat:
+                continue
+            if node.trueNode:
                 # As we simplify the assertions, there is a chance that the fact has been already added
                 if assertion not in s.assertions():
                     s.add(assertion)
@@ -113,14 +110,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                     flattedResult += flattenAlgorithmWithConditions(node.trueNode,
                                                                     set(s.assertions()),
                                                                     debug, recStack)
-        if node.falseNode:
-            for priorKnowledge in node.rule.flattenedResult:
-                s = Solver()
-                s.add(priorKnowledge)
-                s.add(conditions)
-                # Why did we not add this here?
-                if s.check() == unsat:
-                    continue
+            if node.falseNode:
                 falseAssertion = simplify(Not(assertion))
                 if falseAssertion not in s.assertions():
                     s.add(falseAssertion)
@@ -183,6 +173,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
 
 def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack, lookup=None):
     # print("##### Start evaluating custom command " + node.rawName)
+    directory_definition_stack = VModel.getInstance().directory_definition_stack
     if conditions is None:
         conditions = set()
     result = None
@@ -265,7 +256,6 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
         result = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
 
     elif 'add_definitions' in node.getName().lower():
-        global directory_definition_stack
         # There is only one parent for each CommandDefinitionNode,
         # and it has the ordering value within
         ordering = node.parent[0].ordering 
@@ -345,7 +335,7 @@ def mergeFlattenedDefinitionResults(global_result, local_result, command_type):
                 if to_add:
                     result[idx] = (g_name, {Or(*g_cond, *cond)})
                 else:
-                    result[idx] = (g_name, {And(*g_cond, *cond)})
+                    result[idx] = (g_name, {And(*g_cond, Not(*cond))})
         else:
             result.append((name, cond))
     return result
