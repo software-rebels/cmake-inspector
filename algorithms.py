@@ -6,7 +6,7 @@ from collections import Set, defaultdict
 from typing import Dict, List
 from z3 import *
 
-from datastructs import Node, LiteralNode, RefNode, CustomCommandNode, SelectNode, ConcatNode, TargetNode, OptionNode
+from datastructs import DefinitionNode, Node, LiteralNode, RefNode, CustomCommandNode, SelectNode, ConcatNode, TargetNode, OptionNode
 from vmodel import VModel
 
 
@@ -93,6 +93,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
         flattedResult = []
         # Check if conditions satisfiable before expanding the tree (Using Z3)
         assertion = node.rule.getCondition().getAssertions()
+        # Add facts about the variables in the condition expression
         if node.trueNode:
             # Add facts about the variables in the condition expression
             for priorKnowledge in node.rule.flattenedResult:
@@ -115,6 +116,9 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                 s = Solver()
                 s.add(priorKnowledge)
                 s.add(conditions)
+                # Why did we not add this here?
+                if s.check() == unsat:
+                    continue
                 falseAssertion = simplify(Not(assertion))
                 if falseAssertion not in s.assertions():
                     s.add(falseAssertion)
@@ -124,7 +128,9 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                                                                     debug, recStack)
     elif isinstance(node, ConcatNode):
         result = list()
-        for idx, item in enumerate(node.getChildren()):
+        children = node.getChildren()
+        
+        for idx, item in enumerate(children):
             childSet = flattenAlgorithmWithConditions(item, conditions, debug, recStack)
             tempSet = list()
             # The flattened values for a child could be empty, skipping ...
@@ -175,6 +181,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
 
 def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack, lookup=None):
     # print("##### Start evaluating custom command " + node.rawName)
+    directory_definition_stack = VModel.getInstance().directory_definition_stack
     if conditions is None:
         conditions = set()
     result = None
@@ -236,7 +243,188 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
         result = flattenAlgorithmWithConditions(node.depends[0], conditions, recStack=recStack)
         for argument in arguments:
             del result[argument.getValue()]
+ 
+    elif 'directory_definitions' in node.getName().lower():
+        # Normally, there are 2 dependents for each definition node: 'directory_definition_(i+1) and a 
+        # definition command like add_definition. Sometimes, we also have to concat
+        # Also, the ordering here is important because index 0 is the command, index 1 is 
+        # the directory_definitions_(i+1)
+        result = []
+        for dependent in node.depends:
+            result += flattenAlgorithmWithConditions(dependent, conditions, recStack=recStack)
+    
+    elif 'target_definitions' in node.getName().lower():
+        result = []
+        result += flattenCustomCommandNode(node.commands[0], conditions, recStack=recStack)
+        if node.depends:
+            result += flattenAlgorithmWithConditions(node.depends[0], conditions, recStack=recStack)
+        return result
 
+    elif 'target_compile_definitions' in node.getName().lower():
+        result = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
+
+    elif 'add_definitions' in node.getName().lower():
+        # There is only one parent for each CommandDefinitionNode,
+        # and it has the ordering value within
+        ordering = node.parent[0].ordering 
+        result = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
+        flags_to_add = [flag[0] for flag in result]
+        for flag in flags_to_add:
+            directory_definition_stack[flag] = ordering
+
+    elif 'remove_definitions' in node.getName().lower():
+        temp_result = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
+        result = []
+        for e in temp_result:
+            flag, condition = e[0], e[1]
+            if flag not in directory_definition_stack:
+                # Since the flags have not been introduced by add_definitions, 
+                # there is nothing we need to do
+                logging.info(f"REMOVE: flags {flag} not yet added")
+                continue
+            else:
+                # take the negation of all of the nodes' condition
+                if len(condition) == 0:
+                    new_condition = {False}
+                elif len(condition) == 1:
+                    new_condition = {Not(*condition)}
+                else:
+                    new_condition = {Not(And(*condition))}
+            result.append((flag, new_condition))
+    return result
+
+
+# Flatten Definition requires a very convoluted traversal ordering that requires parent's 
+# information recursively, so we cannot just recurse normally
+def getFlattenedDefinitionsFromNode(node: Node, conditions: Set = None, debug=True, recStack=None):
+    # There are only type of nodes following a definition edge.
+    children = node.getChildren()
+    directory_node, target_node = None, None
+    if len(children) == 1:
+        if children[0].from_dir:
+            directory_node = children[0]
+        else:
+            target_node = children[0]
+    elif len(children) == 2:
+        if children[0].from_dir:
+            directory_node = children[0]
+            target_node = children[1]
+        else:
+            target_node = children[0]
+            directory_node = children[1]
+    dir_result = flattenDirectoryDefinitions(directory_node, conditions, recStack)
+    target_result = flattenTargetDefinitions(target_node, conditions, recStack)
+    # Now this gives us all the flattened result for the directory side,
+    # we have to reconcile the data with the target side.
+    result = mergeDirectoryAndTargetDefinitions(dir_result, target_result)
+    return result
+
+
+def find_name(to_find, name):
+    res = []
+    for idx, t in enumerate(to_find):
+        if t[0] == name:
+            res.append(idx)
+    return res
+
+
+def mergeFlattenedDefinitionResults(global_result, local_result, command_type):
+    # Can clearly be optimized with the use of a dictionary, but I don't think the scale requires it
+    to_add = True if command_type == 'add' else False
+    result = global_result
+    for r in local_result:
+        name, cond = r
+        indices = find_name(global_result, name)
+        if indices:
+            for idx in indices:
+                g_name, g_cond = global_result[idx]
+                g_cond = {And(*g_cond)} if len(g_cond) > 1 else g_cond
+                cond = {And(*cond)} if len(cond) > 1 else cond
+                if to_add:
+                    result[idx] = (g_name, {Or(*g_cond, *cond)})
+                else:
+                    result[idx] = (g_name, {And(*g_cond, *cond)})
+        else:
+            result.append((name, cond))
+    return result
+
+
+def mergeDirectoryAndTargetDefinitions(directory_result, target_result):
+    # something need to be fixed here
+    result = directory_result 
+    for tar in target_result:
+        flag, cond = tar
+        indices = find_name(result, flag)
+        if not indices:
+            result.append((flag, cond))
+            continue
+        for idx in indices:
+            r_flag, r_cond = result[idx]
+            result[idx] = (r_flag, {Or(*r_cond, *cond)})
+    return result
+
+
+def flattenTargetDefinitions(node: CustomCommandNode, conditions: Set, recStack, lookup=None):
+    if node is None:
+        return []
+    result = flattenCustomCommandNode(node, conditions, recStack, lookup)
+    return result
+
+
+def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recStack, lookup=None):
+    if node is None:
+        return []
+    result = []
+    # first recurse through all its inheritance
+    # currently we only inherit from one parent, and I don't think this will 
+    # change in the forseeable future.
+    cur_node = node
+    inheritance_path = [cur_node]
+    while cur_node.inherits:
+        cur_node = cur_node.inherits[0]
+        inheritance_path.append(cur_node)
+    # Now, we recurse down from the parent until the end of the current directory.
+    # we can now use _reverse_inherits here until we reach node
+    cur_root_node = inheritance_path.pop()
+    while inheritance_path:
+        if cur_node.commands:
+            # When the definition node is not added in retrospect to fit in with the architecture
+            # where there is actually directory-based definition defined for this specific directory
+            cur_command = cur_node.commands[0] # This is a custom command like add_definitions/remove_definitions
+            cur_result = flattenCustomCommandNode(cur_command, conditions, recStack)
+            result = mergeFlattenedDefinitionResults(result, cur_result, cur_command.command_type)
+
+        if not cur_node.depends:
+            if inheritance_path:
+                # jump to the next subdirectory
+                cur_root_node = inheritance_path.pop()        
+                cur_node = cur_root_node
+            else:
+                cur_root_node = None
+                continue
+        else:
+            next_node = cur_node.depends[0]
+            assert isinstance(next_node, DefinitionNode)
+            if next_node.ordering > cur_node.ordering + 1:
+                # jump to the subdirectory
+                cur_root_node = inheritance_path.pop()
+                cur_node = cur_root_node
+            else:
+                # first work on the commands side
+                # then, we simply traverse to the next dependent
+                cur_node = cur_node.depends[0]        
+    # if this is the last node in the inheritance path, just loop through dependents, because 
+    # there you are in the lowest level and no longer have to go down the stack.
+    while cur_node:
+        if not cur_node.commands:
+            break
+        cur_command = cur_node.commands[0] # This is a custom command like add_definitions/remove_definitions
+        cur_result = flattenCustomCommandNode(cur_command, conditions, recStack)
+        if not cur_node.depends:
+            cur_node = None
+        else:
+            cur_node = cur_node.depends[0]
+        result = mergeFlattenedDefinitionResults(result, cur_result, cur_command.command_type)
     return result
 
 

@@ -1,4 +1,5 @@
 from datastructs import *
+from functools import reduce
 
 
 def getNodeShape(node: Node):
@@ -23,6 +24,8 @@ def getEdgeLabel(firstNode: Node, secondNode: Node):
     if isinstance(firstNode, TargetNode):
         if firstNode.definitions == secondNode:
             return "Definitions"
+        if firstNode.interfaceDefinitions == secondNode:
+            return "Interface_definitions"
         if firstNode.linkLibraries == secondNode:
             return "Libraries"
         if firstNode.sources == secondNode:
@@ -35,7 +38,7 @@ def getEdgeLabel(firstNode: Node, secondNode: Node):
             return "Interface_compile_features"
         if firstNode.compileOptions == secondNode:
             return "Compile_options"
-        if firstNode.interfaceCompileFeatures == secondNode:
+        if firstNode.interfaceCompileOptions == secondNode:
             return "Interface_compile_options"
         if firstNode.includeDirectories == secondNode:
             return "INCLUDE_DIRECTORIES"
@@ -50,10 +53,13 @@ def getEdgeLabel(firstNode: Node, secondNode: Node):
             return "FALSE"
         elif firstNode.args == secondNode:
             return "CONDITION"
+    if isinstance(firstNode, DefinitionNode):
+        if firstNode.inherits and reduce(lambda x, y: x or y == secondNode, firstNode.inherits, False):
+            return "INHERITS"
     if isinstance(firstNode, CustomCommandNode):
-        if firstNode.commands and firstNode.commands[0] == secondNode:
+        if firstNode.commands and reduce(lambda x, y: x or y == secondNode, firstNode.commands, False):
             return "COMMANDS"
-        elif firstNode.depends and firstNode.depends[0] == secondNode:
+        elif firstNode.depends and reduce(lambda x, y: x or y == secondNode, firstNode.depends, False):
             return "DEPENDS"
     if isinstance(firstNode, OptionNode):
         if firstNode.depends == secondNode:

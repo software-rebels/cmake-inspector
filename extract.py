@@ -20,8 +20,8 @@ from grammar.CMakeParser import CMakeParser
 from grammar.CMakeListener import CMakeListener
 # Our own library
 from datastructs import RefNode, TargetNode, Lookup, SelectNode, ConcatNode, \
-    CustomCommandNode, TestNode, LiteralNode, Node, OptionNode
-from analyze import printSourceFiles, printFilesForATarget, checkForCyclesAndPrint
+    CustomCommandNode, TestNode, LiteralNode, Node, OptionNode, Directory, DirectoryNode, DefinitionNode
+from analyze import printDefinitionsForATarget, printSourceFiles, printFilesForATarget, checkForCyclesAndPrint
 from utils import util_handleConditions, util_getStringFromList,\
     util_create_and_add_refNode_for_variable, util_extract_variable_name
 from commands import *
@@ -29,11 +29,11 @@ from commands import *
 logging.basicConfig(filename='cmakeInspector.log', level=logging.DEBUG)
 config.DATABASE_URL = 'bolt://neo4j:123@localhost:7687'
 
-project_dir = ""
+project_dir = "."
 
 vmodel = VModel.getInstance()
 lookupTable = Lookup.getInstance()
-
+directoryTree = Directory.getInstance()
 
 class CMakeExtractorListener(CMakeListener):
     rule: Optional[Rule] = None
@@ -42,8 +42,11 @@ class CMakeExtractorListener(CMakeListener):
     def __init__(self):
         global vmodel
         global lookupTable
+        global directoryTree
         vmodel = VModel.getInstance()
         lookupTable = Lookup.getInstance()
+        directoryTree = Directory.getInstance()
+        directoryTree.setRoot(project_dir)
         self.rule = None
         self.logicalExpressionStack = []
 
@@ -302,13 +305,11 @@ class CMakeExtractorListener(CMakeListener):
 
         # add_definitions(-DFOO -DBAR ...)
         elif commandId == 'add_definitions':
-            addCompileOptionsCommand(arguments)
+            handleCompileDefinitionCommand(arguments, command='add', specific=False, project_dir=project_dir)
 
         # remove_definitions(-DFOO -DBAR ...)
         elif commandId == 'remove_definitions':
-            fileNode = CustomCommandNode('remove_definitions')
-            fileNode.commands.append(vmodel.expand(arguments))
-            vmodel.nodes.append(util_handleConditions(fileNode, fileNode.name))
+            handleCompileDefinitionCommand(arguments, command='remove', specific=False, project_dir=project_dir)
 
         # load_cache(pathToCacheFile READ_WITH_PREFIX
         #    prefix entry1...)
@@ -1064,10 +1065,17 @@ class CMakeExtractorListener(CMakeListener):
 
             print('start new file',os.path.join(project_dir, 'CMakeLists.txt'))
             possible_paths = flattenAlgorithmWithConditions(vmodel.expand([project_dir]))
+            # First 0 for getting the only element in possible path,
+            # Second 0 for getting the key (path)
             project_dir = possible_paths[0][0]
             util_create_and_add_refNode_for_variable('CMAKE_CURRENT_SOURCE_DIR',
-                                                     LiteralNode(possible_paths[0][0], possible_paths[0][0]))
-            parseFile(os.path.join(possible_paths[0][0], 'CMakeLists.txt'))
+                                                     LiteralNode(project_dir, project_dir))
+            parent_dir = directoryTree.find(tempProjectDir)
+            child_dir = directoryTree.find(project_dir)
+            if child_dir is None:
+                child_dir = DirectoryNode(project_dir)
+            directoryTree.addChild(parent_dir, child_dir)
+            parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
             lookupTable.dropScope()
             project_dir = tempProjectDir
 
@@ -1086,12 +1094,17 @@ class CMakeExtractorListener(CMakeListener):
             node = util_create_and_add_refNode_for_variable(variable_name, vmodel.expand(files))
             vmodel.nodes.append(node)
 
-
         elif commandId == 'add_library':
-            addTarget(arguments, False)
-
+            directory_node = directoryTree.find(project_dir)
+            target_nodes = addTarget(arguments, False)
+            for target_node in target_nodes:
+                directory_node.targets.append(target_node)
+    
         elif commandId == 'add_executable':
-            addTarget(arguments, True)
+            directory_node = directoryTree.find(project_dir)
+            target_nodes = addTarget(arguments, True)
+            for target_node in target_nodes:
+                directory_node.targets.append(target_node)
 
         elif commandId == 'list':
             listCommand(arguments)
@@ -1157,9 +1170,15 @@ class CMakeExtractorListener(CMakeListener):
             handleProperty(interfaceIncludeDirectories, 'interfaceIncludeDirectories')
             handleProperty(interfaceSystemIncludeDirectories, 'interfaceSystemIncludeDirectories')
 
+        elif commandId == 'add_compile_definitions':
+            handleCompileDefinitionCommand(arguments, command='add', specific=True, project_dir=project_dir)
+
         elif commandId == 'add_compile_options':
             addCompileOptionsCommand(arguments)
-
+        
+        elif commandId == 'target_compile_definitions':
+            addCompileTargetDefinitionsCommand(arguments)
+        
         # link_libraries([item1 [item2 [...]]]
         #        [[debug|optimized|general] <item>] ...)
         elif commandId == 'link_libraries':
@@ -1168,19 +1187,6 @@ class CMakeExtractorListener(CMakeListener):
         # link_directories(directory1 directory2 ...)
         elif commandId == 'link_directories':
             addLinkDirectories(arguments)
-
-        elif commandId == 'target_compile_definitions':
-            # This command add a definition to the current ones. So we should add it in all the possible paths
-            targetName = arguments.pop(0)
-            targetName = flattenAlgorithmWithConditions(vmodel.expand([targetName]))[0][0]
-            scope = None
-            targetNode = lookupTable.getKey('t:{}'.format(targetName))
-            assert isinstance(targetNode, TargetNode)
-            nextNode = vmodel.expand(arguments)
-            if scope:
-                nextNode.name = scope + "_" + nextNode.name
-            # vmodel.addNode(nextNode)
-            targetNode.setDefinition(util_handleConditions(nextNode, nextNode, targetNode.getDefinition()))
 
         elif commandId in ('target_link_libraries', 'add_dependencies'):
             customCommand = CustomCommandNode(commandId)
@@ -1283,7 +1289,66 @@ def getGraph(directory):
     util_create_and_add_refNode_for_variable('CMAKE_SOURCE_DIR', LiteralNode(project_dir, project_dir))
     parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
     vmodel.findAndSetTargets()
+    linkDirectory()
     return vmodel, lookupTable
+
+
+def linkDirectory():
+    topological_order = directoryTree.getTopologicalOrder()
+    # Setting the correct definition dependency based on directory
+    for dir_node in topological_order:
+        cur_dir = dir_node.rawName
+        cur_dir_props = vmodel.directory_to_properties.get(cur_dir)
+
+        # If there are directories that it depends on and they have directory-based definitions, 
+        # it has to create an auxillary node that inherits parents' directory-based definitions.
+        # Or if it is a root, then by definition, it is dependent on nothing.
+        if not (dir_node == directoryTree.root or dir_node.depends_on):
+            continue
+        
+        has_inheritance = False # to keep track of whether to remove the local_definitions_node later
+        if cur_dir_props and (local_definition_node := cur_dir_props.getOwnKey('COMPILE_DEFINITIONS')):
+            has_inheritance = True
+        else:
+            local_definition_node = DefinitionNode(from_dir=True, ordering=math.inf)
+            if not cur_dir_props:
+                vmodel.directory_to_properties[cur_dir] = Lookup()
+            vmodel.directory_to_properties.get(cur_dir).setKey('COMPILE_DEFINITIONS', local_definition_node)
+
+        for parent_node in dir_node.depends_on:
+            parent_dir = parent_node.rawName
+            parent_dir_props = vmodel.directory_to_properties.get(parent_dir)
+            if not parent_dir_props or not (parent_definition_node := parent_dir_props.getOwnKey('COMPILE_DEFINITIONS')):
+                # parent_definition_node = parent_dir_props.getOwnKey('COMPILE_DEFINITIONS')
+                continue
+            local_definition_node.addInheritance(parent_definition_node)
+            has_inheritance = True
+
+        if not has_inheritance:
+            local_definition_node = None    
+            del vmodel.directory_to_properties[cur_dir]
+
+        # Merging target definitions and directory definitions for each single target, over all directories
+        for target in dir_node.targets:
+            concat_target_node = ConcatNode('merge_target_definition_{}'.format(vmodel.getNextCounter()))
+            concat_interface_node = ConcatNode('merge_target_interface_definition_{}'.format(vmodel.getNextCounter()))
+            if local_definition_node:
+                concat_target_node.addNode(local_definition_node)
+                # Depends on the exact definition, not really sure if directory definition
+                # is part of interface definition
+                # concat_interface_node.addNode(local_definition_node) 
+            if target.definitions and isinstance(target.definitions, DefinitionNode):
+                concat_target_node.addNode(target.definitions)
+            if target.interfaceDefinitions and isinstance(target.interfaceDefinitions, DefinitionNode):
+                concat_interface_node.addNode(target.interfaceDefinitions)
+            if concat_target_node.getChildren():
+                target.setDefinition(concat_target_node)
+            if concat_interface_node.getChildren():
+                target.setInterfaceDefinition(concat_interface_node)
+                            
+
+def getFlattenedDefintionsForTarget(target: str):
+    return printDefinitionsForATarget(vmodel, lookupTable, target)
 
 
 def getFlattenedFilesForTarget(target: str):
