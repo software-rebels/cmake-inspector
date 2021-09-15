@@ -1,6 +1,11 @@
+from operator import concat
+from re import L
+
+from z3.z3 import Concat
 from algorithms import flattenAlgorithmWithConditions
 from condition_data_structure import Rule
-from datastructs import Lookup, CustomCommandNode, TargetNode, ConcatNode, WhileCommandNode
+from datastructs import Lookup, CustomCommandNode, TargetNode, ConcatNode, \
+WhileCommandNode, DefinitionNode, CommandDefinitionNode, DefinitionPair, TargetCompileDefinitionNode
 from grammar.CMakeLexer import CMakeLexer, CommonTokenStream, InputStream
 from grammar.CMakeParser import CMakeParser
 from utils import *
@@ -217,6 +222,97 @@ def addCompileOptionsCommand(arguments):
     newCompileOptions.addNode(targetNode)
 
 
+def addCompileTargetDefinitionsCommand(arguments):
+    vmodel = VModel.getInstance()
+    lookup = Lookup.getInstance()
+    
+    targetName = arguments.pop(0)
+    targetName = flattenAlgorithmWithConditions(vmodel.expand([targetName]))[0][0]
+    targetNode = lookup.getKey('t:{}'.format(targetName))
+    assert isinstance(targetNode, TargetNode)
+
+    scope = arguments.pop(0)
+    to_interface = to_definition = False
+
+    if scope == 'PUBLIC':
+        to_interface = to_definition = True
+    elif scope == 'PRIVATE':
+        to_definition = True
+    elif scope == 'INTERFACE':
+        to_interface = True
+        pass
+    else:
+        raise ValueError(f'target_compile_definitions is given an invalid scope: {scope}')
+    
+    definition_names = util_preprocess_definition_names(arguments, force=True)
+    
+    # Similar to the directory definition case, but since ordering here does not matter
+    # we do not have to use DefinitionPair for flipping the path.
+    if to_definition:
+        new_definition_node = DefinitionNode(from_dir=False)
+        new_target_command_node = TargetCompileDefinitionNode()
+        next_node = vmodel.expand(definition_names)
+        depended_node = util_handleConditions(next_node, next_node.name, None)
+        new_target_command_node.commands.append(depended_node)
+        new_definition_node.commands.append(new_target_command_node)
+        
+        current_definition = targetNode.definitions
+        if current_definition is not None:
+            assert isinstance(current_definition, DefinitionNode)
+            new_definition_node.depends.append(targetNode.definitions)
+        
+        vmodel.nodes.append(new_definition_node)
+        targetNode.definitions = new_definition_node
+
+    # Although the code is very similar to above, it has to be separated 
+    # because, we do not want interface definition nodes to be dependent 
+    # on definition nodes, or vice versa.
+    if to_interface:
+        new_definition_node = DefinitionNode(from_dir=False)
+        new_target_command_node = TargetCompileDefinitionNode()
+        next_node = vmodel.expand(definition_names)
+        depended_node = util_handleConditions(next_node, next_node.name, None)
+        new_target_command_node.commands.append(depended_node)
+        new_definition_node.commands.append(new_target_command_node)
+        
+        current_definition = targetNode.interfaceDefinitions
+        if current_definition is not None:
+            assert isinstance(current_definition, DefinitionNode)
+            new_definition_node.depends.append(targetNode.interfaceDefinitions)
+
+        vmodel.nodes.append(new_definition_node)
+        targetNode.interfaceDefinitions = new_definition_node
+
+
+def handleCompileDefinitionCommand(arguments, command, specific, project_dir):
+    # This handles add and remove commands for both preprocessor definitions
+    vmodel = VModel.getInstance()
+    newDefinitionCommand = CommandDefinitionNode(command=command, specific=specific)
+    definitionNode = DefinitionNode(ordering=vmodel.getDefinitionOrder())
+    arguments = util_preprocess_definition_names(arguments)
+    nextNode = vmodel.expand(arguments)
+    targetNode = util_handleConditions(nextNode, nextNode.name, None)
+    
+    if vmodel.directory_to_properties.get(project_dir) is None:
+        vmodel.directory_to_properties[project_dir] = Lookup()
+    project_dir_lookup = vmodel.directory_to_properties.get(project_dir)
+    
+    # To link a new definition node below the last added definition node, thus perserving 
+    # the command ordering in the CMAKE file 
+    if last_definition_pair := project_dir_lookup.getOwnKey('COMPILE_DEFINITIONS_PAIRS'):
+        last_definition_pair.tail.depends.append(definitionNode)
+    else: # if we are adding a head node
+        last_definition_pair = DefinitionPair(definitionNode)
+        vmodel.nodes.append(definitionNode)
+        project_dir_lookup.setKey('COMPILE_DEFINITIONS', last_definition_pair.head)
+
+    newDefinitionCommand.commands.append(targetNode)
+    newDefinitionCommand.addParent(definitionNode)
+    definitionNode.commands.append(newDefinitionCommand)
+    last_definition_pair.tail = definitionNode
+    project_dir_lookup.setKey('COMPILE_DEFINITIONS_PAIRS', last_definition_pair)
+
+
 def addLinkLibraries(arguments):
     vmodel = VModel.getInstance()
 
@@ -250,7 +346,9 @@ def addTarget(arguments, isExecutable=True):
     vmodel = VModel.getInstance()
     lookupTable = Lookup.getInstance()
 
+    targets = []
     targetName = arguments.pop(0)
+    
     for item in flattenAlgorithmWithConditions(vmodel.expand([targetName])):
         targetName = item[0]
         condition = item[1]
@@ -285,7 +383,7 @@ def addTarget(arguments, isExecutable=True):
         prevNode = None
         if targetNode is None:
             targetNode = TargetNode(targetName, nextNode)
-            targetNode.setDefinition(vmodel.DIRECTORY_PROPERTIES.getKey('COMPILE_OPTIONS'))
+            targetNode.setCompileOptions(vmodel.DIRECTORY_PROPERTIES.getKey('COMPILE_OPTIONS'))
             targetNode.linkLibraries = vmodel.DIRECTORY_PROPERTIES.getKey('LINK_LIBRARIES')
             targetNode.includeDirectories = vmodel.DIRECTORY_PROPERTIES.getKey('INCLUDE_DIRECTORIES')
             lookupTable.setKey(lookupTableName, targetNode)
@@ -318,6 +416,9 @@ def addTarget(arguments, isExecutable=True):
 
         nextNode = util_handleConditions(nextNode, targetName, prevNode, condition)
         targetNode.sources = nextNode
+        targets.append(targetNode)
+
+    return targets
 
 
 # Very similar to while command

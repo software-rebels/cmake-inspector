@@ -4,14 +4,14 @@ from collections import defaultdict
 
 from antlr4 import CommonTokenStream, ParseTreeWalker, InputStream
 
-from analyze import printFilesForATarget
-from extract import CMakeExtractorListener
+from analyze import printDefinitionsForATarget, printFilesForATarget
+from extract import CMakeExtractorListener, getFlattenedDefintionsForTarget, linkDirectory
 from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
-from datastructs import Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, \
-    CustomCommandNode, TargetNode, TestNode, OptionNode, Node
+from datastructs import CommandDefinitionNode, DefinitionNode, Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, \
+    CustomCommandNode, TargetNode, TestNode, OptionNode, Node, Directory
 from algorithms import flattenAlgorithm, flattenAlgorithmWithConditions, getFlattedArguments, flattenCustomCommandNode, \
-    CycleDetectedException, postprocessZ3Output
+    CycleDetectedException, getFlattenedDefinitionsFromNode, postprocessZ3Output
 from vmodel import VModel
 
 
@@ -24,7 +24,10 @@ class TestVariableDefinitions(unittest.TestCase):
         tree = parser.cmakefile()
         extractor = CMakeExtractorListener()
         walker = ParseTreeWalker()
+        # root_dir = '.'
+        # Directory().getInstance().setRoot(root_dir)
         walker.walk(extractor, tree)
+        linkDirectory()
 
     def setUp(self) -> None:
         self.vmodel = VModel.getInstance()
@@ -441,7 +444,8 @@ class TestVariableDefinitions(unittest.TestCase):
             add_executable(foo bar.c)
         """
         self.runTool(text)
-        self.assertEqual(4, len(self.lookup.getKey("t:foo").definitions.getChildren()[0].getChildren()))
+        # self.vmodel.export()
+        self.assertEqual(4, len(self.lookup.getKey("t:foo").compileOptions.getChildren()[0].getChildren()))
 
     def test_add_compile_option_in_if_statement(self):
         text = """
@@ -456,9 +460,9 @@ class TestVariableDefinitions(unittest.TestCase):
             add_executable(foo bar.c)
         """
         self.runTool(text)
-        self.assertIsNone(self.lookup.getKey("t:john").definitions)
-        self.assertEqual('-Ddebug', self.lookup.getKey("t:cat").definitions.getChildren()[0].getValue())
-        self.assertEqual(3, len(self.lookup.getKey("t:foo").definitions.getChildren()))
+        self.assertIsNone(self.lookup.getKey("t:john").compileOptions)
+        self.assertEqual('-Ddebug', self.lookup.getKey("t:cat").compileOptions.getChildren()[0].getValue())
+        self.assertEqual(3, len(self.lookup.getKey("t:foo").compileOptions.getChildren()))
 
     def test_file_write_with_variable_in_filename(self):
         text = """
@@ -521,8 +525,8 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertIsInstance(fileCommand, CustomCommandNode)
         self.assertEqual(self.vmodel.findNode('FILE'), fileCommand)
         self.assertEqual("GLOB files_for_test/*.cxx", " ".join(getFlattedArguments(fileCommand.commands[0])))
-        self.assertEqual(['files_for_test/b.cxx', 'files_for_test/c.cxx', 'files_for_test/a.cxx'],
-                         [item[0] for item in flattenCustomCommandNode(fileCommand, {}, [])])
+        self.assertEqual(['./files_for_test/a.cxx', './files_for_test/b.cxx', './files_for_test/c.cxx'],
+                         sorted([item[0] for item in flattenCustomCommandNode(fileCommand, {}, [])]))
 
     def test_simple_file_remove(self):
         text = """
@@ -801,6 +805,7 @@ class TestVariableDefinitions(unittest.TestCase):
         get_directory_property(baz SOMETHING)
         """
         self.runTool(text)
+        # self.vmodel.export()
         johnVar = self.lookup.getKey("${john}")
         doeVar = self.lookup.getKey("${doe}")
         bazVar = self.lookup.getKey("${baz}")
@@ -1234,18 +1239,87 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertEqual('DIRECTORY /bar PROPERTY LABELS val1 val2',
                          " ".join(getFlattedArguments(setProperty.commands[0])))
 
-    def test_remove_definitions(self):
+    def test_definition_directory_dependency(self):
         text = """
-        add_definitions(-Djohn)
-        add_library(foo bar.cxx)
+        add_library(foo foo.cpp)
         if(AMD)
-            remove_definitions(-Djohn)
+            add_definitions(-Dboo)
+            add_subdirectory(test_cmake_file/test_directory_definition)
         endif(AMD)
         """
         self.runTool(text)
+        targetNode = self.vmodel.findNode('goo_2')
+        commandNode = self.vmodel.findNode('add_definitions')
+        self.assertIsInstance(commandNode, CommandDefinitionNode)
+        self.assertEqual({'-Dboo', '-Dtest'}, set(map(lambda x: x[0], getFlattenedDefinitionsFromNode(targetNode.definitions))))
+        flattened_result = printDefinitionsForATarget(self.vmodel, self.lookup, 'goo', output=True)
+        self.assertSetEqual({'-Dboo'}, flattened_result['[AMD]'])
+        self.assertSetEqual({'-Dtest'}, flattened_result['[AT_SUB, AMD]'])
+
+    def test_add_definitions(self):
+        text = """
+        add_library(foo foo.cpp)
+        if(ABC)
+            add_definitions(-Dboo)
+        endif(ABC)
+        if(AMD)
+            target_compile_definitions(foo PUBLIC boo)
+        endif(AMD)
+        """
+        self.runTool(text)
+        targetNode = self.lookup.getKey('t:foo')
+        commandNode = self.vmodel.findNode('add_definitions')
+        self.assertIsInstance(commandNode, CommandDefinitionNode)
+        self.assertEqual({'-Dboo'}, set(map(lambda x: x[0], getFlattenedDefinitionsFromNode(targetNode.definitions))))
+        flattened_result = printDefinitionsForATarget(self.vmodel, self.lookup, 'foo', output=False)
+        self.assertSetEqual({'-Dboo'}, flattened_result['[Or(ABC, AMD)]'])
+
+    def test_target_definitions(self):
+        text = """
+        add_library(foo foo.cpp)
+        target_compile_definitions(foo PUBLIC bar)
+        target_compile_definitions(foo PRIVATE car)
+        target_compile_definitions(foo INTERFACE far) 
+        """
+        self.runTool(text)
+        targetNode = self.lookup.getKey('t:foo')
+        self.assertIsInstance(targetNode, TargetNode)
+        target_def = targetNode.definitions.getChildren()[0]
+        interface_def = targetNode.interfaceDefinitions.getChildren()[0]
+        self.assertIsInstance(target_def, DefinitionNode)
+        self.assertIsInstance(interface_def, DefinitionNode)
+        self.assertSetEqual({'-Dbar', '-Dcar'}, set(map(lambda x: x[0], getFlattenedDefinitionsFromNode(targetNode.definitions))))
+        self.assertSetEqual({'-Dbar', '-Dfar'}, set(map(lambda x: x[0], getFlattenedDefinitionsFromNode(targetNode.interfaceDefinitions))))
+
+    def test_remove_definitions(self):
+        text = """
+        add_library(foo foo.cpp)
+        if(ABC)
+        target_compile_definitions(foo PUBLIC bar)
+        endif(ABC)
+        add_definitions(/Dcar)
+        if(AMD)
+            remove_definitions(-Dbar -Dcar)
+        endif(AMD)
+        """
+        self.runTool(text)
+        targetNode = self.lookup.getKey('t:foo')
         commandNode = self.vmodel.findNode('remove_definitions')
-        self.assertIsInstance(commandNode, CustomCommandNode)
-        self.assertEqual('-Djohn', commandNode.commands[0].getValue())
+        self.assertIsInstance(commandNode, CommandDefinitionNode)
+        self.assertEqual({'-Dbar', '-Dcar'}, set(map(lambda x: x[0], getFlattenedDefinitionsFromNode(targetNode.definitions))))
+        flattened_result = printDefinitionsForATarget(self.vmodel, self.lookup, 'foo', output=False)
+        self.assertSetEqual({'-Dbar'}, flattened_result['[ABC]'])
+        self.assertSetEqual({'-Dcar'}, flattened_result['[Not(AMD)]'])
+
+
+    def test_adding_subdirectory(self):
+        text = """
+        add_library(foo foo.cpp)
+        add_subdirectory(test_cmake_file/test_subdirectory)        
+        """
+        self.runTool(text)
+        targetNode = self.lookup.getVariableHistory('t:bar')[0]
+        self.assertIsInstance(targetNode, TargetNode)
 
     def test_load_cache(self):
         text = """
@@ -1440,6 +1514,8 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
 
+    # This is deprecated due to new target definition architecture
+    @unittest.skip("")
     def test_target_compile_definition(self):
         text = """
         add_executable(foo bar.cxx)
@@ -1576,8 +1652,8 @@ class TestVariableDefinitions(unittest.TestCase):
 
         # buildRuntimeGraph(self.vmodel, self.lookup)
         a = printFilesForATarget(self.vmodel, self.lookup, 'test_exec')
-        self.assertIn('files_for_test/a.cxx', a['[Not(foo)]'])
-        self.assertSetEqual({'files_for_test/a.cxx', "files_for_test/c.cxx", "files_for_test/b.cxx"}, a['[foo]'])
+        self.assertIn('./files_for_test/a.cxx', a['[Not(foo)]'])
+        self.assertSetEqual({'./files_for_test/a.cxx', "./files_for_test/c.cxx", "./files_for_test/b.cxx"}, a['[foo]'])
 
     def test_get_files_for_a_target_with_dependency_to_other_target(self):
         text = """
@@ -1606,10 +1682,10 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'test_exec_john')
         self.assertSetEqual({"another_folder_for_test/a.cxx"}, a["[]"])
-        self.assertSetEqual({"files_for_test/a.cxx"}, a['[Not(foo), Not(john)]'])
-        self.assertSetEqual({"files_for_test/c.cxx",
-                             "files_for_test/b.cxx",
-                             "files_for_test/a.cxx"}, a['[Not(john), foo]'])
+        self.assertSetEqual({"./files_for_test/a.cxx"}, a['[Not(foo), Not(john)]'])
+        self.assertSetEqual({"./files_for_test/c.cxx",
+                             "./files_for_test/b.cxx",
+                             "./files_for_test/a.cxx"}, a['[Not(john), foo]'])
 
     def test_get_files_for_a_target_with_dependency_to_other_target_concatinated_target_name(self):
         text = """
@@ -1638,10 +1714,10 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'test_exec_john')
         self.assertSetEqual({"another_folder_for_test/a.cxx"}, a["[]"])
-        self.assertSetEqual({"files_for_test/a.cxx"}, a['[Not(foo), Not(john)]'])
-        self.assertSetEqual({"files_for_test/c.cxx",
-                             "files_for_test/b.cxx",
-                             "files_for_test/a.cxx"}, a['[Not(john), foo]'])
+        self.assertSetEqual({"./files_for_test/a.cxx"}, a['[Not(foo), Not(john)]'])
+        self.assertSetEqual({"./files_for_test/c.cxx",
+                             "./files_for_test/b.cxx",
+                             "./files_for_test/a.cxx"}, a['[Not(john), foo]'])
 
     def test_cycle_detection_system_works(self):
         text = """
@@ -2122,11 +2198,11 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec')
         self.assertSetEqual({'bar.cpp'}, a['[]'])
-        self.assertSetEqual({'files_for_test/a.cxx',
+        self.assertSetEqual({'./files_for_test/a.cxx',
                              'bar.cpp',
                              'CMAKE_BINARY_DIR/grpc/src/api/services/containers',
-                             'files_for_test/b.cxx',
-                             'files_for_test/c.cxx'}, a['[build_client, build_server]'])
+                             './files_for_test/b.cxx',
+                             './files_for_test/c.cxx'}, a['[build_client, build_server]'])
 
     def test_simple_target_name_as_variable(self):
         text = """

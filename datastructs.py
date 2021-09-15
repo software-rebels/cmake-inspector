@@ -1,4 +1,5 @@
-from typing import Optional, List
+from operator import is_
+from typing import Optional, List, Type
 import copy
 
 from condition_data_structure import Rule
@@ -50,6 +51,9 @@ class Node:
         if other is None:
             return False
         return self.name == other.name
+    
+    # def __repr__(self):
+    #     return str(self.__dict__)
 
 
 class TargetNode(Node):
@@ -69,6 +73,7 @@ class TargetNode(Node):
         self.interfaceIncludeDirectories = None  # Property of Target
         self.interfaceSystemIncludeDirectories = None  # Property of Target
         self.definitions = None
+        self.interfaceDefinitions = None  # Not sure if we need this yet
         self.linkLibraries = None
 
         self.scope = None
@@ -99,6 +104,8 @@ class TargetNode(Node):
             result.append(self.sources)
         if self.definitions:
             result.append(self.definitions)
+        if self.interfaceDefinitions:
+            result.append(self.interfaceDefinitions)
         if self.linkLibraries:
             result.append(self.linkLibraries)
         if self.interfaceSources:
@@ -133,8 +140,17 @@ class TargetNode(Node):
     def setDefinition(self, node: Node):
         self.definitions = node
 
+    def setInterfaceDefinition(self, node: Node):
+        self.interfaceDefinitions = node
+
     def getDefinition(self):
         return self.definitions
+
+    def setCompileOptions(self, node: Node):
+        self.compileOptions = node
+
+    def setInterfaceCompileOptions(self, node: Node):
+        self.interfaceCompileOptions = node
 
     def getValue(self):
         return self.name
@@ -369,6 +385,120 @@ class Lookup:
     def getInstance(cls):
         if cls._instance is None:
             cls._instance = Lookup()
+
+        return cls._instance
+
+    @classmethod
+    def clearInstance(cls):
+        cls._instance = None
+
+
+class DirectoryNode(LiteralNode):
+    def __init__(self, name):
+        super().__init__(name)
+        self._post_num = 0 # for linearization
+        self.depends_on = [] # child depends on parent
+        self.depended_by = [] # parent depended by child
+        self.targets = []
+
+
+class DefinitionPair:
+    def __init__(self, head, tail=None):
+        self.head = head
+        self.tail = tail
+
+
+# Technically not really a custom command, but node type integrates well
+class DefinitionNode(CustomCommandNode):
+    def __init__(self, from_dir=True, ordering=-1):
+        super().__init__(f"{'directory' if from_dir else 'target'}_definitions")
+        self.from_dir = from_dir
+        self.ordering = ordering # For figuring out add/remove dependencies.
+        self.inherits = []
+
+    def addInheritance(self, node):
+        if not isinstance(node, DefinitionNode):
+            raise TypeError("Inherited node is not of type DefinitionNode.")
+        self.inherits.append(node)
+    
+    def getChildren(self) -> Optional[List]:
+        result = []
+        result.extend(self.inherits)
+        if r := super().getChildren():
+            result.extend(r)
+        return result if result else None
+
+
+class CommandDefinitionNode(CustomCommandNode):
+    def __init__(self, command, specific=False):
+        self.command_type = command
+        if not command in ['add', 'remove']:
+            raise ValueError(f'CommandDefinitionNode given wrong initialization input: {command}')
+        name = ''
+        if specific:
+            name = f'{command}_compile_definitions'
+        else:
+            name = f'{command}_definitions'
+        super().__init__(name)
+
+
+class TargetCompileDefinitionNode(CustomCommandNode):
+    def __init__(self):
+        super().__init__('target_compile_definitions')
+
+
+class Directory:
+    _instance = None
+
+    def __init__(self):
+        self.root = None
+        self.map = {}
+        # might want to test linearization later, but ignore for now.
+        self.topologicalOrder = None 
+
+    def setRoot(self, root_dir):
+        if not self.root:
+            self.root = DirectoryNode(root_dir)
+            self.map[root_dir] = self.root
+
+    def find(self, name):
+        return self.map.get(name, None) 
+
+    # TODO: Should also check for circular dependency when adding new child
+    def addChild(self, node, child):
+        node.depended_by.append(child)
+        child.depends_on.append(node)
+        self.map[child.rawName] = child
+
+    def getTopologicalOrder(self, force=False):
+        if self.topologicalOrder is not None and not force:
+            return self.topologicalOrder
+        self._dfs(self.root)
+        sorted_nodes = sorted([(node, node._post_num) for _, node in self.map.items()], 
+                                key=lambda x: x[1], reverse=True)
+        result = [node for node, _ in sorted_nodes]
+        return result
+
+    def _dfs(self, node):
+        def _visit(node):
+            node.isVisited = True 
+            for child in node.depends_on:
+                if not child.isVisited:
+                    _visit(child)
+            _post(node)
+        
+        def _post(node):
+            nonlocal post_num
+            post_num += 1
+            node._post_num = post_num
+        
+        post_num = 1
+        _visit(node)
+
+    @classmethod
+    def getInstance(cls):
+        if cls._instance is None:
+            cls._instance = Directory()
 
         return cls._instance
 
