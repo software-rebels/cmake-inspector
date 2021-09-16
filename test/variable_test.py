@@ -2087,8 +2087,8 @@ class TestVariableDefinitions(unittest.TestCase):
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec')
 
         self.assertEqual(2, len(a.keys()))
-        self.assertIn('john.cpp', a['[doe == 2, Not(APPLE)]'])
-        self.assertIn('bar.cpp', a['[doe == 5, APPLE]'])
+        self.assertIn('john.cpp', a['[Not(APPLE), doe == 2]'])
+        self.assertIn('bar.cpp', a['[APPLE, doe == 5]'])
 
     def test_GREATER_variable_if_condition(self):
         text = """
