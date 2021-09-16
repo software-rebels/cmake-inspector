@@ -484,6 +484,11 @@ def removeDuplicatesFromFlattedList(flatted: Dict) -> List:
 def postprocessZ3Output(flattened: List):
     for idx, item in enumerate(flattened):
         g = Goal()
-        t = Tactic('ctx-solver-simplify')
+        t1 = Tactic('simplify')
+        t2 = Tactic('propagate-values')
+        t3 = Tactic('propagate-ineqs')
+        t4 = Tactic('ctx-solver-simplify')
+        # t5 = Tactic('split-clause') # We may want to use this tactic, leave it here
+        t = Then(t1, t2, t3, t4)
         g.add(item[1])
         flattened[idx] = (item[0], t(g)[0])
