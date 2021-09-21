@@ -250,6 +250,13 @@ class WhileCommandNode(CustomCommandNode):
         super(WhileCommandNode, self).__init__(rule.getCondition().getText(True))
         self.rule = rule
 
+class ForeachCommandNode(CustomCommandNode):
+    loopVariableName:str;
+    iterationVariableName:Node;
+    def __init__(self,loopVariableName:str,iterationVariableName:Node):
+        super(ForeachCommandNode, self).__init__('foreach');
+        self.loopVariableName = loopVariableName
+        self.iterationVariableName= iterationVariableName
 
 class ConcatNode(Node):
     def __init__(self, name: str):

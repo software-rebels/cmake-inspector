@@ -831,7 +831,7 @@ class TestVariableDefinitions(unittest.TestCase):
         get_cmake_property(baz VARIABLES)
         """
         self.runTool(text)
-        self.assertIn("CMAKE_CURRENT_SOURCE_DIR CMAKE_SOURCE_DIR CMAKE_CURRENT_LIST_DIR foo john", " ".join(getFlattedArguments(self.lookup.getKey("${baz}").pointTo)))
+        self.assertIn("CMAKE_CURRENT_SOURCE_DIR CMAKE_SOURCE_DIR CMAKE_CURRENT_LIST_DIR CMAKE_VERSION CMAKE_MODULE_PATH CMAKE_PROJECT_VERSION_MAJOR CMAKE_PROJECT_VERSION_MINOR CMAKE_PROJECT_VERSION_PATCH CMAKE_PROJECT_VERSION_TWAEK HUPNP_VERSION_MAJOR HUPNP_VERSION_MINOR HUPNP_VERSION_PATCH CMAKE_CURRENT_LIST_FILE foo john", " ".join(getFlattedArguments(self.lookup.getKey("${baz}").pointTo)))
 
     def test_add_custom_command_super_simple(self):
         text = """
@@ -996,6 +996,18 @@ class TestVariableDefinitions(unittest.TestCase):
     def test_get_filename_component_without_condition(self):
         text = """
         get_filename_component(foo bar.cxx DIRECTORY BASE_DIR /home)
+        """
+        self.runTool(text)
+        fooVar = self.lookup.getKey("${foo}")
+        a = flattenAlgorithmWithConditions(fooVar)
+        self.assertIsInstance(fooVar,RefNode)
+        self.assertEqual(1, len(a))
+        self.assertEqual("/home", a[0][0])
+
+    def test_get_filename_component_without_condition_with_variable(self):
+        text = """
+        set(addr "/home")
+        get_filename_component(foo bar.cxx DIRECTORY BASE_DIR ${addr})
         """
         self.runTool(text)
         fooVar = self.lookup.getKey("${foo}")
@@ -2412,6 +2424,44 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         print("done!")
+
+    def test_while_graph(self):
+        text = """
+        set(a foo)
+        set(b bar)
+        while(true)
+           list(APPEND b ${a})
+        endwhile()
+        while(true)
+           list(APPEND b ${a})
+        endwhile()
+        set(c ${b})
+        set(K ${b})
+        set(b ${a})
+        
+        """
+        self.runTool(text)
+        self.vmodel.export(False, True)
+
+    def test_simple_foreach_loop(self):
+        text = """
+        set(a foo)
+        set(items foo bar john doe)
+        foreach(item ${items})
+          set(a ${item}bar)
+          set(b mehran${a})
+          include(sample_file/${a})
+          include(sample_file/${b})
+        endforeach()
+        """
+        self.runTool(text)
+        self.vmodel.export(False, True)
+
+        # self.assertIsInstance(self.lookup.getKey('${a}').pointTo, CustomCommandNode)
+        # self.assertIsInstance(self.lookup.getKey('${b}').pointTo, CustomCommandNode)
+        # customCommand = self.lookup.getKey('${b}').pointTo
+        # self.assertIn(self.lookup.getVariableHistory('${a}')[1], customCommand.pointTo)
+        # self.assertIn(self.lookup.getVariableHistory('${b}')[0], customCommand.pointTo)
 
 if __name__ == '__main__':
     unittest.main()

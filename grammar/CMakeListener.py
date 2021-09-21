@@ -1,318 +1,348 @@
 # Generated from CMake.g4 by ANTLR 4.9.1
 from antlr4 import *
-if __name__ is not None and "." in __name__:
-    from .CMakeParser import CMakeParser
-else:
-    from CMakeParser import CMakeParser
 
 # This class defines a complete listener for a parse tree produced by CMakeParser.
 class CMakeListener(ParseTreeListener):
 
     # Enter a parse tree produced by CMakeParser#cmakefile.
-    def enterCmakefile(self, ctx:CMakeParser.CmakefileContext):
+    def enterCmakefile(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#cmakefile.
-    def exitCmakefile(self, ctx:CMakeParser.CmakefileContext):
+    def exitCmakefile(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#commands.
-    def enterCommands(self, ctx:CMakeParser.CommandsContext):
+    def enterCommands(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#commands.
-    def exitCommands(self, ctx:CMakeParser.CommandsContext):
+    def exitCommands(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#functionCommand.
-    def enterFunctionCommand(self, ctx:CMakeParser.FunctionCommandContext):
+    def enterFunctionCommand(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#functionCommand.
-    def exitFunctionCommand(self, ctx:CMakeParser.FunctionCommandContext):
+    def exitFunctionCommand(self, ctx):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#foreachCommand.
+    def enterForeachCommand(self, ctx):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#foreachCommand.
+    def exitForeachCommand(self, ctx):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#foreachStatement.
+    def enterForeachStatement(self, ctx):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#foreachStatement.
+    def exitForeachStatement(self, ctx):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#endForeachStatement.
+    def enterEndForeachStatement(self, ctx):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#endForeachStatement.
+    def exitEndForeachStatement(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#whileCommand.
-    def enterWhileCommand(self, ctx:CMakeParser.WhileCommandContext):
+    def enterWhileCommand(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#whileCommand.
-    def exitWhileCommand(self, ctx:CMakeParser.WhileCommandContext):
+    def exitWhileCommand(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#whileStatement.
-    def enterWhileStatement(self, ctx:CMakeParser.WhileStatementContext):
+    def enterWhileStatement(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#whileStatement.
-    def exitWhileStatement(self, ctx:CMakeParser.WhileStatementContext):
+    def exitWhileStatement(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#endWhileStatement.
-    def enterEndWhileStatement(self, ctx:CMakeParser.EndWhileStatementContext):
+    def enterEndWhileStatement(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#endWhileStatement.
-    def exitEndWhileStatement(self, ctx:CMakeParser.EndWhileStatementContext):
+    def exitEndWhileStatement(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#ifCommand.
-    def enterIfCommand(self, ctx:CMakeParser.IfCommandContext):
+    def enterIfCommand(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#ifCommand.
-    def exitIfCommand(self, ctx:CMakeParser.IfCommandContext):
+    def exitIfCommand(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#ifStatement.
-    def enterIfStatement(self, ctx:CMakeParser.IfStatementContext):
+    def enterIfStatement(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#ifStatement.
-    def exitIfStatement(self, ctx:CMakeParser.IfStatementContext):
+    def exitIfStatement(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#elseIfStatement.
-    def enterElseIfStatement(self, ctx:CMakeParser.ElseIfStatementContext):
+    def enterElseIfStatement(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#elseIfStatement.
-    def exitElseIfStatement(self, ctx:CMakeParser.ElseIfStatementContext):
+    def exitElseIfStatement(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#elseStatement.
-    def enterElseStatement(self, ctx:CMakeParser.ElseStatementContext):
+    def enterElseStatement(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#elseStatement.
-    def exitElseStatement(self, ctx:CMakeParser.ElseStatementContext):
+    def exitElseStatement(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#endIfStatement.
-    def enterEndIfStatement(self, ctx:CMakeParser.EndIfStatementContext):
+    def enterEndIfStatement(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#endIfStatement.
-    def exitEndIfStatement(self, ctx:CMakeParser.EndIfStatementContext):
+    def exitEndIfStatement(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#functionStatement.
-    def enterFunctionStatement(self, ctx:CMakeParser.FunctionStatementContext):
+    def enterFunctionStatement(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#functionStatement.
-    def exitFunctionStatement(self, ctx:CMakeParser.FunctionStatementContext):
+    def exitFunctionStatement(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#functionBody.
-    def enterFunctionBody(self, ctx:CMakeParser.FunctionBodyContext):
+    def enterFunctionBody(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#functionBody.
-    def exitFunctionBody(self, ctx:CMakeParser.FunctionBodyContext):
+    def exitFunctionBody(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#endFunctionStatement.
-    def enterEndFunctionStatement(self, ctx:CMakeParser.EndFunctionStatementContext):
+    def enterEndFunctionStatement(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#endFunctionStatement.
-    def exitEndFunctionStatement(self, ctx:CMakeParser.EndFunctionStatementContext):
+    def exitEndFunctionStatement(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#LogicalExpressionExists.
-    def enterLogicalExpressionExists(self, ctx:CMakeParser.LogicalExpressionExistsContext):
+    def enterLogicalExpressionExists(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#LogicalExpressionExists.
-    def exitLogicalExpressionExists(self, ctx:CMakeParser.LogicalExpressionExistsContext):
+    def exitLogicalExpressionExists(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#LogicalExpressionTarget.
-    def enterLogicalExpressionTarget(self, ctx:CMakeParser.LogicalExpressionTargetContext):
+    def enterLogicalExpressionTarget(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#LogicalExpressionTarget.
-    def exitLogicalExpressionTarget(self, ctx:CMakeParser.LogicalExpressionTargetContext):
+    def exitLogicalExpressionTarget(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#LogicalExpressionIsAbsolute.
-    def enterLogicalExpressionIsAbsolute(self, ctx:CMakeParser.LogicalExpressionIsAbsoluteContext):
+    def enterLogicalExpressionIsAbsolute(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#LogicalExpressionIsAbsolute.
-    def exitLogicalExpressionIsAbsolute(self, ctx:CMakeParser.LogicalExpressionIsAbsoluteContext):
+    def exitLogicalExpressionIsAbsolute(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#LogicalEntity.
-    def enterLogicalEntity(self, ctx:CMakeParser.LogicalEntityContext):
+    def enterLogicalEntity(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#LogicalEntity.
-    def exitLogicalEntity(self, ctx:CMakeParser.LogicalEntityContext):
+    def exitLogicalEntity(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#ComparisonExpression.
-    def enterComparisonExpression(self, ctx:CMakeParser.ComparisonExpressionContext):
+    def enterComparisonExpression(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#ComparisonExpression.
-    def exitComparisonExpression(self, ctx:CMakeParser.ComparisonExpressionContext):
+    def exitComparisonExpression(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#LogicalExpressionInParen.
-    def enterLogicalExpressionInParen(self, ctx:CMakeParser.LogicalExpressionInParenContext):
+    def enterLogicalExpressionInParen(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#LogicalExpressionInParen.
-    def exitLogicalExpressionInParen(self, ctx:CMakeParser.LogicalExpressionInParenContext):
+    def exitLogicalExpressionInParen(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#LogicalExpressionPolicy.
-    def enterLogicalExpressionPolicy(self, ctx:CMakeParser.LogicalExpressionPolicyContext):
+    def enterLogicalExpressionPolicy(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#LogicalExpressionPolicy.
-    def exitLogicalExpressionPolicy(self, ctx:CMakeParser.LogicalExpressionPolicyContext):
+    def exitLogicalExpressionPolicy(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#LogicalExpressionAnd.
-    def enterLogicalExpressionAnd(self, ctx:CMakeParser.LogicalExpressionAndContext):
+    def enterLogicalExpressionAnd(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#LogicalExpressionAnd.
-    def exitLogicalExpressionAnd(self, ctx:CMakeParser.LogicalExpressionAndContext):
+    def exitLogicalExpressionAnd(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#ConstantValue.
-    def enterConstantValue(self, ctx:CMakeParser.ConstantValueContext):
+    def enterConstantValue(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#ConstantValue.
-    def exitConstantValue(self, ctx:CMakeParser.ConstantValueContext):
+    def exitConstantValue(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#LogicalExpressionNot.
-    def enterLogicalExpressionNot(self, ctx:CMakeParser.LogicalExpressionNotContext):
+    def enterLogicalExpressionNot(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#LogicalExpressionNot.
-    def exitLogicalExpressionNot(self, ctx:CMakeParser.LogicalExpressionNotContext):
+    def exitLogicalExpressionNot(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#LogicalExpressionOr.
-    def enterLogicalExpressionOr(self, ctx:CMakeParser.LogicalExpressionOrContext):
+    def enterLogicalExpressionOr(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#LogicalExpressionOr.
-    def exitLogicalExpressionOr(self, ctx:CMakeParser.LogicalExpressionOrContext):
+    def exitLogicalExpressionOr(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#LogicalExpressionDefined.
-    def enterLogicalExpressionDefined(self, ctx:CMakeParser.LogicalExpressionDefinedContext):
+    def enterLogicalExpressionDefined(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#LogicalExpressionDefined.
-    def exitLogicalExpressionDefined(self, ctx:CMakeParser.LogicalExpressionDefinedContext):
+    def exitLogicalExpressionDefined(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#LogicalExpressionIsDirectory.
-    def enterLogicalExpressionIsDirectory(self, ctx:CMakeParser.LogicalExpressionIsDirectoryContext):
+    def enterLogicalExpressionIsDirectory(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#LogicalExpressionIsDirectory.
-    def exitLogicalExpressionIsDirectory(self, ctx:CMakeParser.LogicalExpressionIsDirectoryContext):
+    def exitLogicalExpressionIsDirectory(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#optionCommand.
-    def enterOptionCommand(self, ctx:CMakeParser.OptionCommandContext):
+    def enterOptionCommand(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#optionCommand.
-    def exitOptionCommand(self, ctx:CMakeParser.OptionCommandContext):
+    def exitOptionCommand(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#command_invocation.
-    def enterCommand_invocation(self, ctx:CMakeParser.Command_invocationContext):
+    def enterCommand_invocation(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#command_invocation.
-    def exitCommand_invocation(self, ctx:CMakeParser.Command_invocationContext):
+    def exitCommand_invocation(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#argument.
-    def enterArgument(self, ctx:CMakeParser.ArgumentContext):
+    def enterArgument(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#argument.
-    def exitArgument(self, ctx:CMakeParser.ArgumentContext):
+    def exitArgument(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#constant_value.
-    def enterConstant_value(self, ctx:CMakeParser.Constant_valueContext):
+    def enterConstant_value(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#constant_value.
-    def exitConstant_value(self, ctx:CMakeParser.Constant_valueContext):
+    def exitConstant_value(self, ctx):
+        pass
+
+
+    # Enter a parse tree produced by CMakeParser#foreachInputs.
+    def enterForeachInputs(self, ctx):
+        pass
+
+    # Exit a parse tree produced by CMakeParser#foreachInputs.
+    def exitForeachInputs(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#single_argument.
-    def enterSingle_argument(self, ctx:CMakeParser.Single_argumentContext):
+    def enterSingle_argument(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#single_argument.
-    def exitSingle_argument(self, ctx:CMakeParser.Single_argumentContext):
+    def exitSingle_argument(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#compound_argument.
-    def enterCompound_argument(self, ctx:CMakeParser.Compound_argumentContext):
+    def enterCompound_argument(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#compound_argument.
-    def exitCompound_argument(self, ctx:CMakeParser.Compound_argumentContext):
+    def exitCompound_argument(self, ctx):
         pass
 
 
     # Enter a parse tree produced by CMakeParser#comp_operator.
-    def enterComp_operator(self, ctx:CMakeParser.Comp_operatorContext):
+    def enterComp_operator(self, ctx):
         pass
 
     # Exit a parse tree produced by CMakeParser#comp_operator.
-    def exitComp_operator(self, ctx:CMakeParser.Comp_operatorContext):
+    def exitComp_operator(self, ctx):
         pass
 
 
-
-del CMakeParser

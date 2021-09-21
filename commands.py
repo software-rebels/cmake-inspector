@@ -6,7 +6,7 @@ import logging
 from algorithms import flattenAlgorithmWithConditions
 from condition_data_structure import Rule
 from datastructs import Lookup, CustomCommandNode, TargetNode, ConcatNode, \
-WhileCommandNode, DefinitionNode, CommandDefinitionNode, DefinitionPair, TargetCompileDefinitionNode, TestNode
+WhileCommandNode, DefinitionNode, CommandDefinitionNode, DefinitionPair, TargetCompileDefinitionNode, TestNode, ForeachCommandNode
 from grammar.CMakeLexer import CMakeLexer, CommonTokenStream, InputStream
 from grammar.CMakeParser import CMakeParser
 from utils import *
@@ -109,6 +109,53 @@ def listCommand(arguments):
         # A new RefNode will point to this new concatNode
         util_create_and_add_refNode_for_variable(rawListName, concatNode)
 
+
+def foreachCommand():
+    vmodel = VModel.getInstance()
+    # customCommand = CustomCommandNode("WHILE({})".format(util_getStringFromList(arguments)))
+    vmodel.pushCurrentLookupTable()
+    # We want to show the dependency between while command and newly created nodes. We compare nodes before and after
+    # while loop and connect while command node to them.
+    vmodel.nodeStack.append(list(vmodel.nodes))
+
+
+# We compare lookup table before while and after that. For any changed variable, or newly created one,
+# the tool will add the RefNode to the while command node, then it creates a new RefNode pointing to the
+# While command node
+def endForeachCommand(foreachVars):
+    instantCommands = ['include']
+    shouldRunInstantly = False
+    vmodel = VModel.getInstance()
+    lookupTable = Lookup.getInstance()
+
+    lastPushedLookup = vmodel.getLastPushedLookupTable()
+
+    command = ForeachCommandNode(foreachVars[0], foreachVars[1])
+    prevNodeStack = vmodel.nodeStack.pop()
+    iterLoop = vmodel.expand([foreachVars[1]])
+    loopVar = vmodel.expand([foreachVars[0]]);
+    refNodeVars = CustomCommandNode("foreach_vars_{}_{}".format(foreachVars[0], foreachVars[1]))
+    refNodeVars.pointTo.append(iterLoop)
+    refNodeVars.pointTo.append(loopVar)
+    command.pointTo.append((refNodeVars))
+    for item in vmodel.nodes:
+        if item not in prevNodeStack:
+            command.pointTo.append(item)
+            if item.rawName in instantCommands:
+                shouldRunInstantly = True
+
+    for key in lookupTable.items[-1].keys():
+        if key not in lastPushedLookup.items[-1].keys() or lookupTable.getKey(key) != lastPushedLookup.getKey(key):
+            # command.pointTo.append(lookupTable.getKey(key))
+            refNode = RefNode("{}_{}".format(key, vmodel.getNextCounter()), command)
+            lookupTable.setKey(key, refNode)
+            vmodel.nodes.append(refNode)
+
+    if shouldRunInstantly:
+        print("[error][foreach] There are foreach commands that are neglected at this point")
+        # possibleValues = flattenAlgorithmWithConditions(iterLoop)
+        # for item in possibleValues:
+        #     setCommand([foreachVars[0],item])
 
 def whileCommand(rule: Rule):
     vmodel = VModel.getInstance()
