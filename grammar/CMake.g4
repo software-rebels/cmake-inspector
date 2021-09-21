@@ -11,6 +11,7 @@ cmakefile
 	: commands* EOF
 	;
 commands:   functionCommand
+          | foreachCommand
           | ifCommand
           | whileCommand
           | optionCommand
@@ -19,6 +20,22 @@ commands:   functionCommand
 
 functionCommand
     : functionStatement functionBody endFunctionStatement;
+
+foreachCommand
+    : foreachStatement (ifBody=commands)* endForeachStatement;
+
+foreachStatement
+	: FOREACH LPAREN  (foreachInputs foreachInputs) RPAREN
+	;
+
+
+//foreachInputs
+//    : (body=.*?)
+//    ;
+
+endForeachStatement
+	: ENDFOREACH LPAREN (.*?) RPAREN
+	;
 
 whileCommand
 	: whileStatement (ifBody=commands)* endWhileStatement
@@ -96,6 +113,11 @@ argument
 
 constant_value: CONSTANTS | DECIMAL;
 
+foreachInputs
+    :Identifier | Unquoted_argument | Bracket_argument
+	| Quoted_argument | DECIMAL ;
+
+
 // TODO: Guess it would be better to replace it with logic expression since many function input is logic
 single_argument
 	: Identifier | Unquoted_argument | Bracket_argument
@@ -109,6 +131,9 @@ compound_argument
 
 comp_operator : GT | GTEQ | LT | EQ | EQR | VGEQ |
                 STQE | STRLESS | STRGREATER | VERSION_GREATER | VERSION_EQUALL | VERSION_LESS | MATCHES;
+
+FOREACH: F O R E A C H;
+ENDFOREACH: E N D F O R E A C H;
 
 NOT : N O T;
 AND : A N D;

@@ -2,6 +2,29 @@ import operator
 from typing import Dict, List
 from z3 import *
 
+class ForeachVariable:
+    logicType = None
+
+    def __init__(self, logicType: str):
+        self.logicType = logicType
+
+    def getType(self):
+        return self.logicType
+
+    def getText(self, pretty=False) -> str:
+        pass
+
+    def evaluate(self):
+        pass
+
+    def satisfiable(self, condition: Dict) -> List:
+        pass
+
+    def getAssertions(self):
+        pass
+
+    def satModel(self, s: Solver):
+        pass
 
 class LogicalExpression:
     logicType = None

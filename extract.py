@@ -39,11 +39,14 @@ extension_type= "ECM"
 
 no_op_commands=['cmake_policy','enable_testing','fltk_wrap_ui','install','mark_as_advanced','message','qt_wrap_cpp',
                 'source_group','variable_watch','include_guard','install_icon']
+
+                
 find_package_lookup_directories=['cmake','CMake',':name',':name/cmake',':name/CMake','lib/cmake/:name',
-                                 'share/cmake/:name','lib/:name','share/:name','lib/:name/cmake','lib/:name/CMake',
+                                 'share/cmake/:name','share/cmake-:version/:name','lib/:name','share/:name','lib/:name/cmake','lib/:name/CMake',
                                  'share/:name/cmake','share/:name/CMake',':name/lib/cmake/:name',
                                  ':name/share/cmake/:name',':name/lib/:name',':name/share/:name',
                                  ':name/lib/:name/cmake',':name/lib/:name/CMake',':name/share/:name/cmake',
+                                 'share/:name/modules','bin','lib/x86_64-linux-gnu/cmake/:name'
                                  ':name/share/:name/CMake','lib/x86_64-linux-gnu/cmake/:name',
                                  '/opt/homebrew/Cellar/extra-cmake-modules/5.83.0/share/ECM/cmake',
                                  '/opt/homebrew/Cellar/extra-cmake-modules/5.83.0/share/ECM/modules',
@@ -51,13 +54,25 @@ find_package_lookup_directories=['cmake','CMake',':name',':name/cmake',':name/CM
                                  '/opt/homebrew/Cellar/qt@5/5.15.2/bin',
                                  '/Applications/CMake.app/Contents/share/cmake-3.20/Modules',
                                  '/opt/homebrew/Cellar/cmake/3.20.4/share/cmake/Modules/',
+                                 'share/cmake-:version/:name','share/cmake-:version/Modules',
+                                 '/usr/share/kde4/apps/cmake/modules',
                                  '/opt/homebrew/Cellar/qt@5/5.15.2/lib/cmake/Qt5']
-find_package_prefix=''
+find_package_prefixes=['/usr','']
+architecture='x86_64-linux-gnu'
 includes_paths=['/Applications/CMake.app/Contents/share/cmake-3.20/Modules']
-
+# Handle max recursion
+currentFunction=None
+prevFunction=[]
+maxRecursionDepth=100
+currentRecursionDepth=0
+#
+foreachCommandStack = []
+foreachNodeStack = []
 class CMakeExtractorListener(CMakeListener):
     rule: Optional[Rule] = None
+    insideLoop = False;
     logicalExpressionStack: List[LogicalExpression] = []
+    foreachVariable: List[String] = []
 
     def __init__(self):
         global vmodel
@@ -199,7 +214,11 @@ class CMakeExtractorListener(CMakeListener):
                                 rightHandSide = bool(rightHandSide)
 
                         if isinstance(expression.getAssertions(), ArithRef) and isinstance(rightHandSide, str):
-                            rightHandSide = int(item[0].replace('.','', 1).replace('"', ''))
+                            cleanedRighthandSide = item[0].replace('.','', 1).replace('"', '')
+                            if(cleanedRighthandSide.isdigit()):
+                                rightHandSide = int(cleanedRighthandSide)
+                            else:
+                                rightHandSide = Int(cleanedRighthandSide)
                         assertion = condition.union(item[1].union({expression.getAssertions() == rightHandSide}))
                     except Exception as e:
                         print(f"Variable name: {expression.variableName} and item[0]: {item[0]}")
@@ -299,6 +318,47 @@ class CMakeExtractorListener(CMakeListener):
         optionNode.default = optionInitialValue
         util_create_and_add_refNode_for_variable(optionName, optionNode)
 
+
+
+
+    def exitForeachOptions(self,ctx:CMakeParser.WhileCommandContext):
+        ctx.left.getText()
+        self.foreachVariable.append()
+    def enterForeachCommand(self, ctx:CMakeParser.WhileCommandContext):
+        assert len(self.foreachVariable) == 0
+        self.insideLoop = True
+
+
+    def enterForeachInputs(self, ctx:CMakeParser.WhileStatementContext):
+        global foreachCommandStack
+        ctx_var = ctx.getText();
+        if ctx_var[0] == "$":
+            foreachVariableRawName = f'{ctx_var}'
+        else:
+            foreachVariableRawName = f'${{{ctx_var}}}'
+
+        foreachCommandStack.append(foreachVariableRawName)
+
+    def exitForeachStatement(self, ctx:CMakeParser.WhileStatementContext):
+        global foreachCommandStack,foreachNodeStack
+
+        # # self.rule.setType('foreach')
+        # assert len(self.logicalExpressionStack) == 0
+        # foreachCommand(self.rule)
+        foreachNodeStack.append(foreachCommandStack)
+        foreachCommandStack =[]
+        foreachCommand();
+
+
+
+    def exitForeachCommand(self, ctx:CMakeParser.WhileCommandContext):
+        global foreachCommandStack
+        endForeachCommand(foreachNodeStack.pop())
+        self.insideLoop = False
+
+
+
+
     def enterWhileCommand(self, ctx:CMakeParser.WhileCommandContext):
         assert len(self.logicalExpressionStack) == 0
         self.rule = Rule()
@@ -307,7 +367,6 @@ class CMakeExtractorListener(CMakeListener):
     def exitWhileStatement(self, ctx:CMakeParser.WhileStatementContext):
         self.rule.setCondition(self.logicalExpressionStack.pop())
         assert len(self.logicalExpressionStack) == 0
-        whileCommand(self.rule)
 
     def exitWhileCommand(self, ctx:CMakeParser.WhileCommandContext):
         endwhileCommand()
@@ -336,6 +395,9 @@ class CMakeExtractorListener(CMakeListener):
         args = vmodel.expand(arguments)
         include_possibilities=flattenAlgorithmWithConditions(args)
         commandNode.depends.append(args)
+        if self.insideLoop:
+            print("[warning] include inside loop neglected")
+            return;
         for include_possibility in include_possibilities:
             argsVal = include_possibility[0]
             includedFile = os.path.join(project_dir, argsVal)
@@ -374,7 +436,7 @@ class CMakeExtractorListener(CMakeListener):
                             break
                     # assert len(cmake_module_path[1]) == 0 # check if we have multiple conditions
                     if not(len(cmake_module_path[1]) == 0):
-                        print('Something might go wrong, conditional module path exist!')
+                        logging.warning('Something might go wrong, conditional module path exist!')
                 else:
                     paths = [os.path.join(path,argsVal).replace('//','/')+'.cmake' for path in includes_paths]
                     paths += [os.path.join(path,argsVal).replace('//','/') for path in includes_paths]
@@ -387,12 +449,86 @@ class CMakeExtractorListener(CMakeListener):
                             parseFile(path, True)
                             foundModule = True
                     if not foundModule:
-                        print("[error][enterCommand_invocation] Cannot Find : {} to include".format(arguments))
+                        print("[error][enterCommand_invocation] Cannot Find : {} to include, conditions {}".format(arguments,include_possibility[1]))
                         vmodel.nodes.append(util_handleConditions(commandNode, commandNode.getName()))
                 # now we turn the current list dir back
                 util_create_and_add_refNode_for_variable('CMAKE_CURRENT_LIST_DIR',
                                                          LiteralNode(f"original_{currentPath}", currentPath))
 
+
+    def find_Module(self,packageName,findPackageNode):
+        global vmodel
+        global project_dir
+
+        flattened_packageName = flattenAlgorithmWithConditions(packageName)
+        for possible_include in flattened_packageName:
+            includePath = None
+            # First we check CMAKE_MODULE_PATH
+            cmake_module_paths = flattenAlgorithmWithConditions(vmodel.expand(["${CMAKE_MODULE_PATH}"]))
+            for cmake_module_path in cmake_module_paths:
+                if os.path.exists(os.path.join(cmake_module_path[0], f'Find{possible_include[0]}.cmake')):
+                    includePath = os.path.abspath(os.path.join(cmake_module_path[0], f'Find{possible_include[0]}.cmake'))
+                    break
+                if not (len(cmake_module_path[1]) == 0 and len(possible_include[1]) == 0):
+                    print("something might go wrong, conditional module path exist!")
+                # assert len(cmake_module_path[1]) == 0 and len(possible_include[1]) == 0 # check if we have multiple conditions
+            else:
+                # If not found, then, we search in default directories
+                for find_package_prefix in find_package_prefixes:
+                    for index, path in enumerate(find_package_lookup_directories):
+                        if os.path.exists(os.path.join(find_package_prefix, path.replace(':name', possible_include[0]),
+                                                       f'Find{possible_include[0]}.cmake')):
+                            includePath = os.path.abspath(os.path.join(find_package_prefix, path.replace(':name', possible_include[0]),
+                                                       f'Find{possible_include[0]}.cmake'))
+                            break
+                    if includePath:
+                        break
+            if includePath:
+                util_create_and_add_refNode_for_variable(packageName.getValue() + "_Module",
+                                                         LiteralNode(includePath, includePath))
+                util_create_and_add_refNode_for_variable('PACKAGE_FIND_NAME',
+                                                         LiteralNode(f"name_{packageName.getValue()}",
+                                                                     packageName.getValue()))
+
+                util_create_and_add_refNode_for_variable('PACKAGE_FIND_VERSION',
+                                                         LiteralNode('VERSION_MINOR', 20))
+
+                if len(possible_include[1]):
+                    vmodel = VModel.getInstance()
+
+                    prior_condition = possible_include[1]
+                    logicalExpression = DummyExpression(prior_condition)
+                    rule = Rule()
+                    if len(vmodel.systemState):
+                        rule.setLevel(vmodel.systemState[-1].level)
+                    else:
+                        rule.setLevel(1)
+                    rule.setType('if')
+                    rule.setCondition(logicalExpression)
+                    vmodel.pushSystemState(rule)
+                    vmodel.pushCurrentLookupTable()
+                    vmodel.nodeStack.append(list(vmodel.nodes))
+
+                    tempProjectDir = project_dir
+                    project_dir = os.path.dirname(includePath)
+                    setCommand(['CMAKE_CURRENT_LIST_DIR', project_dir])
+                    self.includeCommand([includePath])
+                    project_dir = tempProjectDir
+
+                    rule = vmodel.popSystemState()
+                    prevNodeStack = vmodel.nodeStack.pop()
+                    for item in vmodel.nodes:
+                        if item not in prevNodeStack:
+                            findPackageNode.pointTo.append(item)
+
+                else:
+                    tempProjectDir = project_dir
+                    project_dir = os.path.dirname(includePath)
+                    setCommand(['CMAKE_CURRENT_LIST_DIR', project_dir])
+                    self.includeCommand([includePath])
+                    project_dir = tempProjectDir
+                return True
+        return False
 
     def enterCommand_invocation(self, ctx: CMakeParser.Command_invocationContext):
         global project_dir
@@ -472,101 +608,115 @@ class CMakeExtractorListener(CMakeListener):
                 requiredIndex = capitalArguments.index('REQUIRED')
             else:
                 requiredIndex = -1
+            isModule = False
+            if 'MODULE' in capitalArguments:
+                isModule = True
+
             requiredPackage = False
             if requiredIndex != -1:
                 requiredPackage = True
 
 
             flattened_packageName = flattenAlgorithmWithConditions(packageName)
-            version='';
-            for possible_include in flattened_packageName:
-                includePath = None
-                # First we check CMAKE_MODULE_PATH
-                cmake_module_paths = flattenAlgorithmWithConditions(vmodel.expand(["${CMAKE_MODULE_PATH}"]))
-                for cmake_module_path in cmake_module_paths:
-                    if os.path.exists(os.path.join(cmake_module_path[0],f'{possible_include[0]}Config.cmake')):
-                        includePath = os.path.exists(os.path.join(cmake_module_path[0],f'{possible_include[0]}Config.cmake'))
-                        version = os.path.exists(os.path.join(cmake_module_path[0],f'{possible_include[0]}ConfigVersion.cmake'))
-                        break
-                    if os.path.exists(os.path.join(cmake_module_path[0], f'{possible_include[0]}-config.cmake')):
-                        includePath = os.path.exists(
-                            os.path.join(cmake_module_path[0], f'{possible_include[0]}-config.cmake'))
-                        version = os.path.exists(os.path.join(cmake_module_path[0],f'{possible_include[0]}-config-version.cmake'))
+            version=''
+            if self.find_Module(packageName,findPackageNode):
+                return True;
+            elif not isModule:
+                for possible_include in flattened_packageName:
+                    includePath = None
+                    # First we check CMAKE_MODULE_PATH
+                    cmake_module_paths = flattenAlgorithmWithConditions(vmodel.expand(["${CMAKE_MODULE_PATH}"]))
+                    for cmake_module_path in cmake_module_paths:
+                        if os.path.exists(os.path.join(cmake_module_path[0],f'{possible_include[0]}Config.cmake')):
+                            includePath = os.path.join(cmake_module_path[0],f'{possible_include[0]}Config.cmake')
+                            version = os.path.join(cmake_module_path[0],f'{possible_include[0]}ConfigVersion.cmake')
+                            break
+                        if os.path.exists(os.path.join(cmake_module_path[0], f'{possible_include[0]}-config.cmake')):
+                            includePath = os.path.exists(
+                                os.path.join(cmake_module_path[0], f'{possible_include[0]}-config.cmake'))
+                            version = os.path.join(cmake_module_path[0],f'{possible_include[0]}-config-version.cmake')
 
-                        break
-                    if not(len(cmake_module_path[1]) == 0 and len(possible_include[1]) == 0):
-                        print("something might go wrong, conditional module path exist!")
-                    # assert len(cmake_module_path[1]) == 0 and len(possible_include[1]) == 0 # check if we have multiple conditions
-                else:
-                    # If not found, then, we search in default directories
-                    for index,path in enumerate(find_package_lookup_directories):
-                        if os.path.exists(os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0]}Config.cmake')):
-                            includePath = os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0]}Config.cmake')
-                            version = os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0]}ConfigVersion.cmake')
-
-                        if os.path.exists(os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0].lower()}-config.cmake')):
-                            includePath = os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0].lower()}-config.cmake')
-                            version = os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0].lower()}-config-version.cmake')
-
-                if includePath:
-                    util_create_and_add_refNode_for_variable(packageName.getValue() + "_CONFIG", LiteralNode(includePath, includePath))
-                    util_create_and_add_refNode_for_variable('PACKAGE_FIND_NAME',
-                                                             LiteralNode(f"name_{packageName.getValue()}", packageName.getValue()))
-                    if len(possible_include[1]):
-                        vmodel = VModel.getInstance()
-
-                        prior_condition = possible_include[1]
-                        logicalExpression = DummyExpression(prior_condition)
-                        rule = Rule()
-                        if len(vmodel.systemState):
-                            rule.setLevel(vmodel.systemState[-1].level)
-                        else:
-                            rule.setLevel(1)
-                        rule.setType('if')
-                        rule.setCondition(logicalExpression)
-                        vmodel.pushSystemState(rule)
-                        vmodel.pushCurrentLookupTable()
-                        vmodel.nodeStack.append(list(vmodel.nodes))
-
-                        tempProjectDir = project_dir
-                        project_dir = os.path.dirname(includePath)
-                        # load_version
-                        if(os.path.exists(version)):
-                            self.includeCommand([version])
-                            package_version = flattenAlgorithmWithConditions(vmodel.expand(['PACKAGE_VERSION']))
-                            if len(package_version):
-                                setCommand([f"{packageName.getValue()}_FIND_VERSION",package_version[0][0]]);
-                        # end load version
-                        setCommand(['CMAKE_CURRENT_LIST_DIR', project_dir])
-                        self.includeCommand([includePath])
-                        project_dir = tempProjectDir
-
-                        rule = vmodel.popSystemState()
-                        prevNodeStack = vmodel.nodeStack.pop()
-                        for item in vmodel.nodes:
-                            if item not in prevNodeStack:
-                                findPackageNode.pointTo.append(item)
-
+                            break
+                        if not(len(cmake_module_path[1]) == 0 and len(possible_include[1]) == 0):
+                            print("something might go wrong, conditional module path exist!")
+                        # assert len(cmake_module_path[1]) == 0 and len(possible_include[1]) == 0 # check if we have multiple conditions
                     else:
-                        tempProjectDir = project_dir
-                        project_dir = os.path.dirname(includePath)
-                        # load_version
-                        if(os.path.exists(version)):
-                            self.includeCommand([version])
-                            package_version = flattenAlgorithmWithConditions(vmodel.expand(['PACKAGE_VERSION']))
-                            if len(package_version):
-                                setCommand([f"{packageName.getValue()}_FIND_VERSION",package_version[0][0]]);
-                        # end load version
+                        # If not found, then, we search in default directories
+                        for find_package_prefix in find_package_prefixes:
+                            for index,path in enumerate(find_package_lookup_directories):
+                                if os.path.exists(os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0]}Config.cmake')):
+                                    includePath = os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0]}Config.cmake')
+                                    version = os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0]}ConfigVersion.cmake')
+                                    break
 
-                        setCommand(['CMAKE_CURRENT_LIST_DIR',project_dir])
-                        self.includeCommand([includePath])
-                        project_dir = tempProjectDir
+                                if os.path.exists(os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0].lower()}-config.cmake')):
+                                    includePath = os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0].lower()}-config.cmake')
+                                    version = os.path.join(find_package_prefix,path.replace(':name',possible_include[0]),f'{possible_include[0].lower()}-config-version.cmake')
+                                    break
+                            if includePath:
+                                break
+                    if includePath:
+                        util_create_and_add_refNode_for_variable(packageName.getValue() + "_CONFIG", LiteralNode(includePath, includePath))
+                        util_create_and_add_refNode_for_variable('PACKAGE_FIND_NAME',
+                                                                 LiteralNode(f"name_{packageName.getValue()}", packageName.getValue()))
+                        if len(possible_include[1]):
+                            vmodel = VModel.getInstance()
 
-                elif requiredPackage:
-                    # raise Exception("Required package not found: {}".format(packageName.getValue()))
-                    print("Required package not found: {}".format(packageName.getValue()))
-                    logging.error("Required package not found: {}".format(packageName.getValue()))
+                            prior_condition = possible_include[1]
+                            logicalExpression = DummyExpression(prior_condition)
+                            rule = Rule()
+                            if len(vmodel.systemState):
+                                rule.setLevel(vmodel.systemState[-1].level)
+                            else:
+                                rule.setLevel(1)
+                            rule.setType('if')
+                            rule.setCondition(logicalExpression)
+                            vmodel.pushSystemState(rule)
+                            vmodel.pushCurrentLookupTable()
+                            vmodel.nodeStack.append(list(vmodel.nodes))
 
+                            tempProjectDir = project_dir
+                            project_dir = os.path.dirname(includePath)
+                            # load_version
+                            if(os.path.exists(version)):
+                                self.includeCommand([version])
+                                package_version = flattenAlgorithmWithConditions(vmodel.expand(['PACKAGE_VERSION']))
+                                if len(package_version):
+                                    setCommand([f"{packageName.getValue()}_FIND_VERSION",package_version[0][0]]);
+                            # end load version
+                            setCommand(['CMAKE_CURRENT_LIST_DIR', project_dir])
+                            self.includeCommand([includePath])
+                            project_dir = tempProjectDir
+
+                            rule = vmodel.popSystemState()
+                            prevNodeStack = vmodel.nodeStack.pop()
+                            for item in vmodel.nodes:
+                                if item not in prevNodeStack:
+                                    findPackageNode.pointTo.append(item)
+
+                        else:
+                            tempProjectDir = project_dir
+                            project_dir = os.path.dirname(includePath)
+                            # load_version
+                            if(os.path.exists(version)):
+                                self.includeCommand([version])
+                                package_version = flattenAlgorithmWithConditions(vmodel.expand(['PACKAGE_VERSION']))
+                                if len(package_version):
+                                    setCommand([f"{packageName.getValue()}_FIND_VERSION",package_version[0][0]]);
+                            # end load version
+
+                            setCommand(['CMAKE_CURRENT_LIST_DIR',project_dir])
+                            self.includeCommand([includePath])
+                            project_dir = tempProjectDir
+
+                    elif requiredPackage:
+                        logging.error("Required package not found: {}".format(packageName.getValue()))
+                        raise Exception("Required package not found: {}".format(packageName.getValue()))
+                        # print("Required package not found: {}".format(packageName.getValue()))
+            elif requiredPackage:
+                logging.error("Required module not found: {}".format(packageName.getValue()))
+                raise Exception("Required package not found: {}".format(packageName.getValue()))
+                # print("Required module not found: {}".format(packageName.getValue()))
 
             # capitalArguments = [x.upper() for x in arguments]
             # projectVersion = None
@@ -778,13 +928,12 @@ class CMakeExtractorListener(CMakeListener):
         elif commandId == 'get_filename_component':
             varName = arguments.pop(0)
 
-            currentPath = flattenAlgorithmWithConditions(vmodel.expand(['${CMAKE_CURRENT_LIST_DIR}']))
-            if len(currentPath):
-                currentPath = currentPath[0][0];
-            else:
-                currentPath = '';
+            # currentPath = flattenAlgorithmWithConditions(vmodel.expand(['${CMAKE_CURRENT_LIST_DIR}']))
+            # if len(currentPath):
+            #     currentPath = currentPath[0][0];
+            # else:
+            #     currentPath = '';
 
-            # print(os.path.join(currentPathValue,arguments[0].strip('"')))
             commandNode = CustomCommandNode("get_filename_component_{}".format(vmodel.getNextCounter()))
             otherArgs = vmodel.expand(arguments)
             commandNode.commands.append(otherArgs)
@@ -797,8 +946,19 @@ class CMakeExtractorListener(CMakeListener):
             else:
                 pathValue = pathVariable
 
+            # TODO: investigate these options in more detail!
+            if not isinstance(pathValue,str):
+              return;
 
             capitalArguments = [x.upper() for x in arguments]
+
+            if 'BASE_DIR' in capitalArguments:
+                if not len(pathValue) or pathValue[0]!='/':
+                    base_dir_idx = capitalArguments.index('BASE_DIR') + 1
+                    baseAddr = vmodel.expand([arguments[base_dir_idx]]).getValue()
+                    pathValue = os.path.join(baseAddr, pathValue).rstrip('/')
+            if isinstance(pathValue,RefNode):
+                pathValue = flattenAlgorithmWithConditions(pathValue)
 
             if 'DIRECTORY' in capitalArguments or 'PATH' in capitalArguments:
                 pathValue = os.path.dirname(pathValue)
@@ -843,13 +1003,9 @@ class CMakeExtractorListener(CMakeListener):
                 else:
                     pathValue = parts[0]
 
-            if 'BASE_DIR' in capitalArguments:
-                if not len(pathValue) or pathValue[0]!='/':
-                    base_dir_idx = capitalArguments.index('BASE_DIR') + 1
-                    pathValue = os.path.join(arguments[base_dir_idx],pathValue).rstrip('/')
-            if isinstance(pathValue,RefNode):
-                pathValue = flattenAlgorithmWithConditions(pathValue)
-            util_create_and_add_refNode_for_variable(varName,commandNode,relatedProperty=pathValue)
+
+            node = util_create_and_add_refNode_for_variable(varName,commandNode,relatedProperty=pathValue)
+            commandNode.commands.append(LiteralNode(pathValue, pathValue))
             # setCommand([varName,pathValue])
 
 
@@ -1326,7 +1482,7 @@ class CMakeExtractorListener(CMakeListener):
                 if key not in lastPushedLookup.items[-1].keys() or \
                         lookupTable.getKey(key) != lastPushedLookup.getKey(key):
                     # We don't want to create a ref node for the variable that is the argument of foreach command
-                    # if key == "${{{}}}".format(forEachVariableName):
+                    # if key == "${{{}}}".format(forEachVariableName):s
                     #     continue
                     refNode = RefNode("{}_{}".format(key, vmodel.getNextCounter()), command)
                     lookupTable.setKey(key, refNode)
@@ -2103,6 +2259,23 @@ class CMakeExtractorListener(CMakeListener):
             if customFunction is None:
                 print("[enterCommand_invocation] Command ignored: {}".format(commandId))
                 return
+
+            # Handle Max recursion for recursive functions
+            global prevFunction
+            global currentFunction
+            global currentRecursionDepth
+            global maxRecursionDepth
+
+            currentFunction = commandId
+
+            if len(prevFunction)!=0 and currentFunction in prevFunction:
+                currentRecursionDepth += 1
+            if maxRecursionDepth <= currentRecursionDepth:
+                print(f"{commandId}:Max recursion reached! Exiting future calls...")
+                return
+            prevFunction.append(currentFunction)
+            # Finish part one of max recursion
+
             if not customFunction.get('isMacro'):
                 vmodel.lookupTable.newScope()
             functionArguments = customFunction.get('arguments')
@@ -2128,6 +2301,13 @@ class CMakeExtractorListener(CMakeListener):
             extractor = self
             walker = ParseTreeWalker()
             walker.walk(extractor, tree)
+
+            # Restore state after running the function for max recursion
+            if len(prevFunction) and currentFunction in prevFunction[0:-1]:
+                currentRecursionDepth -= 1
+            prevFunction.pop();
+            # Finished restoring
+
             if not customFunction.get('isMacro'):
                 vmodel.lookupTable.dropScope()
 
@@ -2286,12 +2466,22 @@ def exportFlattenedListToCSV(flattened: Dict, fileName: str):
 def main(argv):
     global extension_type
     extension_type = "ECM"
-    if len(argv) > 2 and argv[2]=='find_package_dir':
-        dirs = argv[3].split(',')
-        find_package_lookup_directories.append(dirs)
+    if len(argv) > 2:
+        currentIndex = 2;
+        if argv[currentIndex]=='find_package_dir':
+            dirs = argv[currentIndex+1].split(',')
+            find_package_lookup_directories.append(dirs)
+            currentIndex += 2
+
+        if argv[currentIndex] == 'version':
+            cmake_version = argv[currentIndex+1]
+            for idx in range(len(find_package_lookup_directories)):
+                find_package_lookup_directories[idx] = find_package_lookup_directories[idx].replace(':version',cmake_version)
+
+
 
     getGraph(argv[1])
-    # vmodel.export()
+    vmodel.export()
     # vmodel.checkIntegrity()
     # vmodel.findAndSetTargets()
     # doGitAnalysis(project_dir)

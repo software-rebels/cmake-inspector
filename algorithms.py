@@ -9,7 +9,6 @@ from z3 import *
 from datastructs import DefinitionNode, Node, LiteralNode, RefNode, CustomCommandNode, SelectNode, ConcatNode, TargetNode, OptionNode, TestNode
 from vmodel import VModel
 
-
 def flattenAlgorithm(node: Node):
     if isinstance(node, LiteralNode):
         return [node.getValue()]
@@ -194,8 +193,8 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
         conditions = set()
     result = None
     if 'get_filename_component' in node.getName().lower():
-        arguments = node.commands[0].getChildren()
-        result = flattenAlgorithmWithConditions(arguments[0])
+        # arguments = node.commands[0].getChildren()
+        result = flattenAlgorithmWithConditions(node.commands[1])
         if (len(result)):
             return result
     elif 'file' in node.getName().lower():
@@ -253,10 +252,11 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
 
     elif 'string_' in node.getName().lower():
         arguments = node.commands[0].getChildren()
-        if(node.commands[0].getChildren()[0].getName().lower()=='regex'):
+        if node.commands[0].getChildren()[0].getName().lower()=='regex' and len(node.commands[0].getChildren()) > 4:
             result = flattenAlgorithmWithConditions(node.commands[0].getChildren()[4], conditions, recStack=recStack)
         else: #TODO: add other cases!
-            print('string_ need to be completed!')
+            logging.debug('string_ need to be completed!')
+
 
     elif 'directory_definitions' in node.getName().lower():
         # Normally, there are 2 dependents for each definition node: 'directory_definition_(i+1) and a 
@@ -307,9 +307,9 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
             result.append((flag, new_condition))
     else:
         # TODO: check for future
-        print(node.getName().lower())
-        print(node)
-        print("hey! do not ignore me!")
+        # print(node.getName().lower())
+        # print(node)
+        # print("hey! do not ignore me!")
         pass
         result = flattenAlgorithmWithConditions(node.depends[0], conditions, recStack=recStack)
         for argument in arguments:
