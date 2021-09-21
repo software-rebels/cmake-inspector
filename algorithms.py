@@ -194,7 +194,7 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
     result = None
     if 'get_filename_component' in node.getName().lower():
         # arguments = node.commands[0].getChildren()
-        result = flattenAlgorithmWithConditions(node.commands[1])
+        result = flattenAlgorithmWithConditions(node.commands[1], conditions=conditions)
         if (len(result)):
             return result
     elif 'file' in node.getName().lower():

@@ -2403,7 +2403,6 @@ class TestVariableDefinitions(unittest.TestCase):
         ECM_PREFIX = self.lookup.getKey('${ECM_PREFIX}')
         a = flattenAlgorithmWithConditions(ECM_PREFIX)
         self.assertEqual('{APPLE}', str(a[0][1]))
-        self.assertEqual(2, len(a))
 
 
     def test_dependent_include(self):
