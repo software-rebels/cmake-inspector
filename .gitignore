@@ -22,3 +22,10 @@ graph_dots_final/
 koffice-plugins/
 graphs/
 
+.env/
+KDE/
+KDE_command_analysis/
+graph_dots/
+graph_dots_final/
+koffice-plugins/
+venv/
