@@ -1,29 +1,16 @@
-# Bultin Libraries
-import csv
 import glob
 import logging
-import sys
-import os
-import pickle
-from typing import List, Optional, Dict
+
 # Third-party
 from z3 import *
 from antlr4 import FileStream, CommonTokenStream, ParseTreeWalker
 from antlr4.tree.Tree import TerminalNode
 from neomodel import config
+from condition_data_structure import LocalVariable,OrExpression, ComparisonExpression
 # Grammar generates by Antlr
-from algorithms import flattenAlgorithmWithConditions
-from condition_data_structure import Rule, LogicalExpression, AndExpression, LocalVariable, NotExpression, OrExpression, \
-    ConstantExpression, ComparisonExpression
-from grammar.CMakeLexer import CMakeLexer
-from grammar.CMakeParser import CMakeParser
 from grammar.CMakeListener import CMakeListener
 # Our own library
-from datastructs import RefNode, TargetNode, Lookup, SelectNode, ConcatNode, \
-    CustomCommandNode, TestNode, LiteralNode, Node, OptionNode, Directory, DirectoryNode, DefinitionNode
-from analyze import printDefinitionsForATarget, printSourceFiles, printFilesForATarget, checkForCyclesAndPrint
-from utils import util_handleConditions, util_getStringFromList,\
-    util_create_and_add_refNode_for_variable, util_extract_variable_name
+from datastructs import TestNode, LiteralNode, OptionNode, Directory, DirectoryNode
 from commands import *
 
 logging.basicConfig(filename='cmakeInspector.log', level=logging.DEBUG)
@@ -31,9 +18,17 @@ config.DATABASE_URL = 'bolt://neo4j:123@localhost:7687'
 
 project_dir = "."
 
-vmodel = VModel.getInstance()
-lookupTable = Lookup.getInstance()
-directoryTree = Directory.getInstance()
+vmodel = None
+lookupTable = None
+directoryTree = None
+
+
+def initialize():
+    global vmodel, lookupTable, directoryTree
+    vmodel = VModel.getInstance()
+    lookupTable = Lookup.getInstance()
+    directoryTree = Directory.getInstance()
+
 
 class CMakeExtractorListener(CMakeListener):
     rule: Optional[Rule] = None
@@ -1282,17 +1277,6 @@ def parseFile(filePath):
     walker.walk(extractor, tree)
 
 
-def getGraph(directory):
-    global project_dir
-    project_dir = directory
-    util_create_and_add_refNode_for_variable('CMAKE_CURRENT_SOURCE_DIR', LiteralNode(project_dir, project_dir))
-    util_create_and_add_refNode_for_variable('CMAKE_SOURCE_DIR', LiteralNode(project_dir, project_dir))
-    parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
-    vmodel.findAndSetTargets()
-    linkDirectory()
-    return vmodel, lookupTable
-
-
 def linkDirectory():
     topological_order = directoryTree.getTopologicalOrder()
     # Setting the correct definition dependency based on directory
@@ -1345,47 +1329,3 @@ def linkDirectory():
                 target.setDefinition(concat_target_node)
             if concat_interface_node.getChildren():
                 target.setInterfaceDefinition(concat_interface_node)
-                            
-
-def getFlattenedDefintionsForTarget(target: str):
-    return printDefinitionsForATarget(vmodel, lookupTable, target)
-
-
-def getFlattenedFilesForTarget(target: str):
-    return printFilesForATarget(vmodel, lookupTable, target)
-
-
-def getTargets():
-    vmodel.findAndSetTargets()
-    for idx, item in enumerate(vmodel.targets):
-        print(f'{idx}. {item.getValue()}')
-
-
-def exportFlattenedListToCSV(flattened: Dict, fileName: str):
-    CSV_HEADERS = ['file', 'condition']
-    with open(fileName, 'w') as csv_out:
-        writer = csv.DictWriter(csv_out, fieldnames=CSV_HEADERS)
-        writer.writeheader()
-        for key in flattened.keys():
-            writer.writerow({
-                'file': flattened[key],
-                'condition': key
-            })
-
-
-def main(argv):
-    getGraph(argv[1])
-    vmodel.export()
-    # vmodel.checkIntegrity()
-    # vmodel.findAndSetTargets()
-    # doGitAnalysis(project_dir)
-    # code.interact(local=dict(globals(), **locals()))
-    # printInputVariablesAndOptions(vmodel, lookupTable)
-    # printSourceFiles(vmodel, lookupTable)
-    # testNode = vmodel.findNode('${CLIENT_LIBRARIES}_662')
-    # flattenAlgorithmWithConditions(testNode)
-    a = printFilesForATarget(vmodel, lookupTable, argv[2], True)
-
-
-if __name__ == "__main__":
-    main(sys.argv)

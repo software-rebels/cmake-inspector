@@ -4,7 +4,7 @@ changes by statically analyzing build specifications. DiPiDi, works on projects 
 build system.
 ## Table of Contents
 - [Installation](./Installation/README.md)
-- Basic Usage
+- [Basic Usage](./Usage/README.md)
 - [Design Decisions](./Design/README.md)
 - [External Databases](./Neo4j/README.md)
 - Work in Progress

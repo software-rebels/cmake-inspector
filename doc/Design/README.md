@@ -27,3 +27,8 @@ This node has two children which point to the `true` and `false` path.
 - **CustomCommandNode**: Other commands like `while, foreach, add_definitions, etc.` may have different number of
 arguments and may depend on a variable which may have different values under different configurations. We create a
 `CustomCommandNode` for these commands and postponed their execution to the evaluation phase.
+
+This information is then saved and can be accessed through an API when attempting to determine the exposure of a 
+source code change.
+
+### Flattening the Variables
