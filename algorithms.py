@@ -311,9 +311,6 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
         # print(node)
         # print("hey! do not ignore me!")
         pass
-        result = flattenAlgorithmWithConditions(node.depends[0], conditions, recStack=recStack)
-        for argument in arguments:
-            del result[argument.getValue()]
     return result
 
 
