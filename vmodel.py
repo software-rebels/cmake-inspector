@@ -314,7 +314,7 @@ class VModel:
                 clusterId += 1
                 dot.subgraph(newGraph)
             dot.unflatten()
-            dot.render('graph.gv', view=True,format='pdf')
+            dot.render('graph.gv', view=False,format='pdf')
         
         # Doing DFS to create nodes in NEO4j
         if writeToNeo:

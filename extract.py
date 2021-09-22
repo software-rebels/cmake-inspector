@@ -712,8 +712,8 @@ class CMakeExtractorListener(CMakeListener):
 
                     elif requiredPackage:
                         logging.error("Required package not found: {}".format(packageName.getValue()))
-                        raise Exception("Required package not found: {}".format(packageName.getValue()))
-                        # print("Required package not found: {}".format(packageName.getValue()))
+                        # raise Exception("Required package not found: {}".format(packageName.getValue()))
+                        print("Required package not found: {}".format(packageName.getValue()))
             elif requiredPackage:
                 logging.error("Required module not found: {}".format(packageName.getValue()))
                 raise Exception("Required package not found: {}".format(packageName.getValue()))
@@ -1493,7 +1493,10 @@ class CMakeExtractorListener(CMakeListener):
 
         elif commandId == 'add_subdirectory':
             tempProjectDir = project_dir
-            project_dir = os.path.join(project_dir, ctx.argument().single_argument()[0].getText())
+            if os.path.exists(os.path.join(project_dir, ctx.argument().single_argument()[0].getText())):
+                project_dir = os.path.join(project_dir, ctx.argument().single_argument()[0].getText())
+            else:
+                project_dir =  ctx.argument().single_argument()[0].getText()
             # TODO check if we need to bring anything from the new state
             lookupTable.newScope()
 
@@ -1510,7 +1513,7 @@ class CMakeExtractorListener(CMakeListener):
                 child_dir = DirectoryNode(project_dir)
             directoryTree.addChild(parent_dir, child_dir)
             parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
-            parseFile(os.path.join(possible_paths[0][0], 'CMakeLists.txt'),True)
+            # parseFile(os.path.join(possible_paths[0][0], 'CMakeLists.txt'),True)
             lookupTable.dropScope()
             project_dir = tempProjectDir
 
@@ -1657,11 +1660,13 @@ class CMakeExtractorListener(CMakeListener):
 
             if 'VERSION' in capitalArguments:
                 versionIndex = arguments.index('VERSION')
-                projectVersion = arguments[versionIndex+1]
+                projectVersion = vmodel.expand([arguments[versionIndex+1]])
+                # # TODO: Add support for conditional versioning
+                # projectVersion = flattenAlgorithmWithConditions(projectVersion)[0][0]
 
             util_create_and_add_refNode_for_variable(f'{projectName}_SOURCE_DIR', LiteralNode(project_dir, project_dir))
             if projectVersion:
-                util_create_and_add_refNode_for_variable(f'{projectName}_VERSION', LiteralNode(f'{projectName}_VERSION_DIR', projectVersion))
+                util_create_and_add_refNode_for_variable(f'{projectName}_VERSION', projectVersion)
             if projectDescription:
                 util_create_and_add_refNode_for_variable(f'{projectName}_DESCRIPTION_DIR', LiteralNode(f'{projectName}_DESCRIPTION_DIR', projectDescription))
 
