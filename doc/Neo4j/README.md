@@ -1,4 +1,5 @@
-# Files that will be compile in all pathes
+# Useful Neo4j Queries
+## Files that will be compile in all pathes
 match p=(t:Target {name: "Tutorial"})-[*0..]->(:Literal)
 with nodes(p) as ns
 where NONE(node in ns where node:Select)
