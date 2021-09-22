@@ -32,3 +32,7 @@ This information is then saved and can be accessed through an API when attemptin
 source code change.
 
 ### Flattening the Variables
+Starting from a target, we go down the graph until we reach to a leaf which is a source file that the target depends
+on. If we find a `SelectNode` in the path, we have to decide whether to take the true path or the false path
+given the condition on the `SelectNode` and our previous assumptions. We use 
+[Z3 SMT Solver](https://github.com/Z3Prover/z3) to prune unreachable paths and keep track of assumptions along the way.
