@@ -5,7 +5,8 @@ build system.
 ## Table of Contents
 - [Installation](./Installation/README.md)
 - [Basic Usage](./Usage/README.md)
+- [Visualization](./Visualization/README.md)
+- [Detecting Problems](./Detecting_Problems/README.md)
 - [Design Decisions](./Design/README.md)
-- [External Databases](./Neo4j/README.md)
 - Work in Progress
-- References
+- [References](./References/README.md)
