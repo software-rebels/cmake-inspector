@@ -399,6 +399,13 @@ class CMakeExtractorListener(CMakeListener):
         if self.insideLoop:
             print("[warning] include inside loop neglected")
             return;
+
+        currentPath = flattenAlgorithmWithConditions(vmodel.expand(['${CMAKE_CURRENT_LIST_DIR}']))
+        if len(currentPath):
+            currentPath = currentPath[0][0];
+        else:
+            currentPath = '';
+
         for include_possibility in include_possibilities:
             argsVal = include_possibility[0]
             includedFile = os.path.join(project_dir, argsVal)
@@ -407,11 +414,6 @@ class CMakeExtractorListener(CMakeListener):
             while includedFile.find('//') != -1:
                 includedFile = includedFile.replace('//','/')
 
-            currentPath = flattenAlgorithmWithConditions(vmodel.expand(['${CMAKE_CURRENT_LIST_DIR}']))
-            if len(currentPath):
-                currentPath = currentPath[0][0];
-            else:
-                currentPath = '';
 
             # We execute the command if we can find the CMake file and there is no condition to execute it
             if os.path.isfile(includedFile):
@@ -424,6 +426,7 @@ class CMakeExtractorListener(CMakeListener):
                 util_create_and_add_refNode_for_variable('CMAKE_CURRENT_LIST_DIR',
                                                          LiteralNode(f"include_{includedFile}", includedFile))
                 parseFile(os.path.join(includedFile, 'CMakeLists.txt'),True)
+
             else:
                 cmake_module_paths = flattenAlgorithmWithConditions(vmodel.expand(["${CMAKE_MODULE_PATH}"]))
                 for cmake_module_path in cmake_module_paths:
@@ -452,9 +455,16 @@ class CMakeExtractorListener(CMakeListener):
                     if not foundModule:
                         print("[error][enterCommand_invocation] Cannot Find : {} to include, conditions {}".format(arguments,include_possibility[1]))
                         vmodel.nodes.append(util_handleConditions(commandNode, commandNode.getName()))
-                # now we turn the current list dir back
-                util_create_and_add_refNode_for_variable('CMAKE_CURRENT_LIST_DIR',
-                                                         LiteralNode(f"original_{currentPath}", currentPath))
+                    # now we turn the current list dir back
+                    util_create_and_add_refNode_for_variable('CMAKE_CURRENT_SOURCE_DIR',
+                                                             LiteralNode(f"parse_{currentPath}", currentPath))
+                    util_create_and_add_refNode_for_variable('CMAKE_CURRENT_LIST_DIR',
+                                                             LiteralNode(f"original_{currentPath}", currentPath))
+            # now we turn the current list dir back
+            util_create_and_add_refNode_for_variable('CMAKE_CURRENT_SOURCE_DIR',
+                                                     LiteralNode(f"parse_{currentPath}", currentPath))
+            util_create_and_add_refNode_for_variable('CMAKE_CURRENT_LIST_DIR',
+                                                     LiteralNode(f"original_{currentPath}", currentPath))
 
 
     def find_Module(self,packageName,findPackageNode):
@@ -713,7 +723,7 @@ class CMakeExtractorListener(CMakeListener):
                     elif requiredPackage:
                         logging.error("Required package not found: {}".format(packageName.getValue()))
                         # raise Exception("Required package not found: {}".format(packageName.getValue()))
-                        print("Required package not found: {}".format(packageName.getValue()))
+                        print("[Bug or Error]Required package not found: {}".format(packageName.getValue()))
             elif requiredPackage:
                 logging.error("Required module not found: {}".format(packageName.getValue()))
                 raise Exception("Required package not found: {}".format(packageName.getValue()))
