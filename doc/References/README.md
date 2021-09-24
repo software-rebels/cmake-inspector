@@ -1,0 +1,2 @@
+## References
+- [Meidani, Mehran, Maxime Lamothe, and Shane McIntosh. "Assessing the Exposure of Software Changes: The DiPiDi Approach." arXiv preprint arXiv:2104.00725 (2021).](https://arxiv.org/pdf/2104.00725.pdf)
