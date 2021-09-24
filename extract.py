@@ -1,30 +1,18 @@
-# Bultin Libraries
-import csv
 import glob
 import logging
-import sys
-import os
-import pickle
-from typing import List, Optional, Dict
+
 # Third-party
 from z3 import *
 from antlr4 import FileStream, CommonTokenStream, ParseTreeWalker
 from antlr4.tree.Tree import TerminalNode
 from neomodel import config
+from condition_data_structure import LocalVariable,OrExpression, ComparisonExpression
 # Grammar generates by Antlr
-from algorithms import flattenAlgorithmWithConditions
-from condition_data_structure import Rule, LogicalExpression, AndExpression, LocalVariable, NotExpression, OrExpression, \
-    ConstantExpression, ComparisonExpression
-from grammar.CMakeLexer import CMakeLexer
-from grammar.CMakeParser import CMakeParser
 from grammar.CMakeListener import CMakeListener
 # Our own library
-from datastructs import RefNode, TargetNode, Lookup, SelectNode, ConcatNode, \
-    CustomCommandNode, TestNode, LiteralNode, Node, OptionNode, Directory, DirectoryNode, DefinitionNode
-from analyze import printDefinitionsForATarget, printSourceFiles, printFilesForATarget, checkForCyclesAndPrint
-from utils import util_handleConditions, util_getStringFromList,\
-    util_create_and_add_refNode_for_variable, util_extract_variable_name
+from datastructs import TestNode, LiteralNode, OptionNode, Directory, DirectoryNode
 from commands import *
+from typing import Dict, List
 
 
 logging.basicConfig(filename='cmakeInspector.log', level=logging.DEBUG)
@@ -32,42 +20,85 @@ config.DATABASE_URL = 'bolt://neo4j:123@localhost:7687'
 
 project_dir = "."
 
-vmodel = VModel.getInstance()
-lookupTable = Lookup.getInstance()
-directoryTree = Directory.getInstance()
-extension_type= "ECM"
+extension_type = "ECM"
 
-no_op_commands=['cmake_policy','enable_testing','fltk_wrap_ui','install','mark_as_advanced','message','qt_wrap_cpp',
-                'source_group','variable_watch','include_guard','install_icon']
+no_op_commands = ['cmake_policy', 'enable_testing', 'fltk_wrap_ui', 'install', 'mark_as_advanced', 'message',
+                  'qt_wrap_cpp',
+                  'source_group', 'variable_watch', 'include_guard', 'install_icon']
 
-                
-find_package_lookup_directories=['cmake','CMake',':name',':name/cmake',':name/CMake','lib/cmake/:name',
-                                 'share/cmake/:name','share/cmake-:version/:name','lib/:name','share/:name','lib/:name/cmake','lib/:name/CMake',
-                                 'share/:name/cmake','share/:name/CMake',':name/lib/cmake/:name',
-                                 ':name/share/cmake/:name',':name/lib/:name',':name/share/:name',
-                                 ':name/lib/:name/cmake',':name/lib/:name/CMake',':name/share/:name/cmake',
-                                 'share/:name/modules','bin','lib/x86_64-linux-gnu/cmake/:name'
-                                 ':name/share/:name/CMake','lib/x86_64-linux-gnu/cmake/:name',
-                                 '/opt/homebrew/Cellar/extra-cmake-modules/5.83.0/share/ECM/cmake',
-                                 '/opt/homebrew/Cellar/extra-cmake-modules/5.83.0/share/ECM/modules',
-                                 '/opt/homebrew/Cellar/extra-cmake-modules/5.83.0/share/ECM/kde-modules'
-                                 '/opt/homebrew/Cellar/qt@5/5.15.2/bin',
-                                 '/Applications/CMake.app/Contents/share/cmake-3.20/Modules',
-                                 '/opt/homebrew/Cellar/cmake/3.20.4/share/cmake/Modules/',
-                                 'share/cmake-:version/:name','share/cmake-:version/Modules',
-                                 '/usr/share/kde4/apps/cmake/modules',
-                                 '/opt/homebrew/Cellar/qt@5/5.15.2/lib/cmake/Qt5']
-find_package_prefixes=['/usr','']
-architecture='x86_64-linux-gnu'
-includes_paths=['/Applications/CMake.app/Contents/share/cmake-3.20/Modules']
+find_package_lookup_directories = ['cmake', 'CMake', ':name', ':name/cmake', ':name/CMake', 'lib/cmake/:name',
+                                   'share/cmake/:name', 'share/cmake-:version/:name', 'lib/:name', 'share/:name',
+                                   'lib/:name/cmake', 'lib/:name/CMake',
+                                   'share/:name/cmake', 'share/:name/CMake', ':name/lib/cmake/:name',
+                                   ':name/share/cmake/:name', ':name/lib/:name', ':name/share/:name',
+                                   ':name/lib/:name/cmake', ':name/lib/:name/CMake', ':name/share/:name/cmake',
+                                   'share/:name/modules', 'bin', 'lib/x86_64-linux-gnu/cmake/:name'
+                                                                 ':name/share/:name/CMake',
+                                   'lib/x86_64-linux-gnu/cmake/:name',
+                                   '/opt/homebrew/Cellar/extra-cmake-modules/5.83.0/share/ECM/cmake',
+                                   '/opt/homebrew/Cellar/extra-cmake-modules/5.83.0/share/ECM/modules',
+                                   '/opt/homebrew/Cellar/extra-cmake-modules/5.83.0/share/ECM/kde-modules'
+                                   '/opt/homebrew/Cellar/qt@5/5.15.2/bin',
+                                   '/Applications/CMake.app/Contents/share/cmake-3.20/Modules',
+                                   '/opt/homebrew/Cellar/cmake/3.20.4/share/cmake/Modules/',
+                                   'share/cmake-:version/:name', 'share/cmake-:version/Modules',
+                                   '/usr/share/kde4/apps/cmake/modules',
+                                   '/opt/homebrew/Cellar/qt@5/5.15.2/lib/cmake/Qt5']
+find_package_prefixes = ['/usr', '']
+architecture = 'x86_64-linux-gnu'
+includes_paths = ['/Applications/CMake.app/Contents/share/cmake-3.20/Modules']
 # Handle max recursion
-currentFunction=None
-prevFunction=[]
-maxRecursionDepth=100
-currentRecursionDepth=0
+currentFunction = None
+prevFunction = []
+maxRecursionDepth = 100
+currentRecursionDepth = 0
 #
 foreachCommandStack = []
 foreachNodeStack = []
+
+extension_type = "ECM"
+
+no_op_commands = ['cmake_policy', 'enable_testing', 'fltk_wrap_ui', 'install', 'mark_as_advanced', 'message',
+                  'qt_wrap_cpp',
+                  'source_group', 'variable_watch', 'include_guard', 'install_icon']
+
+find_package_lookup_directories = ['cmake', 'CMake', ':name', ':name/cmake', ':name/CMake', 'lib/cmake/:name',
+                                   'share/cmake/:name', 'share/cmake-:version/:name', 'lib/:name', 'share/:name',
+                                   'lib/:name/cmake', 'lib/:name/CMake',
+                                   'share/:name/cmake', 'share/:name/CMake', ':name/lib/cmake/:name',
+                                   ':name/share/cmake/:name', ':name/lib/:name', ':name/share/:name',
+                                   ':name/lib/:name/cmake', ':name/lib/:name/CMake', ':name/share/:name/cmake',
+                                   'share/:name/modules', 'bin', 'lib/x86_64-linux-gnu/cmake/:name'
+                                                                 ':name/share/:name/CMake',
+                                   'lib/x86_64-linux-gnu/cmake/:name',
+                                   '/opt/homebrew/Cellar/extra-cmake-modules/5.83.0/share/ECM/cmake',
+                                   '/opt/homebrew/Cellar/extra-cmake-modules/5.83.0/share/ECM/modules',
+                                   '/opt/homebrew/Cellar/extra-cmake-modules/5.83.0/share/ECM/kde-modules'
+                                   '/opt/homebrew/Cellar/qt@5/5.15.2/bin',
+                                   '/Applications/CMake.app/Contents/share/cmake-3.20/Modules',
+                                   '/opt/homebrew/Cellar/cmake/3.20.4/share/cmake/Modules/',
+                                   'share/cmake-:version/:name', 'share/cmake-:version/Modules',
+                                   '/usr/share/kde4/apps/cmake/modules',
+                                   '/opt/homebrew/Cellar/qt@5/5.15.2/lib/cmake/Qt5']
+find_package_prefixes = ['/usr', '']
+architecture = 'x86_64-linux-gnu'
+includes_paths = ['/Applications/CMake.app/Contents/share/cmake-3.20/Modules']
+# Handle max recursion
+currentFunction = None
+prevFunction = []
+maxRecursionDepth = 100
+currentRecursionDepth = 0
+#
+foreachCommandStack = []
+foreachNodeStack = []
+
+
+def initialize():
+    global vmodel, lookupTable, directoryTree
+    vmodel = VModel.getInstance()
+    lookupTable = Lookup.getInstance()
+    directoryTree = Directory.getInstance()
+
 class CMakeExtractorListener(CMakeListener):
     rule: Optional[Rule] = None
     insideLoop = False;

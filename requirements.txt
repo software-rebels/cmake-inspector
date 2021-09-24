@@ -3,7 +3,7 @@ attrs==20.2.0
 Django==1.11.29
 gitdb==4.0.5
 GitPython==3.1.8
-graphviz==0.14.1
+graphviz==0.17
 iniconfig==1.0.1
 lizard==1.17.4
 more-itertools==8.5.0
