@@ -13,11 +13,7 @@ from vmodel import VModel
 def getGraph(directory):
     VModel.clearInstance()
     Lookup.clearInstance()
-    extract.initialize()
-    extract.project_dir = directory
-    util_create_and_add_refNode_for_variable('CMAKE_CURRENT_SOURCE_DIR', LiteralNode(extract.project_dir, extract.project_dir))
-    util_create_and_add_refNode_for_variable('CMAKE_SOURCE_DIR', LiteralNode(extract.project_dir, extract.project_dir))
-    extract.parseFile(os.path.join(extract.project_dir, 'CMakeLists.txt'))
+    extract.initialize(directory, True)
     extract.vmodel.findAndSetTargets()
     extract.linkDirectory()
     return extract.vmodel, extract.lookupTable
@@ -50,18 +46,22 @@ def exportFlattenedListToCSV(flattened: Dict, fileName: str):
 
 
 def main(argv):
+    global extension_type
+    extension_type = "ECM"
+    if len(argv) > 2:
+        currentIndex = 2
+        if argv[currentIndex] == 'find_package_dir':
+            dirs = argv[currentIndex + 1].split(',')
+            extract.find_package_lookup_directories.append(dirs)
+            currentIndex += 2
+
+        if argv[currentIndex] == 'version':
+            cmake_version = argv[currentIndex + 1]
+            for idx in range(len(extract.find_package_lookup_directories)):
+                extract.find_package_lookup_directories[idx] = extract.find_package_lookup_directories[idx].replace(
+                    ':version', cmake_version)
     getGraph(argv[1])
     extract.vmodel.export()
-    # vmodel.checkIntegrity()
-    # vmodel.findAndSetTargets()
-    # doGitAnalysis(project_dir)
-    # code.interact(local=dict(globals(), **locals()))
-    # printInputVariablesAndOptions(vmodel, lookupTable)
-    # printSourceFiles(vmodel, lookupTable)
-    # testNode = vmodel.findNode('${CLIENT_LIBRARIES}_662')
-    # flattenAlgorithmWithConditions(testNode)
-    files = printFilesForATarget(extract.vmodel, extract.lookupTable, argv[2], True)
-    print(files)
 
 
 if __name__ == "__main__":
