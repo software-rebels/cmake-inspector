@@ -50,7 +50,8 @@ class CycleDetectedException(Exception):
     pass
 
 
-def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=True, recStack=None,ignoreSymbols=False):
+def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=True, recStack=None,ignoreSymbols=False,
+                                   indent=0):
     if conditions is None:
         conditions = set()
     if recStack is None:
@@ -65,7 +66,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
         raise CycleDetectedException('We have a cycle here!!')
 
     recStack.append(node)
-    # logging.debug("++++++ Flatten node with name: " + node.getName())
+    logging.debug("\t" * indent + " Flatten node with name: " + node.getName() + " type: " + type(node).__name__)
 
     flattedResult = None
     # We return result from memoize variable if available:
@@ -87,7 +88,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                 flattedResult = [(node.rawName, conditions)]
         else:
             flattedResult = flattenAlgorithmWithConditions(node.getPointTo(), conditions,
-                                                           debug, recStack)
+                                                           debug, recStack, False, indent+1)
     elif isinstance(node, CustomCommandNode):
         flattedResult = flattenCustomCommandNode(node, conditions, recStack)
         if flattedResult is None:
@@ -113,7 +114,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                 if s.check() == sat:
                     flattedResult += flattenAlgorithmWithConditions(node.trueNode,
                                                                     set(s.assertions()),
-                                                                    debug, recStack)
+                                                                    debug, recStack, False, indent+1)
         if node.falseNode:
             for priorKnowledge in node.rule.flattenedResult:
                 s = Solver()
@@ -128,13 +129,13 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                 if s.check() == sat:
                     flattedResult += flattenAlgorithmWithConditions(node.falseNode,
                                                                     set(s.assertions()),
-                                                                    debug, recStack)
+                                                                    debug, recStack, False, indent+1)
 
     elif isinstance(node, ConcatNode):
         result = list()
         for idx, item in enumerate(node.getChildren()):
 
-            childSet = flattenAlgorithmWithConditions(item, conditions, debug, recStack)
+            childSet = flattenAlgorithmWithConditions(item, conditions, debug, recStack, False, indent+1)
             tempSet = list()
             # The flattened values for a child could be empty, skipping ...
             if not childSet:
