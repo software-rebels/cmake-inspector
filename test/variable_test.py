@@ -1258,7 +1258,7 @@ class TestVariableDefinitions(unittest.TestCase):
         targetNode = self.vmodel.findNode('goo_2')
         commandNode = self.vmodel.findNode('add_definitions')
         self.assertIsInstance(commandNode, CommandDefinitionNode)
-        self.assertEqual({'-Dboo', '-Dtest'}, set(map(lambda x: x[0], getFlattenedDefinitionsFromNode(targetNode.definitions))))
+        self.assertEqual({'-Dboo', '-Dtest', ''}, set(map(lambda x: x[0], getFlattenedDefinitionsFromNode(targetNode.definitions))))
         flattened_result = printDefinitionsForATarget(self.vmodel, self.lookup, 'goo', output=True)
         self.assertSetEqual({'-Dboo'}, flattened_result['[AMD]'])
         self.assertSetEqual({'-Dtest'}, flattened_result['[AT_SUB, AMD]'])
@@ -1277,7 +1277,7 @@ class TestVariableDefinitions(unittest.TestCase):
         targetNode = self.lookup.getKey('t:foo')
         commandNode = self.vmodel.findNode('add_definitions')
         self.assertIsInstance(commandNode, CommandDefinitionNode)
-        self.assertEqual({'-Dboo'}, set(map(lambda x: x[0], getFlattenedDefinitionsFromNode(targetNode.definitions))))
+        self.assertEqual({'-Dboo', ''}, set(map(lambda x: x[0], getFlattenedDefinitionsFromNode(targetNode.definitions))))
         flattened_result = printDefinitionsForATarget(self.vmodel, self.lookup, 'foo', output=False)
         self.assertSetEqual({'-Dboo'}, flattened_result['[Or(ABC, AMD)]'])
 
@@ -1313,7 +1313,7 @@ class TestVariableDefinitions(unittest.TestCase):
         targetNode = self.lookup.getKey('t:foo')
         commandNode = self.vmodel.findNode('remove_definitions')
         self.assertIsInstance(commandNode, CommandDefinitionNode)
-        self.assertEqual({'-Dbar', '-Dcar'}, set(map(lambda x: x[0], getFlattenedDefinitionsFromNode(targetNode.definitions))))
+        self.assertEqual({'-Dbar', '-Dcar', ''}, set(map(lambda x: x[0], getFlattenedDefinitionsFromNode(targetNode.definitions))))
         flattened_result = printDefinitionsForATarget(self.vmodel, self.lookup, 'foo', output=False)
         self.assertSetEqual({'-Dbar'}, flattened_result['[ABC]'])
         self.assertSetEqual({'-Dcar'}, flattened_result['[Not(AMD)]'])
@@ -1851,7 +1851,7 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertSetEqual({"another_folder_for_test/a.cxx",
                              "another_folder_for_test/b2.cxx"}, a['[Not(john), foo]'])
         self.assertSetEqual({"files_for_test/b.cxx",
-                             "files_for_test/a.cxx"}, a['[foo, john]'])
+                             "files_for_test/a.cxx"}, a['[john, foo]'])
 
     def test_simple_if_assignment_outside_if(self):
         text = """
@@ -1967,11 +1967,11 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec')
-        self.assertIn('john', a['[opt2, Not(opt1)]'])
-        self.assertIn('john', a['[Not(opt2), Not(opt1)]'])
+        self.assertIn('john', a['[Not(opt1)]'])
+        self.assertIn('opt1_john', a['[opt1]'])
 
-        self.assertIn('opt2_doe', a['[opt2, Not(opt1)]'])
-        self.assertIn('opt2_doe', a['[opt2, opt1]'])
+        self.assertIn('doe', a['[Not(opt2)]'])
+        self.assertIn('opt2_doe', a['[opt2]'])
 
     def test_string_concat_node_with_multiple_condition(self):
         text = """
@@ -2025,6 +2025,52 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertIn('john/doe', a['[Not(opt2), Not(opt1)]'])
         self.assertIn('john/opt2_doe', a['[opt2, Not(opt1)]'])
         self.assertIn('opt1_john/doe', a['[opt1]'])
+
+    def test_simple_concat_node_validation_with_condition(self):
+        text = """
+        if(APPLE)
+            set(foo a b c)
+        endif()
+        set(bar q w e)
+        set(mehran m 2${foo}3${bar})
+        """
+        self.runTool(text)
+        self.vmodel.export()
+        flatted = flattenAlgorithmWithConditions(self.vmodel.findNode("${mehran}"))
+        values = [i[0] for i in flatted]
+        self.assertIn("m", values)
+        self.assertIn("2a", values)
+        self.assertIn("c3q", values)
+        self.assertIn("23q", values)
+
+    def test_simple_concat_node_validation(self):
+        text = """
+        set(foo a b c)
+        set(bar q w e)
+        set(mehran m 2${foo}3${bar})
+        """
+        self.runTool(text)
+        self.vmodel.export()
+        flatted = flattenAlgorithmWithConditions(self.vmodel.findNode("${mehran}"))
+        values = [i[0] for i in flatted]
+        self.assertIn("m", values)
+        self.assertIn("2a", values)
+        self.assertIn("c3q", values)
+        self.assertIn("b", values)
+
+    def test_simple_concat_node_validation_2(self):
+        text = """
+        set(foo a b c)
+        set(bar q w e)
+        set(mehran ${foo} ${bar})
+        """
+        self.runTool(text)
+        flatted = flattenAlgorithmWithConditions(self.vmodel.findNode("${mehran}"))
+        values = [i[0] for i in flatted]
+        self.assertIn("a", values)
+        self.assertIn("b", values)
+        self.assertIn("c", values)
+        self.assertIn("q", values)
 
     @unittest.skip("until all we find a better universal solution to test ECM (Maybe containerize)")
     def test_z_real_ecm_mark_as_test(self):
@@ -2162,7 +2208,7 @@ class TestVariableDefinitions(unittest.TestCase):
         var = self.lookup.getKey('${CONTAINER_PROTOS_OUT_PATH}')
         a = flattenAlgorithmWithConditions(var)
         postprocessZ3Output(a)
-        self.assertEqual('CMAKE_BINARY_DIR/grpc/src/api/services/containers', a[0][0])
+        self.assertEqual('${CMAKE_BINARY_DIR}/grpc/src/api/services/containers', a[0][0])
 
     def test_flatten_symbolic_concat_node(self):
         text = """
@@ -2206,11 +2252,10 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         a = printFilesForATarget(self.vmodel, self.lookup, 'exec')
         self.assertSetEqual({'bar.cpp'}, a['[]'])
+        self.assertSetEqual({'${CMAKE_BINARY_DIR}/grpc/src/api/services/containers'}, a['[build_server]'])
         self.assertSetEqual({'./files_for_test/a.cxx',
-                             'bar.cpp',
-                             'CMAKE_BINARY_DIR/grpc/src/api/services/containers',
                              './files_for_test/b.cxx',
-                             './files_for_test/c.cxx'}, a['[build_client, build_server]'])
+                             './files_for_test/c.cxx'}, a['[build_client]'])
 
     def test_simple_target_name_as_variable(self):
         text = """
@@ -2445,6 +2490,22 @@ class TestVariableDefinitions(unittest.TestCase):
         """
         self.runTool(text)
         self.vmodel.export(False, True)
+
+    def test_target_in_condition(self):
+        text = """
+        if(APPLE)
+            add_executable(foo a.cc)
+        elseif(LINUX)
+            add_executable(foo b.cc)
+        else()
+            add_executable(foo c.cc)
+        endif()
+        """
+        self.runTool(text)
+        flatted = printFilesForATarget(self.vmodel, self.lookup, "foo")
+        self.assertSetEqual({'c.cc'}, flatted['[Not(APPLE), Not(LINUX)]'])
+        self.assertSetEqual({'b.cc'}, flatted['[Not(APPLE), LINUX]'])
+        self.assertSetEqual({'a.cc'}, flatted['[APPLE]'])
 
     def test_simple_foreach_loop(self):
         text = """
