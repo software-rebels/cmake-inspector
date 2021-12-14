@@ -6,8 +6,10 @@ from collections import Set, defaultdict
 from typing import Dict, List
 from z3 import *
 
-from datastructs import DefinitionNode, Node, LiteralNode, RefNode, CustomCommandNode, SelectNode, ConcatNode, TargetNode, OptionNode, TestNode
+from datastructs import DefinitionNode, Node, LiteralNode, RefNode, CustomCommandNode, SelectNode, ConcatNode, \
+    TargetNode, OptionNode, TestNode
 from vmodel import VModel
+
 
 def flattenAlgorithm(node: Node):
     if isinstance(node, LiteralNode):
@@ -50,7 +52,14 @@ class CycleDetectedException(Exception):
     pass
 
 
-def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=True, recStack=None,ignoreSymbols=False,
+def getHashedKey(nodeName: str, conditions: Set):
+    result = hash(nodeName)
+    for item in conditions:
+        result ^= hash(item)
+    return result
+
+
+def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=True, recStack=None, ignoreSymbols=False,
                                    indent=0):
     if conditions is None:
         conditions = set()
@@ -64,17 +73,16 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
         for idx, item in enumerate(recStack):
             print(f'{idx}: {item.getValue()}')
         raise CycleDetectedException('We have a cycle here!!')
-
+    if getHashedKey(node.getName(), conditions) in VModel.getInstance().flattenMemoize:
+        return VModel.getInstance().flattenMemoize[getHashedKey(node.getName(), conditions)]
     recStack.append(node)
-    logging.debug("\t" * indent + " Flatten node with name: " + node.getName() + " type: " + type(node).__name__)
-
     flattedResult = None
     # We return result from memoize variable if available:
     if isinstance(node, LiteralNode):
         flattedResult = [(node.getValue(), conditions)]
     elif isinstance(node, TargetNode):
         flattedResult = [(node.rawName, conditions)]
-    elif isinstance(node, TestNode): # XXX Check with @Mehran later
+    elif isinstance(node, TestNode):  # XXX Check with @Mehran later
         flattedResult = [(node.rawName, conditions)]
     elif isinstance(node, OptionNode):
         # TODO: We may want to consider the default value for option
@@ -85,10 +93,11 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
             if ignoreSymbols:
                 flattedResult = []
             else:
-                flattedResult = [(node.rawName, conditions)]
+                # We got to an point that we found an unresolvable symbol and we keep as it is
+                flattedResult = [(f"${{{node.rawName}}}", conditions)]
         else:
             flattedResult = flattenAlgorithmWithConditions(node.getPointTo(), conditions,
-                                                           debug, recStack, False, indent+1)
+                                                           debug, recStack, False, indent + 1)
     elif isinstance(node, CustomCommandNode):
         flattedResult = flattenCustomCommandNode(node, conditions, recStack)
         if flattedResult is None:
@@ -98,45 +107,44 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
         # Check if conditions satisfiable before expanding the tree (Using Z3)
         assertion = node.rule.getCondition().getAssertions()
         # Add facts about the variables in the condition expression
-        if node.trueNode:
-            # Add facts about the variables in the condition expression
-            for priorKnowledge in node.rule.flattenedResult:
-                s = Solver()
-                # Variables in the condition
-                s.add(priorKnowledge)
-                # Facts from the starting point to here
-                s.add(conditions)
-                if s.check() == unsat:
-                    continue
+        # Add facts about the variables in the condition expression
+        for priorKnowledge in node.rule.flattenedResult:
+            s = Solver()
+            # Variables in the condition
+            s.add(priorKnowledge)
+            # Facts from the starting point to here
+            s.add(conditions)
+            if s.check() == unsat:
+                continue
+            falseSolver = s.translate(main_ctx())
+            # Check the trueNode
+            if node.trueNode:
                 # As we simplify the assertions, there is a chance that the fact has been already added
                 if assertion not in s.assertions():
                     s.add(assertion)
                 if s.check() == sat:
                     flattedResult += flattenAlgorithmWithConditions(node.trueNode,
                                                                     set(s.assertions()),
-                                                                    debug, recStack, False, indent+1)
-        if node.falseNode:
-            for priorKnowledge in node.rule.flattenedResult:
-                s = Solver()
-                s.add(priorKnowledge)
-                s.add(conditions)
-                # Why did we not add this here?
-                if s.check() == unsat:
-                    continue
-                falseAssertion = simplify(Not(assertion))
-                if falseAssertion not in s.assertions():
-                    s.add(falseAssertion)
-                if s.check() == sat:
+                                                                    debug, recStack, False, indent + 1)
+            # Check the falseNode, if it does not exist, replace it with an empty string
+            falseAssertion = simplify(Not(assertion))
+            if falseAssertion not in falseSolver.assertions():
+                falseSolver.add(falseAssertion)
+
+            if falseSolver.check() == sat:
+                if node.falseNode:
                     flattedResult += flattenAlgorithmWithConditions(node.falseNode,
-                                                                    set(s.assertions()),
-                                                                    debug, recStack, False, indent+1)
+                                                                    set(falseSolver.assertions()),
+                                                                    debug, recStack, False, indent + 1)
+                else:
+                    flattedResult += [("", set(falseSolver.assertions()))]
 
     elif isinstance(node, ConcatNode):
+        logging.debug("  " * indent + " Flatten ConcatNode: " + node.getName())
         result = list()
         for idx, item in enumerate(node.getChildren()):
 
-            childSet = flattenAlgorithmWithConditions(item, conditions, debug, recStack, False, indent+1)
-            tempSet = list()
+            childSet = flattenAlgorithmWithConditions(item, conditions, debug, recStack, False, indent + 1)
             # The flattened values for a child could be empty, skipping ...
             if not childSet:
                 continue
@@ -144,46 +152,51 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
             if not result:
                 result = list(childSet)
                 continue
-
+            currentCond = childSet[0][1]
             # logging.debug('ConcatNode {}: Appending child {} {} of {} with {} childset'.format(
             #     node.getName(), item.getName(), idx + 1, numberOfChildren, len(childSet)
             # ))
 
             # There are two types of concat node. One which concat the literal string
             # and other one which make a list of values; Note that result and childSet are guaranteed to have values
-            for str1 in result:
-                for str2 in childSet:
-                    # There shouldn't be any contradiction in the returned conditions.
-                    s = Solver()
-                    # We need to simplify the whole expressions
-                    g = Goal()
-                    g.add(str1[1])
-                    g.add(str2[1])
-                    s.add(g.simplify())
+            if not node.concatString:
+                tempResult = list(result)
+            else:
+                tempResult = list()
 
-                    if s.check() == sat:
-                        newConditions = set(s.assertions())
-                        if node.concatString:
-                            tempSet.append(("{}{}".format(str1[0], str2[0]), newConditions))
-                        else:
-                            if (str2[0], newConditions) not in tempSet:
-                                tempSet.append((str2[0], newConditions))
-                            if (str1[0], newConditions) not in tempSet:
-                                tempSet.append((str1[0], newConditions))
+            for childIdx, str2 in enumerate(childSet):
+                newConditions = str2[1]
+                if node.concatString and (len(childSet) == 1 or childIdx == 0 or str2[1] != currentCond):
+                    currentCond = str2[1]
+                    # We should skip appending to the results from the same conditions
+                    seenConditions = list()
+                    for resultIdx, str1 in enumerate(reversed(result)):
+                        if str1[1] in seenConditions:
+                            tempResult.insert(0, str1)
+                            continue
+                        seenConditions.append(str1[1])
+                        s = Solver()
+                        # We need to simplify the whole expressions
+                        g = Goal()
+                        g.add(str1[1])
+                        g.add(str2[1])
+                        s.add(g.simplify())
 
-                    if not node.concatString:
-                        if (str2[0], str2[1]) not in tempSet:
-                            tempSet.append((str2[0], str2[1]))
-                        if (str1[0], str1[1]) not in tempSet:
-                            tempSet.append((str1[0], str1[1]))
-
-            result = list(tempSet)
-        for idx,res in enumerate(result):
-            if isinstance(res[0],str):
+                        if s.check() == sat:
+                            newConditions = set(s.assertions())
+                            tempResult.append(("{}{}".format(result[-(resultIdx + 1)][0], str2[0]), newConditions))
+                else:
+                    if (str2[0], newConditions) not in result:
+                        tempResult.append((str2[0], newConditions))
+            result = tempResult
+        for idx, res in enumerate(result):
+            if isinstance(res[0], str):
                 result[idx] = (res[0].replace('//', '/'), res[1])
 
         flattedResult = result if result != [''] else []
+        logging.debug("  " * indent + " Finished ConcatNode: " + node.getName())
     recStack.remove(node)
+    VModel.getInstance().flattenMemoize[getHashedKey(node.getName(), conditions)] = flattedResult
     return flattedResult
 
 
@@ -219,15 +232,19 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
         arguments = node.commands[0].getChildren()[1:]
         for argument in arguments:
             flattenedFiles = flattenAlgorithmWithConditions(argument, conditions, recStack=recStack)
-            finalFlattenList = []
+            # Remove duplicate results
+            seenResult = defaultdict(list)
+            finalFiles = []
             for item in flattenedFiles:
-                if isinstance(item[0], Node):
-                    # logging.debug('target_link_libraries: calling recursivelyResolveReference to' \
-                    #               'resolve node with name: {}'.format(item[0].getName()))
-                    finalFlattenList += recursivelyResolveReference(item[0], item[1])
-                else:
-                    finalFlattenList.append(item)
-            for item in finalFlattenList:
+                if not item[0]:
+                    continue
+                simplified = {mySimplifier(item[1]).as_expr()} if item[1] else item[1]
+                if item[0] in seenResult and simplified in seenResult[item[0]]:
+                    continue
+                seenResult[item[0]].append(simplified)
+                finalFiles.append((item[0], simplified))
+
+            for item in finalFiles:
                 node = VModel.getInstance().lookupTable.getKey("t:{}".format(item[0]))
                 if isinstance(node, TargetNode):
                     result += flattenAlgorithmWithConditions(node.sources, item[1], recStack=recStack)
@@ -253,9 +270,9 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
 
     elif 'string_' in node.getName().lower():
         arguments = node.commands[0].getChildren()
-        if node.commands[0].getChildren()[0].getName().lower()=='regex' and len(node.commands[0].getChildren()) > 4:
+        if node.commands[0].getChildren()[0].getName().lower() == 'regex' and len(node.commands[0].getChildren()) > 4:
             result = flattenAlgorithmWithConditions(node.commands[0].getChildren()[4], conditions, recStack=recStack)
-        else: #TODO: add other cases!
+        else:  # TODO: add other cases!
             logging.debug('string_ need to be completed!')
 
 
@@ -267,7 +284,7 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
         result = []
         for dependent in node.depends:
             result += flattenAlgorithmWithConditions(dependent, conditions, recStack=recStack)
-    
+
     elif 'target_definitions' in node.getName().lower():
         result = []
         result += flattenCustomCommandNode(node.commands[0], conditions, recStack=recStack)
@@ -281,7 +298,7 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
     elif 'add_definitions' in node.getName().lower():
         # There is only one parent for each CommandDefinitionNode,
         # and it has the ordering value within
-        ordering = node.parent[0].ordering 
+        ordering = node.parent[0].ordering
         result = flattenAlgorithmWithConditions(node.commands[0], conditions, recStack=recStack)
         flags_to_add = [flag[0] for flag in result]
         for flag in flags_to_add:
@@ -340,6 +357,7 @@ def getFlattenedDefinitionsFromNode(node: Node, conditions: Set = None, debug=Tr
     result = mergeDirectoryAndTargetDefinitions(dir_result, target_result)
     return result
 
+
 def find_name(to_find, name):
     res = []
     for idx, t in enumerate(to_find):
@@ -371,7 +389,7 @@ def mergeFlattenedDefinitionResults(global_result, local_result, command_type):
 
 def mergeDirectoryAndTargetDefinitions(directory_result, target_result):
     # something need to be fixed here
-    result = directory_result 
+    result = directory_result
     for tar in target_result:
         flag, cond = tar
         indices = find_name(result, flag)
@@ -410,14 +428,14 @@ def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recSta
         if cur_node.commands:
             # When the definition node is not added in retrospect to fit in with the architecture
             # where there is actually directory-based definition defined for this specific directory
-            cur_command = cur_node.commands[0] # This is a custom command like add_definitions/remove_definitions
+            cur_command = cur_node.commands[0]  # This is a custom command like add_definitions/remove_definitions
             cur_result = flattenCustomCommandNode(cur_command, conditions, recStack)
             result = mergeFlattenedDefinitionResults(result, cur_result, cur_command.command_type)
 
         if not cur_node.depends:
             if inheritance_path:
                 # jump to the next subdirectory
-                cur_root_node = inheritance_path.pop()        
+                cur_root_node = inheritance_path.pop()
                 cur_node = cur_root_node
             else:
                 cur_root_node = None
@@ -432,13 +450,13 @@ def flattenDirectoryDefinitions(node: CustomCommandNode, conditions: Set, recSta
             else:
                 # first work on the commands side
                 # then, we simply traverse to the next dependent
-                cur_node = cur_node.depends[0]        
-    # if this is the last node in the inheritance path, just loop through dependents, because 
+                cur_node = cur_node.depends[0]
+                # if this is the last node in the inheritance path, just loop through dependents, because
     # there you are in the lowest level and no longer have to go down the stack.
     while cur_node:
         if not cur_node.commands:
             break
-        cur_command = cur_node.commands[0] # This is a custom command like add_definitions/remove_definitions
+        cur_command = cur_node.commands[0]  # This is a custom command like add_definitions/remove_definitions
         cur_result = flattenCustomCommandNode(cur_command, conditions, recStack)
         if not cur_node.depends:
             cur_node = None
@@ -500,15 +518,19 @@ def removeDuplicatesFromFlattedList(flatted: Dict) -> List:
     return result
 
 
-# This function will run simplifier on the facts and cast them to string
+def mySimplifier(conditions):
+    g = Goal()
+    t1 = Tactic('simplify')
+    t2 = Tactic('propagate-values')
+    t3 = Tactic('propagate-ineqs')
+    t4 = Tactic('ctx-solver-simplify')
+    # t5 = Tactic('split-clause') # We may want to use this tactic, leave it here
+    t = Then(t1, t2, t3, t4)
+    g.add(conditions)
+    return t(g)[0]
+
+
+# This function will run simplifier on the facts
 def postprocessZ3Output(flattened: List):
     for idx, item in enumerate(flattened):
-        g = Goal()
-        t1 = Tactic('simplify')
-        t2 = Tactic('propagate-values')
-        t3 = Tactic('propagate-ineqs')
-        t4 = Tactic('ctx-solver-simplify')
-        # t5 = Tactic('split-clause') # We may want to use this tactic, leave it here
-        t = Then(t1, t2, t3, t4)
-        g.add(item[1])
-        flattened[idx] = (item[0], t(g)[0])
+        flattened[idx] = (item[0], mySimplifier(item[1]))
