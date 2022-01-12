@@ -29,3 +29,4 @@ graph_dots/
 graph_dots_final/
 koffice-plugins/
 venv/
+.arm_venv/

@@ -140,7 +140,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                     flattedResult += [("", set(falseSolver.assertions()))]
 
     elif isinstance(node, ConcatNode):
-        logging.debug("  " * indent + " Flatten ConcatNode: " + node.getName())
+        # logging.debug("  " * indent + " Flatten ConcatNode: " + node.getName())
         result = list()
         for idx, item in enumerate(node.getChildren()):
 
@@ -194,7 +194,7 @@ def flattenAlgorithmWithConditions(node: Node, conditions: Set = None, debug=Tru
                 result[idx] = (res[0].replace('//', '/'), res[1])
 
         flattedResult = result if result != [''] else []
-        logging.debug("  " * indent + " Finished ConcatNode: " + node.getName())
+        # logging.debug("  " * indent + " Finished ConcatNode: " + node.getName())
     recStack.remove(node)
     VModel.getInstance().flattenMemoize[getHashedKey(node.getName(), conditions)] = flattedResult
     return flattedResult

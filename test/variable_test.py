@@ -1,19 +1,14 @@
-import json
 import unittest
-from collections import defaultdict
-
-from antlr4 import CommonTokenStream, ParseTreeWalker, InputStream
 
 from analyze import printDefinitionsForATarget, printFilesForATarget
-from extract import CMakeExtractorListener, linkDirectory
-from grammar.CMakeLexer import CMakeLexer
-from grammar.CMakeParser import CMakeParser
+from extract import linkDirectory
 from datastructs import CommandDefinitionNode, DefinitionNode, Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, \
-    CustomCommandNode, TargetNode, TestNode, OptionNode, Node, Directory
+    CustomCommandNode, TargetNode, TestNode, OptionNode
 from algorithms import flattenAlgorithm, flattenAlgorithmWithConditions, getFlattedArguments, flattenCustomCommandNode, \
     CycleDetectedException, getFlattenedDefinitionsFromNode, postprocessZ3Output
 from vmodel import VModel
 from extract import initialize
+from query import GraphQuery
 
 
 class TestVariableDefinitions(unittest.TestCase):
@@ -2506,6 +2501,30 @@ class TestVariableDefinitions(unittest.TestCase):
         self.assertSetEqual({'c.cc'}, flatted['[Not(APPLE), Not(LINUX)]'])
         self.assertSetEqual({'b.cc'}, flatted['[Not(APPLE), LINUX]'])
         self.assertSetEqual({'a.cc'}, flatted['[APPLE]'])
+
+    def test_simple_graph_query(self):
+        text = """
+        add_executable(foo a.cpp b.cpp)
+        """
+        self.runTool(text)
+        graphQuery = GraphQuery(self.vmodel, self.lookup)
+        graphQuery.getFlattenForTargets()
+        self.assertEqual({"foo_2": ['[]']}, graphQuery.getImpactedTargets("a.cpp"))
+
+    def test_graph_query_with_condition(self):
+        text = """
+        if(APPLE)
+            add_executable(foo a.cc)
+        elseif(LINUX)
+            add_executable(foo b.cc)
+        else()
+            add_executable(foo c.cc)
+        endif()
+        """
+        self.runTool(text)
+        graphQuery = GraphQuery(self.vmodel, self.lookup)
+        graphQuery.getFlattenForTargets()
+        self.assertEqual({"foo_2": ['[APPLE]']}, graphQuery.getImpactedTargets("a.cc"))
 
     def test_simple_foreach_loop(self):
         text = """
