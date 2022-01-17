@@ -120,7 +120,7 @@ def printDefinitionsForATarget(vmodel: VModel, lookup: Lookup, target: str, outp
     return result
 
 
-def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=False):
+def getFilesForATarget(vmodel: VModel, lookup: Lookup, target: str):
     logging.info("[FLATTEN] Start flattening target " + target)
     targetNode = lookup.getKey("t:{}".format(target))
     if targetNode is None:
@@ -155,7 +155,7 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
 
     result = defaultdict(set)
     for item in flattenedFiles:
-        result[str(item[1])].add(item[0])
+        result[item[1]].add(item[0])
 
     # with open(f'flatten_merged_result_{str(datetime.timestamp(datetime.utcnow()))[:-7]}.pickle', 'wb') as handle:
     #     pickle.dump(result, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -163,7 +163,7 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
     logging.info("[FLATTEN] Start postprocessing 2 " + target)
     # Post-processing
     # 1. Resolve wildcard path
-    for key in list(result):
+    for key in result.keys():
         for item in list(result[key]):
             if '*' in item:
                 result[key].update(set(glob.glob(item)))
@@ -176,6 +176,11 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
     #         if not result[key]:
     #             del result[key]
     #     result['NO_MATTER_WHAT'].update(files)
+    return result
+
+
+def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=False):
+    result = getFilesForATarget(vmodel, lookup, target)
 
     # json.dumps does not work on set. Using this function, we convert set to a list.
     def set_default(obj):
@@ -190,6 +195,11 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
         #     pickle.dump(result, f, pickle.HIGHEST_PROTOCOL)
         # with open('result.json', 'w') as f:
         #     json.dump(result, f, default=set_default, sort_keys=True, indent=4)
+
+    for key in list(result.keys()):
+        result[str(key)] = result[key]
+        del result[key]
+
     return result
 
 
