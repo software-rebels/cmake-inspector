@@ -2524,7 +2524,6 @@ class TestVariableDefinitions(unittest.TestCase):
         self.runTool(text)
         graphQuery = GraphQuery(self.vmodel, self.lookup)
         graphQuery.getFlattenForTargets()
-        graphQuery.startRPCServer()
         self.assertEqual({"foo_2": ['[APPLE]']}, graphQuery.getImpactedTargets("a.cc"))
 
     def test_simple_foreach_loop(self):
