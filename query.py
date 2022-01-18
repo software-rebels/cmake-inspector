@@ -14,6 +14,15 @@ class GraphQuery:
             self._name = name
             self._type = refType
 
+        def deserialize(self):
+            if self._type == "BoolRef":
+                return Bool(self._name)
+            if self._type == "ArithRef":
+                return Int(self._name)
+            if self._type == "SeqRef":
+                return String(self._name)
+            raise "NotImplemented!"
+
         def __hash__(self):
             return hash(self._name)
 
@@ -36,8 +45,8 @@ class GraphQuery:
             for condition, files in flatted.items():
                 self.setOfFiles.update(files)
 
-        timestr = time.strftime("%Y%m%d-%H%M%S")
-        self.saveTheDict(timestr)
+        # timestr = time.strftime("%Y%m%d-%H%M%S")
+        # self.saveTheDict(timestr)
 
     def serializeConditionList(self, conditions):
         result = set()
@@ -60,8 +69,20 @@ class GraphQuery:
         for target, flatted in self.targetToFlatted.items():
             for condition, files in flatted.items():
                 if changedFile in files:
-                    for item in condition:
-                        result[target].append(str(item))
+                    result[target] = list(self.serializeConditionList(condition))
+
+        return result
+
+    def getImpactedTargetsByFileAndCondition(self, changedFile, requestedConditions):
+        result = defaultdict(list)
+        for target, flatted in self.targetToFlatted.items():
+            for condition, files in flatted.items():
+                if changedFile in files:
+                    solver = Solver()
+                    solver.add(condition)
+                    solver.add(requestedConditions)
+                    if solver.check() == sat:
+                        result[target] = list(self.serializeConditionList(condition))
         return result
 
     def startRPCServer(self):
@@ -80,8 +101,17 @@ class GraphQuery:
             def get_impact(filename):
                 return dict(self.getImpactedTargets(filename))
 
+            def get_impact_by_file_condition(filename, conditions):
+                g = Goal()
+                for condition in conditions:
+                    serializedCondition = self.SerializedCondition(condition['_name'],
+                                                                   condition['_type'])
+                    g.add(serializedCondition.deserialize() == condition['value'])
+                return dict(self.getImpactedTargetsByFileAndCondition(filename, g))
+
             server.register_function(get_file_lists)
             server.register_function(get_impact)
+            server.register_function(get_impact_by_file_condition)
 
             # Run the server's main loop
             server.serve_forever()
