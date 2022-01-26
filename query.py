@@ -48,11 +48,8 @@ class GraphQuery:
         # timestr = time.strftime("%Y%m%d-%H%M%S")
         # self.saveTheDict(timestr)
 
-    def serializeConditionList(self, conditions):
-        result = set()
-        for condition in conditions:
-            result.add(self.SerializedCondition(str(condition), condition.__class__.__name__))
-        return frozenset(result)
+    def serializeConditionList(self, condition):
+        return self.SerializedCondition(str(condition), condition.__class__.__name__)
 
     def saveTheDict(self, projectName):
         dictToSave = dict()
@@ -69,7 +66,7 @@ class GraphQuery:
         for target, flatted in self.targetToFlatted.items():
             for condition, files in flatted.items():
                 if changedFile in files:
-                    result[target] = list(self.serializeConditionList(condition))
+                    result[target].append(self.serializeConditionList(condition))
 
         return result
 
@@ -82,7 +79,7 @@ class GraphQuery:
                     solver.add(condition)
                     solver.add(requestedConditions)
                     if solver.check() == sat:
-                        result[target] = list(self.serializeConditionList(condition))
+                        result[target].append(self.serializeConditionList(condition))
         return result
 
     def startRPCServer(self):

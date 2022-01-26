@@ -1,138 +1,140 @@
 # Generated from CMake.g4 by ANTLR 4.9.1
 # encoding: utf-8
-from __future__ import print_function
 from antlr4 import *
 from io import StringIO
 import sys
+if sys.version_info[1] > 5:
+	from typing import TextIO
+else:
+	from typing.io import TextIO
 
 
 def serializedATN():
     with StringIO() as buf:
-        buf.write(u"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3")
-        buf.write(u"\65\u011a\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7")
-        buf.write(u"\t\7\4\b\t\b\4\t\t\t\4\n\t\n\4\13\t\13\4\f\t\f\4\r\t")
-        buf.write(u"\r\4\16\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22")
-        buf.write(u"\4\23\t\23\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4")
-        buf.write(u"\30\t\30\4\31\t\31\4\32\t\32\4\33\t\33\3\2\7\28\n\2\f")
-        buf.write(u"\2\16\2;\13\2\3\2\3\2\3\3\3\3\3\3\3\3\3\3\3\3\5\3E\n")
-        buf.write(u"\3\3\4\3\4\3\4\3\4\3\5\3\5\7\5M\n\5\f\5\16\5P\13\5\3")
-        buf.write(u"\5\3\5\3\6\3\6\3\6\3\6\3\6\3\6\3\6\3\7\3\7\3\7\7\7^\n")
-        buf.write(u"\7\f\7\16\7a\13\7\3\7\3\7\3\b\3\b\7\bg\n\b\f\b\16\bj")
-        buf.write(u"\13\b\3\b\3\b\3\t\3\t\3\t\3\t\3\t\3\n\3\n\3\n\7\nv\n")
-        buf.write(u"\n\f\n\16\ny\13\n\3\n\3\n\3\13\3\13\7\13\177\n\13\f\13")
-        buf.write(u"\16\13\u0082\13\13\3\13\3\13\7\13\u0086\n\13\f\13\16")
-        buf.write(u"\13\u0089\13\13\7\13\u008b\n\13\f\13\16\13\u008e\13\13")
-        buf.write(u"\3\13\3\13\7\13\u0092\n\13\f\13\16\13\u0095\13\13\7\13")
-        buf.write(u"\u0097\n\13\f\13\16\13\u009a\13\13\3\13\3\13\3\f\3\f")
-        buf.write(u"\3\f\3\f\3\f\3\r\3\r\3\r\3\r\3\r\3\16\3\16\3\16\7\16")
-        buf.write(u"\u00ab\n\16\f\16\16\16\u00ae\13\16\3\16\3\16\3\17\3\17")
-        buf.write(u"\3\17\7\17\u00b5\n\17\f\17\16\17\u00b8\13\17\3\17\3\17")
-        buf.write(u"\3\20\3\20\3\20\3\21\7\21\u00c0\n\21\f\21\16\21\u00c3")
-        buf.write(u"\13\21\3\22\3\22\3\22\7\22\u00c8\n\22\f\22\16\22\u00cb")
-        buf.write(u"\13\22\3\22\3\22\3\23\3\23\3\23\3\23\3\23\3\23\3\23\3")
-        buf.write(u"\23\3\23\3\23\3\23\3\23\3\23\3\23\3\23\3\23\3\23\3\23")
-        buf.write(u"\3\23\3\23\3\23\3\23\3\23\3\23\3\23\3\23\3\23\5\23\u00ea")
-        buf.write(u"\n\23\3\23\3\23\3\23\3\23\3\23\3\23\7\23\u00f2\n\23\f")
-        buf.write(u"\23\16\23\u00f5\13\23\3\24\3\24\3\24\3\25\3\25\3\25\3")
-        buf.write(u"\26\3\26\3\26\3\26\7\26\u0101\n\26\f\26\16\26\u0104\13")
-        buf.write(u"\26\3\26\3\26\3\27\3\27\3\30\3\30\3\31\3\31\3\32\3\32")
-        buf.write(u"\3\32\7\32\u0111\n\32\f\32\16\32\u0114\13\32\3\32\3\32")
-        buf.write(u"\3\33\3\33\3\33\b_w\u00ac\u00b6\u00c1\u00c9\3$\34\2\4")
-        buf.write(u"\6\b\n\f\16\20\22\24\26\30\32\34\36 \"$&(*,.\60\62\64")
-        buf.write(u"\2\b\3\2\23\24\3\2\25\26\4\2++--\4\2,.\60\61\f\2\7\7")
-        buf.write(u"\17\17\23\23\27\27\34\34\36\36$$((,.\60\61\5\2\n\16\20")
-        buf.write(u"\20!\'\2\u0124\29\3\2\2\2\4D\3\2\2\2\6F\3\2\2\2\bJ\3")
-        buf.write(u"\2\2\2\nS\3\2\2\2\fZ\3\2\2\2\16d\3\2\2\2\20m\3\2\2\2")
-        buf.write(u"\22r\3\2\2\2\24|\3\2\2\2\26\u009d\3\2\2\2\30\u00a2\3")
-        buf.write(u"\2\2\2\32\u00a7\3\2\2\2\34\u00b1\3\2\2\2\36\u00bb\3\2")
-        buf.write(u"\2\2 \u00c1\3\2\2\2\"\u00c4\3\2\2\2$\u00e9\3\2\2\2&\u00f6")
-        buf.write(u"\3\2\2\2(\u00f9\3\2\2\2*\u00fc\3\2\2\2,\u0107\3\2\2\2")
-        buf.write(u".\u0109\3\2\2\2\60\u010b\3\2\2\2\62\u010d\3\2\2\2\64")
-        buf.write(u"\u0117\3\2\2\2\668\5\4\3\2\67\66\3\2\2\28;\3\2\2\29\67")
-        buf.write(u"\3\2\2\29:\3\2\2\2:<\3\2\2\2;9\3\2\2\2<=\7\2\2\3=\3\3")
-        buf.write(u"\2\2\2>E\5\6\4\2?E\5\b\5\2@E\5\24\13\2AE\5\16\b\2BE\5")
-        buf.write(u"&\24\2CE\5(\25\2D>\3\2\2\2D?\3\2\2\2D@\3\2\2\2DA\3\2")
-        buf.write(u"\2\2DB\3\2\2\2DC\3\2\2\2E\5\3\2\2\2FG\5\36\20\2GH\5 ")
-        buf.write(u"\21\2HI\5\"\22\2I\7\3\2\2\2JN\5\n\6\2KM\5\4\3\2LK\3\2")
-        buf.write(u"\2\2MP\3\2\2\2NL\3\2\2\2NO\3\2\2\2OQ\3\2\2\2PN\3\2\2")
-        buf.write(u"\2QR\5\f\7\2R\t\3\2\2\2ST\7\4\2\2TU\7)\2\2UV\5.\30\2")
-        buf.write(u"VW\5.\30\2WX\3\2\2\2XY\7*\2\2Y\13\3\2\2\2Z[\7\5\2\2[")
-        buf.write(u"_\7)\2\2\\^\13\2\2\2]\\\3\2\2\2^a\3\2\2\2_`\3\2\2\2_")
-        buf.write(u"]\3\2\2\2`b\3\2\2\2a_\3\2\2\2bc\7*\2\2c\r\3\2\2\2dh\5")
-        buf.write(u"\20\t\2eg\5\4\3\2fe\3\2\2\2gj\3\2\2\2hf\3\2\2\2hi\3\2")
-        buf.write(u"\2\2ik\3\2\2\2jh\3\2\2\2kl\5\22\n\2l\17\3\2\2\2mn\7\21")
-        buf.write(u"\2\2no\7)\2\2op\5$\23\2pq\7*\2\2q\21\3\2\2\2rs\7\22\2")
-        buf.write(u"\2sw\7)\2\2tv\13\2\2\2ut\3\2\2\2vy\3\2\2\2wx\3\2\2\2")
-        buf.write(u"wu\3\2\2\2xz\3\2\2\2yw\3\2\2\2z{\7*\2\2{\23\3\2\2\2|")
-        buf.write(u"\u0080\5\26\f\2}\177\5\4\3\2~}\3\2\2\2\177\u0082\3\2")
-        buf.write(u"\2\2\u0080~\3\2\2\2\u0080\u0081\3\2\2\2\u0081\u008c\3")
-        buf.write(u"\2\2\2\u0082\u0080\3\2\2\2\u0083\u0087\5\30\r\2\u0084")
-        buf.write(u"\u0086\5\4\3\2\u0085\u0084\3\2\2\2\u0086\u0089\3\2\2")
-        buf.write(u"\2\u0087\u0085\3\2\2\2\u0087\u0088\3\2\2\2\u0088\u008b")
-        buf.write(u"\3\2\2\2\u0089\u0087\3\2\2\2\u008a\u0083\3\2\2\2\u008b")
-        buf.write(u"\u008e\3\2\2\2\u008c\u008a\3\2\2\2\u008c\u008d\3\2\2")
-        buf.write(u"\2\u008d\u0098\3\2\2\2\u008e\u008c\3\2\2\2\u008f\u0093")
-        buf.write(u"\5\32\16\2\u0090\u0092\5\4\3\2\u0091\u0090\3\2\2\2\u0092")
-        buf.write(u"\u0095\3\2\2\2\u0093\u0091\3\2\2\2\u0093\u0094\3\2\2")
-        buf.write(u"\2\u0094\u0097\3\2\2\2\u0095\u0093\3\2\2\2\u0096\u008f")
-        buf.write(u"\3\2\2\2\u0097\u009a\3\2\2\2\u0098\u0096\3\2\2\2\u0098")
-        buf.write(u"\u0099\3\2\2\2\u0099\u009b\3\2\2\2\u009a\u0098\3\2\2")
-        buf.write(u"\2\u009b\u009c\5\34\17\2\u009c\25\3\2\2\2\u009d\u009e")
-        buf.write(u"\7\30\2\2\u009e\u009f\7)\2\2\u009f\u00a0\5$\23\2\u00a0")
-        buf.write(u"\u00a1\7*\2\2\u00a1\27\3\2\2\2\u00a2\u00a3\7\31\2\2\u00a3")
-        buf.write(u"\u00a4\7)\2\2\u00a4\u00a5\5$\23\2\u00a5\u00a6\7*\2\2")
-        buf.write(u"\u00a6\31\3\2\2\2\u00a7\u00a8\7\32\2\2\u00a8\u00ac\7")
-        buf.write(u")\2\2\u00a9\u00ab\13\2\2\2\u00aa\u00a9\3\2\2\2\u00ab")
-        buf.write(u"\u00ae\3\2\2\2\u00ac\u00ad\3\2\2\2\u00ac\u00aa\3\2\2")
-        buf.write(u"\2\u00ad\u00af\3\2\2\2\u00ae\u00ac\3\2\2\2\u00af\u00b0")
-        buf.write(u"\7*\2\2\u00b0\33\3\2\2\2\u00b1\u00b2\7\33\2\2\u00b2\u00b6")
-        buf.write(u"\7)\2\2\u00b3\u00b5\13\2\2\2\u00b4\u00b3\3\2\2\2\u00b5")
-        buf.write(u"\u00b8\3\2\2\2\u00b6\u00b7\3\2\2\2\u00b6\u00b4\3\2\2")
-        buf.write(u"\2\u00b7\u00b9\3\2\2\2\u00b8\u00b6\3\2\2\2\u00b9\u00ba")
-        buf.write(u"\7*\2\2\u00ba\35\3\2\2\2\u00bb\u00bc\t\2\2\2\u00bc\u00bd")
-        buf.write(u"\5*\26\2\u00bd\37\3\2\2\2\u00be\u00c0\13\2\2\2\u00bf")
-        buf.write(u"\u00be\3\2\2\2\u00c0\u00c3\3\2\2\2\u00c1\u00c2\3\2\2")
-        buf.write(u"\2\u00c1\u00bf\3\2\2\2\u00c2!\3\2\2\2\u00c3\u00c1\3\2")
-        buf.write(u"\2\2\u00c4\u00c5\t\3\2\2\u00c5\u00c9\7)\2\2\u00c6\u00c8")
-        buf.write(u"\13\2\2\2\u00c7\u00c6\3\2\2\2\u00c8\u00cb\3\2\2\2\u00c9")
-        buf.write(u"\u00ca\3\2\2\2\u00c9\u00c7\3\2\2\2\u00ca\u00cc\3\2\2")
-        buf.write(u"\2\u00cb\u00c9\3\2\2\2\u00cc\u00cd\7*\2\2\u00cd#\3\2")
-        buf.write(u"\2\2\u00ce\u00cf\b\23\1\2\u00cf\u00d0\7\6\2\2\u00d0\u00ea")
-        buf.write(u"\5$\23\20\u00d1\u00d2\7\34\2\2\u00d2\u00ea\5$\23\17\u00d3")
-        buf.write(u"\u00d4\7(\2\2\u00d4\u00ea\5$\23\16\u00d5\u00d6\7\35\2")
-        buf.write(u"\2\u00d6\u00ea\5$\23\r\u00d7\u00d8\7\36\2\2\u00d8\u00ea")
-        buf.write(u"\5$\23\f\u00d9\u00da\7\37\2\2\u00da\u00ea\5$\23\13\u00db")
-        buf.write(u"\u00dc\7 \2\2\u00dc\u00ea\5$\23\n\u00dd\u00de\7\17\2")
-        buf.write(u"\2\u00de\u00ea\5$\23\t\u00df\u00e0\5\60\31\2\u00e0\u00e1")
-        buf.write(u"\5\64\33\2\u00e1\u00e2\5\60\31\2\u00e2\u00ea\3\2\2\2")
-        buf.write(u"\u00e3\u00e4\7)\2\2\u00e4\u00e5\5$\23\2\u00e5\u00e6\7")
-        buf.write(u"*\2\2\u00e6\u00ea\3\2\2\2\u00e7\u00ea\5,\27\2\u00e8\u00ea")
-        buf.write(u"\5\60\31\2\u00e9\u00ce\3\2\2\2\u00e9\u00d1\3\2\2\2\u00e9")
-        buf.write(u"\u00d3\3\2\2\2\u00e9\u00d5\3\2\2\2\u00e9\u00d7\3\2\2")
-        buf.write(u"\2\u00e9\u00d9\3\2\2\2\u00e9\u00db\3\2\2\2\u00e9\u00dd")
-        buf.write(u"\3\2\2\2\u00e9\u00df\3\2\2\2\u00e9\u00e3\3\2\2\2\u00e9")
-        buf.write(u"\u00e7\3\2\2\2\u00e9\u00e8\3\2\2\2\u00ea\u00f3\3\2\2")
-        buf.write(u"\2\u00eb\u00ec\f\b\2\2\u00ec\u00ed\7\7\2\2\u00ed\u00f2")
-        buf.write(u"\5$\23\t\u00ee\u00ef\f\7\2\2\u00ef\u00f0\7\27\2\2\u00f0")
-        buf.write(u"\u00f2\5$\23\b\u00f1\u00eb\3\2\2\2\u00f1\u00ee\3\2\2")
-        buf.write(u"\2\u00f2\u00f5\3\2\2\2\u00f3\u00f1\3\2\2\2\u00f3\u00f4")
-        buf.write(u"\3\2\2\2\u00f4%\3\2\2\2\u00f5\u00f3\3\2\2\2\u00f6\u00f7")
-        buf.write(u"\7\3\2\2\u00f7\u00f8\5*\26\2\u00f8\'\3\2\2\2\u00f9\u00fa")
-        buf.write(u"\7,\2\2\u00fa\u00fb\5*\26\2\u00fb)\3\2\2\2\u00fc\u0102")
-        buf.write(u"\7)\2\2\u00fd\u0101\5\60\31\2\u00fe\u0101\5\62\32\2\u00ff")
-        buf.write(u"\u0101\5,\27\2\u0100\u00fd\3\2\2\2\u0100\u00fe\3\2\2")
-        buf.write(u"\2\u0100\u00ff\3\2\2\2\u0101\u0104\3\2\2\2\u0102\u0100")
-        buf.write(u"\3\2\2\2\u0102\u0103\3\2\2\2\u0103\u0105\3\2\2\2\u0104")
-        buf.write(u"\u0102\3\2\2\2\u0105\u0106\7*\2\2\u0106+\3\2\2\2\u0107")
-        buf.write(u"\u0108\t\4\2\2\u0108-\3\2\2\2\u0109\u010a\t\5\2\2\u010a")
-        buf.write(u"/\3\2\2\2\u010b\u010c\t\6\2\2\u010c\61\3\2\2\2\u010d")
-        buf.write(u"\u0112\7)\2\2\u010e\u0111\5\60\31\2\u010f\u0111\5\62")
-        buf.write(u"\32\2\u0110\u010e\3\2\2\2\u0110\u010f\3\2\2\2\u0111\u0114")
-        buf.write(u"\3\2\2\2\u0112\u0110\3\2\2\2\u0112\u0113\3\2\2\2\u0113")
-        buf.write(u"\u0115\3\2\2\2\u0114\u0112\3\2\2\2\u0115\u0116\7*\2\2")
-        buf.write(u"\u0116\63\3\2\2\2\u0117\u0118\t\7\2\2\u0118\65\3\2\2")
-        buf.write(u"\2\309DN_hw\u0080\u0087\u008c\u0093\u0098\u00ac\u00b6")
-        buf.write(u"\u00c1\u00c9\u00e9\u00f1\u00f3\u0100\u0102\u0110\u0112")
+        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\65")
+        buf.write("\u011a\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7")
+        buf.write("\4\b\t\b\4\t\t\t\4\n\t\n\4\13\t\13\4\f\t\f\4\r\t\r\4\16")
+        buf.write("\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22\4\23\t\23")
+        buf.write("\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30\4\31")
+        buf.write("\t\31\4\32\t\32\4\33\t\33\3\2\7\28\n\2\f\2\16\2;\13\2")
+        buf.write("\3\2\3\2\3\3\3\3\3\3\3\3\3\3\3\3\5\3E\n\3\3\4\3\4\3\4")
+        buf.write("\3\4\3\5\3\5\7\5M\n\5\f\5\16\5P\13\5\3\5\3\5\3\6\3\6\3")
+        buf.write("\6\3\6\3\6\3\6\3\6\3\7\3\7\3\7\7\7^\n\7\f\7\16\7a\13\7")
+        buf.write("\3\7\3\7\3\b\3\b\7\bg\n\b\f\b\16\bj\13\b\3\b\3\b\3\t\3")
+        buf.write("\t\3\t\3\t\3\t\3\n\3\n\3\n\7\nv\n\n\f\n\16\ny\13\n\3\n")
+        buf.write("\3\n\3\13\3\13\7\13\177\n\13\f\13\16\13\u0082\13\13\3")
+        buf.write("\13\3\13\7\13\u0086\n\13\f\13\16\13\u0089\13\13\7\13\u008b")
+        buf.write("\n\13\f\13\16\13\u008e\13\13\3\13\3\13\7\13\u0092\n\13")
+        buf.write("\f\13\16\13\u0095\13\13\7\13\u0097\n\13\f\13\16\13\u009a")
+        buf.write("\13\13\3\13\3\13\3\f\3\f\3\f\3\f\3\f\3\r\3\r\3\r\3\r\3")
+        buf.write("\r\3\16\3\16\3\16\7\16\u00ab\n\16\f\16\16\16\u00ae\13")
+        buf.write("\16\3\16\3\16\3\17\3\17\3\17\7\17\u00b5\n\17\f\17\16\17")
+        buf.write("\u00b8\13\17\3\17\3\17\3\20\3\20\3\20\3\21\7\21\u00c0")
+        buf.write("\n\21\f\21\16\21\u00c3\13\21\3\22\3\22\3\22\7\22\u00c8")
+        buf.write("\n\22\f\22\16\22\u00cb\13\22\3\22\3\22\3\23\3\23\3\23")
+        buf.write("\3\23\3\23\3\23\3\23\3\23\3\23\3\23\3\23\3\23\3\23\3\23")
+        buf.write("\3\23\3\23\3\23\3\23\3\23\3\23\3\23\3\23\3\23\3\23\3\23")
+        buf.write("\3\23\3\23\5\23\u00ea\n\23\3\23\3\23\3\23\3\23\3\23\3")
+        buf.write("\23\7\23\u00f2\n\23\f\23\16\23\u00f5\13\23\3\24\3\24\3")
+        buf.write("\24\3\25\3\25\3\25\3\26\3\26\3\26\3\26\7\26\u0101\n\26")
+        buf.write("\f\26\16\26\u0104\13\26\3\26\3\26\3\27\3\27\3\30\3\30")
+        buf.write("\3\31\3\31\3\32\3\32\3\32\7\32\u0111\n\32\f\32\16\32\u0114")
+        buf.write("\13\32\3\32\3\32\3\33\3\33\3\33\b_w\u00ac\u00b6\u00c1")
+        buf.write("\u00c9\3$\34\2\4\6\b\n\f\16\20\22\24\26\30\32\34\36 \"")
+        buf.write("$&(*,.\60\62\64\2\b\3\2\23\24\3\2\25\26\4\2++--\4\2,.")
+        buf.write("\60\61\f\2\7\7\17\17\23\23\27\27\34\34\36\36$$((,.\60")
+        buf.write("\61\5\2\n\16\20\20!\'\2\u0124\29\3\2\2\2\4D\3\2\2\2\6")
+        buf.write("F\3\2\2\2\bJ\3\2\2\2\nS\3\2\2\2\fZ\3\2\2\2\16d\3\2\2\2")
+        buf.write("\20m\3\2\2\2\22r\3\2\2\2\24|\3\2\2\2\26\u009d\3\2\2\2")
+        buf.write("\30\u00a2\3\2\2\2\32\u00a7\3\2\2\2\34\u00b1\3\2\2\2\36")
+        buf.write("\u00bb\3\2\2\2 \u00c1\3\2\2\2\"\u00c4\3\2\2\2$\u00e9\3")
+        buf.write("\2\2\2&\u00f6\3\2\2\2(\u00f9\3\2\2\2*\u00fc\3\2\2\2,\u0107")
+        buf.write("\3\2\2\2.\u0109\3\2\2\2\60\u010b\3\2\2\2\62\u010d\3\2")
+        buf.write("\2\2\64\u0117\3\2\2\2\668\5\4\3\2\67\66\3\2\2\28;\3\2")
+        buf.write("\2\29\67\3\2\2\29:\3\2\2\2:<\3\2\2\2;9\3\2\2\2<=\7\2\2")
+        buf.write("\3=\3\3\2\2\2>E\5\6\4\2?E\5\b\5\2@E\5\24\13\2AE\5\16\b")
+        buf.write("\2BE\5&\24\2CE\5(\25\2D>\3\2\2\2D?\3\2\2\2D@\3\2\2\2D")
+        buf.write("A\3\2\2\2DB\3\2\2\2DC\3\2\2\2E\5\3\2\2\2FG\5\36\20\2G")
+        buf.write("H\5 \21\2HI\5\"\22\2I\7\3\2\2\2JN\5\n\6\2KM\5\4\3\2LK")
+        buf.write("\3\2\2\2MP\3\2\2\2NL\3\2\2\2NO\3\2\2\2OQ\3\2\2\2PN\3\2")
+        buf.write("\2\2QR\5\f\7\2R\t\3\2\2\2ST\7\4\2\2TU\7)\2\2UV\5.\30\2")
+        buf.write("VW\5.\30\2WX\3\2\2\2XY\7*\2\2Y\13\3\2\2\2Z[\7\5\2\2[_")
+        buf.write("\7)\2\2\\^\13\2\2\2]\\\3\2\2\2^a\3\2\2\2_`\3\2\2\2_]\3")
+        buf.write("\2\2\2`b\3\2\2\2a_\3\2\2\2bc\7*\2\2c\r\3\2\2\2dh\5\20")
+        buf.write("\t\2eg\5\4\3\2fe\3\2\2\2gj\3\2\2\2hf\3\2\2\2hi\3\2\2\2")
+        buf.write("ik\3\2\2\2jh\3\2\2\2kl\5\22\n\2l\17\3\2\2\2mn\7\21\2\2")
+        buf.write("no\7)\2\2op\5$\23\2pq\7*\2\2q\21\3\2\2\2rs\7\22\2\2sw")
+        buf.write("\7)\2\2tv\13\2\2\2ut\3\2\2\2vy\3\2\2\2wx\3\2\2\2wu\3\2")
+        buf.write("\2\2xz\3\2\2\2yw\3\2\2\2z{\7*\2\2{\23\3\2\2\2|\u0080\5")
+        buf.write("\26\f\2}\177\5\4\3\2~}\3\2\2\2\177\u0082\3\2\2\2\u0080")
+        buf.write("~\3\2\2\2\u0080\u0081\3\2\2\2\u0081\u008c\3\2\2\2\u0082")
+        buf.write("\u0080\3\2\2\2\u0083\u0087\5\30\r\2\u0084\u0086\5\4\3")
+        buf.write("\2\u0085\u0084\3\2\2\2\u0086\u0089\3\2\2\2\u0087\u0085")
+        buf.write("\3\2\2\2\u0087\u0088\3\2\2\2\u0088\u008b\3\2\2\2\u0089")
+        buf.write("\u0087\3\2\2\2\u008a\u0083\3\2\2\2\u008b\u008e\3\2\2\2")
+        buf.write("\u008c\u008a\3\2\2\2\u008c\u008d\3\2\2\2\u008d\u0098\3")
+        buf.write("\2\2\2\u008e\u008c\3\2\2\2\u008f\u0093\5\32\16\2\u0090")
+        buf.write("\u0092\5\4\3\2\u0091\u0090\3\2\2\2\u0092\u0095\3\2\2\2")
+        buf.write("\u0093\u0091\3\2\2\2\u0093\u0094\3\2\2\2\u0094\u0097\3")
+        buf.write("\2\2\2\u0095\u0093\3\2\2\2\u0096\u008f\3\2\2\2\u0097\u009a")
+        buf.write("\3\2\2\2\u0098\u0096\3\2\2\2\u0098\u0099\3\2\2\2\u0099")
+        buf.write("\u009b\3\2\2\2\u009a\u0098\3\2\2\2\u009b\u009c\5\34\17")
+        buf.write("\2\u009c\25\3\2\2\2\u009d\u009e\7\30\2\2\u009e\u009f\7")
+        buf.write(")\2\2\u009f\u00a0\5$\23\2\u00a0\u00a1\7*\2\2\u00a1\27")
+        buf.write("\3\2\2\2\u00a2\u00a3\7\31\2\2\u00a3\u00a4\7)\2\2\u00a4")
+        buf.write("\u00a5\5$\23\2\u00a5\u00a6\7*\2\2\u00a6\31\3\2\2\2\u00a7")
+        buf.write("\u00a8\7\32\2\2\u00a8\u00ac\7)\2\2\u00a9\u00ab\13\2\2")
+        buf.write("\2\u00aa\u00a9\3\2\2\2\u00ab\u00ae\3\2\2\2\u00ac\u00ad")
+        buf.write("\3\2\2\2\u00ac\u00aa\3\2\2\2\u00ad\u00af\3\2\2\2\u00ae")
+        buf.write("\u00ac\3\2\2\2\u00af\u00b0\7*\2\2\u00b0\33\3\2\2\2\u00b1")
+        buf.write("\u00b2\7\33\2\2\u00b2\u00b6\7)\2\2\u00b3\u00b5\13\2\2")
+        buf.write("\2\u00b4\u00b3\3\2\2\2\u00b5\u00b8\3\2\2\2\u00b6\u00b7")
+        buf.write("\3\2\2\2\u00b6\u00b4\3\2\2\2\u00b7\u00b9\3\2\2\2\u00b8")
+        buf.write("\u00b6\3\2\2\2\u00b9\u00ba\7*\2\2\u00ba\35\3\2\2\2\u00bb")
+        buf.write("\u00bc\t\2\2\2\u00bc\u00bd\5*\26\2\u00bd\37\3\2\2\2\u00be")
+        buf.write("\u00c0\13\2\2\2\u00bf\u00be\3\2\2\2\u00c0\u00c3\3\2\2")
+        buf.write("\2\u00c1\u00c2\3\2\2\2\u00c1\u00bf\3\2\2\2\u00c2!\3\2")
+        buf.write("\2\2\u00c3\u00c1\3\2\2\2\u00c4\u00c5\t\3\2\2\u00c5\u00c9")
+        buf.write("\7)\2\2\u00c6\u00c8\13\2\2\2\u00c7\u00c6\3\2\2\2\u00c8")
+        buf.write("\u00cb\3\2\2\2\u00c9\u00ca\3\2\2\2\u00c9\u00c7\3\2\2\2")
+        buf.write("\u00ca\u00cc\3\2\2\2\u00cb\u00c9\3\2\2\2\u00cc\u00cd\7")
+        buf.write("*\2\2\u00cd#\3\2\2\2\u00ce\u00cf\b\23\1\2\u00cf\u00d0")
+        buf.write("\7\6\2\2\u00d0\u00ea\5$\23\20\u00d1\u00d2\7\34\2\2\u00d2")
+        buf.write("\u00ea\5$\23\17\u00d3\u00d4\7(\2\2\u00d4\u00ea\5$\23\16")
+        buf.write("\u00d5\u00d6\7\35\2\2\u00d6\u00ea\5$\23\r\u00d7\u00d8")
+        buf.write("\7\36\2\2\u00d8\u00ea\5$\23\f\u00d9\u00da\7\37\2\2\u00da")
+        buf.write("\u00ea\5$\23\13\u00db\u00dc\7 \2\2\u00dc\u00ea\5$\23\n")
+        buf.write("\u00dd\u00de\7\17\2\2\u00de\u00ea\5$\23\t\u00df\u00e0")
+        buf.write("\5\60\31\2\u00e0\u00e1\5\64\33\2\u00e1\u00e2\5\60\31\2")
+        buf.write("\u00e2\u00ea\3\2\2\2\u00e3\u00e4\7)\2\2\u00e4\u00e5\5")
+        buf.write("$\23\2\u00e5\u00e6\7*\2\2\u00e6\u00ea\3\2\2\2\u00e7\u00ea")
+        buf.write("\5,\27\2\u00e8\u00ea\5\60\31\2\u00e9\u00ce\3\2\2\2\u00e9")
+        buf.write("\u00d1\3\2\2\2\u00e9\u00d3\3\2\2\2\u00e9\u00d5\3\2\2\2")
+        buf.write("\u00e9\u00d7\3\2\2\2\u00e9\u00d9\3\2\2\2\u00e9\u00db\3")
+        buf.write("\2\2\2\u00e9\u00dd\3\2\2\2\u00e9\u00df\3\2\2\2\u00e9\u00e3")
+        buf.write("\3\2\2\2\u00e9\u00e7\3\2\2\2\u00e9\u00e8\3\2\2\2\u00ea")
+        buf.write("\u00f3\3\2\2\2\u00eb\u00ec\f\b\2\2\u00ec\u00ed\7\7\2\2")
+        buf.write("\u00ed\u00f2\5$\23\t\u00ee\u00ef\f\7\2\2\u00ef\u00f0\7")
+        buf.write("\27\2\2\u00f0\u00f2\5$\23\b\u00f1\u00eb\3\2\2\2\u00f1")
+        buf.write("\u00ee\3\2\2\2\u00f2\u00f5\3\2\2\2\u00f3\u00f1\3\2\2\2")
+        buf.write("\u00f3\u00f4\3\2\2\2\u00f4%\3\2\2\2\u00f5\u00f3\3\2\2")
+        buf.write("\2\u00f6\u00f7\7\3\2\2\u00f7\u00f8\5*\26\2\u00f8\'\3\2")
+        buf.write("\2\2\u00f9\u00fa\7,\2\2\u00fa\u00fb\5*\26\2\u00fb)\3\2")
+        buf.write("\2\2\u00fc\u0102\7)\2\2\u00fd\u0101\5\60\31\2\u00fe\u0101")
+        buf.write("\5\62\32\2\u00ff\u0101\5,\27\2\u0100\u00fd\3\2\2\2\u0100")
+        buf.write("\u00fe\3\2\2\2\u0100\u00ff\3\2\2\2\u0101\u0104\3\2\2\2")
+        buf.write("\u0102\u0100\3\2\2\2\u0102\u0103\3\2\2\2\u0103\u0105\3")
+        buf.write("\2\2\2\u0104\u0102\3\2\2\2\u0105\u0106\7*\2\2\u0106+\3")
+        buf.write("\2\2\2\u0107\u0108\t\4\2\2\u0108-\3\2\2\2\u0109\u010a")
+        buf.write("\t\5\2\2\u010a/\3\2\2\2\u010b\u010c\t\6\2\2\u010c\61\3")
+        buf.write("\2\2\2\u010d\u0112\7)\2\2\u010e\u0111\5\60\31\2\u010f")
+        buf.write("\u0111\5\62\32\2\u0110\u010e\3\2\2\2\u0110\u010f\3\2\2")
+        buf.write("\2\u0111\u0114\3\2\2\2\u0112\u0110\3\2\2\2\u0112\u0113")
+        buf.write("\3\2\2\2\u0113\u0115\3\2\2\2\u0114\u0112\3\2\2\2\u0115")
+        buf.write("\u0116\7*\2\2\u0116\63\3\2\2\2\u0117\u0118\t\7\2\2\u0118")
+        buf.write("\65\3\2\2\2\309DN_hw\u0080\u0087\u008c\u0093\u0098\u00ac")
+        buf.write("\u00b6\u00c1\u00c9\u00e9\u00f1\u00f3\u0100\u0102\u0110")
+        buf.write("\u0112")
         return buf.getvalue()
 
 
@@ -146,29 +148,28 @@ class CMakeParser ( Parser ):
 
     sharedContextCache = PredictionContextCache()
 
-    literalNames = [ u"<INVALID>", u"'option'", u"<INVALID>", u"<INVALID>", 
-                     u"<INVALID>", u"<INVALID>", u"<INVALID>", u"<INVALID>", 
-                     u"<INVALID>", u"<INVALID>", u"<INVALID>", u"<INVALID>", 
-                     u"<INVALID>", u"<INVALID>", u"<INVALID>", u"<INVALID>", 
-                     u"<INVALID>", u"<INVALID>", u"<INVALID>", u"<INVALID>", 
-                     u"<INVALID>", u"<INVALID>", u"<INVALID>", u"<INVALID>", 
-                     u"<INVALID>", u"<INVALID>", u"<INVALID>", u"<INVALID>", 
-                     u"<INVALID>", u"<INVALID>", u"<INVALID>", u"<INVALID>", 
-                     u"<INVALID>", u"<INVALID>", u"<INVALID>", u"<INVALID>", 
-                     u"<INVALID>", u"<INVALID>", u"<INVALID>", u"'('", u"')'" ]
+    literalNames = [ "<INVALID>", "'option'", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                     "<INVALID>", "<INVALID>", "<INVALID>", "'('", "')'" ]
 
-    symbolicNames = [ u"<INVALID>", u"<INVALID>", u"FOREACH", u"ENDFOREACH", 
-                      u"NOT", u"AND", u"IN", u"RANGE", u"VERSION_LESS", 
-                      u"VERSION_EQUALL", u"VERSION_GREATER", u"STRGREATER", 
-                      u"STRLESS", u"COMMAND", u"MATCHES", u"WHILE", u"ENDWHILE", 
-                      u"FUNCTION", u"MACRO", u"ENDFUNCTION", u"ENDMACRO", 
-                      u"OR", u"IF", u"ELSEIF", u"ELSE", u"ENDIF", u"EXISTS", 
-                      u"DEFINED", u"TARGET", u"IS_ABSOLUTE", u"IS_DIRECTORY", 
-                      u"GT", u"GTEQ", u"LT", u"EQ", u"EQR", u"STQE", u"VGEQ", 
-                      u"POLICY", u"LPAREN", u"RPAREN", u"CONSTANTS", u"Identifier", 
-                      u"DECIMAL", u"Unquoted_argument", u"Escape_sequence", 
-                      u"Quoted_argument", u"Bracket_argument", u"Bracket_comment", 
-                      u"Line_comment", u"Newline", u"Space" ]
+    symbolicNames = [ "<INVALID>", "<INVALID>", "FOREACH", "ENDFOREACH", 
+                      "NOT", "AND", "IN", "RANGE", "VERSION_LESS", "VERSION_EQUALL", 
+                      "VERSION_GREATER", "STRGREATER", "STRLESS", "COMMAND", 
+                      "MATCHES", "WHILE", "ENDWHILE", "FUNCTION", "MACRO", 
+                      "ENDFUNCTION", "ENDMACRO", "OR", "IF", "ELSEIF", "ELSE", 
+                      "ENDIF", "EXISTS", "DEFINED", "TARGET", "IS_ABSOLUTE", 
+                      "IS_DIRECTORY", "GT", "GTEQ", "LT", "EQ", "EQR", "STQE", 
+                      "VGEQ", "POLICY", "LPAREN", "RPAREN", "CONSTANTS", 
+                      "Identifier", "DECIMAL", "Unquoted_argument", "Escape_sequence", 
+                      "Quoted_argument", "Bracket_argument", "Bracket_comment", 
+                      "Line_comment", "Newline", "Space" ]
 
     RULE_cmakefile = 0
     RULE_commands = 1
@@ -197,15 +198,14 @@ class CMakeParser ( Parser ):
     RULE_compound_argument = 24
     RULE_comp_operator = 25
 
-    ruleNames =  [ u"cmakefile", u"commands", u"functionCommand", u"foreachCommand", 
-                   u"foreachStatement", u"endForeachStatement", u"whileCommand", 
-                   u"whileStatement", u"endWhileStatement", u"ifCommand", 
-                   u"ifStatement", u"elseIfStatement", u"elseStatement", 
-                   u"endIfStatement", u"functionStatement", u"functionBody", 
-                   u"endFunctionStatement", u"logical_expr", u"optionCommand", 
-                   u"command_invocation", u"argument", u"constant_value", 
-                   u"foreachInputs", u"single_argument", u"compound_argument", 
-                   u"comp_operator" ]
+    ruleNames =  [ "cmakefile", "commands", "functionCommand", "foreachCommand", 
+                   "foreachStatement", "endForeachStatement", "whileCommand", 
+                   "whileStatement", "endWhileStatement", "ifCommand", "ifStatement", 
+                   "elseIfStatement", "elseStatement", "endIfStatement", 
+                   "functionStatement", "functionBody", "endFunctionStatement", 
+                   "logical_expr", "optionCommand", "command_invocation", 
+                   "argument", "constant_value", "foreachInputs", "single_argument", 
+                   "compound_argument", "comp_operator" ]
 
     EOF = Token.EOF
     T__0=1
@@ -260,8 +260,8 @@ class CMakeParser ( Parser ):
     Newline=50
     Space=51
 
-    def __init__(self, input, output=sys.stdout):
-        super(CMakeParser, self).__init__(input, output=output)
+    def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
+        super().__init__(input, output)
         self.checkVersion("4.9.1")
         self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
         self._predicates = None
@@ -270,15 +270,16 @@ class CMakeParser ( Parser ):
 
 
     class CmakefileContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.CmakefileContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def EOF(self):
             return self.getToken(CMakeParser.EOF, 0)
 
-        def commands(self, i=None):
+        def commands(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(CMakeParser.CommandsContext)
             else:
@@ -288,12 +289,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_cmakefile
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterCmakefile"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterCmakefile" ):
                 listener.enterCmakefile(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitCmakefile"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitCmakefile" ):
                 listener.exitCmakefile(self)
 
 
@@ -328,9 +329,10 @@ class CMakeParser ( Parser ):
 
 
     class CommandsContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.CommandsContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def functionCommand(self):
@@ -360,12 +362,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_commands
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterCommands"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterCommands" ):
                 listener.enterCommands(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitCommands"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitCommands" ):
                 listener.exitCommands(self)
 
 
@@ -422,9 +424,10 @@ class CMakeParser ( Parser ):
 
 
     class FunctionCommandContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.FunctionCommandContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def functionStatement(self):
@@ -442,12 +445,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_functionCommand
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterFunctionCommand"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterFunctionCommand" ):
                 listener.enterFunctionCommand(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitFunctionCommand"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitFunctionCommand" ):
                 listener.exitFunctionCommand(self)
 
 
@@ -475,9 +478,10 @@ class CMakeParser ( Parser ):
 
 
     class ForeachCommandContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.ForeachCommandContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
             self.ifBody = None # CommandsContext
 
@@ -489,7 +493,7 @@ class CMakeParser ( Parser ):
             return self.getTypedRuleContext(CMakeParser.EndForeachStatementContext,0)
 
 
-        def commands(self, i=None):
+        def commands(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(CMakeParser.CommandsContext)
             else:
@@ -499,12 +503,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_foreachCommand
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterForeachCommand"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterForeachCommand" ):
                 listener.enterForeachCommand(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitForeachCommand"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitForeachCommand" ):
                 listener.exitForeachCommand(self)
 
 
@@ -541,9 +545,10 @@ class CMakeParser ( Parser ):
 
 
     class ForeachStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.ForeachStatementContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def FOREACH(self):
@@ -555,7 +560,7 @@ class CMakeParser ( Parser ):
         def RPAREN(self):
             return self.getToken(CMakeParser.RPAREN, 0)
 
-        def foreachInputs(self, i=None):
+        def foreachInputs(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(CMakeParser.ForeachInputsContext)
             else:
@@ -565,12 +570,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_foreachStatement
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterForeachStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterForeachStatement" ):
                 listener.enterForeachStatement(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitForeachStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitForeachStatement" ):
                 listener.exitForeachStatement(self)
 
 
@@ -603,9 +608,10 @@ class CMakeParser ( Parser ):
 
 
     class EndForeachStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.EndForeachStatementContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def ENDFOREACH(self):
@@ -620,12 +626,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_endForeachStatement
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterEndForeachStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterEndForeachStatement" ):
                 listener.enterEndForeachStatement(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitEndForeachStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitEndForeachStatement" ):
                 listener.exitEndForeachStatement(self)
 
 
@@ -665,9 +671,10 @@ class CMakeParser ( Parser ):
 
 
     class WhileCommandContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.WhileCommandContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
             self.ifBody = None # CommandsContext
 
@@ -679,7 +686,7 @@ class CMakeParser ( Parser ):
             return self.getTypedRuleContext(CMakeParser.EndWhileStatementContext,0)
 
 
-        def commands(self, i=None):
+        def commands(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(CMakeParser.CommandsContext)
             else:
@@ -689,12 +696,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_whileCommand
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterWhileCommand"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterWhileCommand" ):
                 listener.enterWhileCommand(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitWhileCommand"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitWhileCommand" ):
                 listener.exitWhileCommand(self)
 
 
@@ -731,9 +738,10 @@ class CMakeParser ( Parser ):
 
 
     class WhileStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.WhileStatementContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def WHILE(self):
@@ -752,12 +760,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_whileStatement
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterWhileStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterWhileStatement" ):
                 listener.enterWhileStatement(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitWhileStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitWhileStatement" ):
                 listener.exitWhileStatement(self)
 
 
@@ -787,9 +795,10 @@ class CMakeParser ( Parser ):
 
 
     class EndWhileStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.EndWhileStatementContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def ENDWHILE(self):
@@ -804,12 +813,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_endWhileStatement
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterEndWhileStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterEndWhileStatement" ):
                 listener.enterEndWhileStatement(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitEndWhileStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitEndWhileStatement" ):
                 listener.exitEndWhileStatement(self)
 
 
@@ -848,9 +857,10 @@ class CMakeParser ( Parser ):
 
 
     class IfCommandContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.IfCommandContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
             self.ifBody = None # CommandsContext
             self.elseIfBody = None # CommandsContext
@@ -864,21 +874,21 @@ class CMakeParser ( Parser ):
             return self.getTypedRuleContext(CMakeParser.EndIfStatementContext,0)
 
 
-        def elseIfStatement(self, i=None):
+        def elseIfStatement(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(CMakeParser.ElseIfStatementContext)
             else:
                 return self.getTypedRuleContext(CMakeParser.ElseIfStatementContext,i)
 
 
-        def elseStatement(self, i=None):
+        def elseStatement(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(CMakeParser.ElseStatementContext)
             else:
                 return self.getTypedRuleContext(CMakeParser.ElseStatementContext,i)
 
 
-        def commands(self, i=None):
+        def commands(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(CMakeParser.CommandsContext)
             else:
@@ -888,12 +898,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_ifCommand
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterIfCommand"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterIfCommand" ):
                 listener.enterIfCommand(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitIfCommand"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitIfCommand" ):
                 listener.exitIfCommand(self)
 
 
@@ -970,9 +980,10 @@ class CMakeParser ( Parser ):
 
 
     class IfStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.IfStatementContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def IF(self):
@@ -991,12 +1002,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_ifStatement
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterIfStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterIfStatement" ):
                 listener.enterIfStatement(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitIfStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitIfStatement" ):
                 listener.exitIfStatement(self)
 
 
@@ -1026,9 +1037,10 @@ class CMakeParser ( Parser ):
 
 
     class ElseIfStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.ElseIfStatementContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def ELSEIF(self):
@@ -1047,12 +1059,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_elseIfStatement
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterElseIfStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterElseIfStatement" ):
                 listener.enterElseIfStatement(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitElseIfStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitElseIfStatement" ):
                 listener.exitElseIfStatement(self)
 
 
@@ -1082,9 +1094,10 @@ class CMakeParser ( Parser ):
 
 
     class ElseStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.ElseStatementContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def ELSE(self):
@@ -1099,12 +1112,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_elseStatement
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterElseStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterElseStatement" ):
                 listener.enterElseStatement(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitElseStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitElseStatement" ):
                 listener.exitElseStatement(self)
 
 
@@ -1143,9 +1156,10 @@ class CMakeParser ( Parser ):
 
 
     class EndIfStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.EndIfStatementContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def ENDIF(self):
@@ -1160,12 +1174,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_endIfStatement
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterEndIfStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterEndIfStatement" ):
                 listener.enterEndIfStatement(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitEndIfStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitEndIfStatement" ):
                 listener.exitEndIfStatement(self)
 
 
@@ -1204,9 +1218,10 @@ class CMakeParser ( Parser ):
 
 
     class FunctionStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.FunctionStatementContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def argument(self):
@@ -1222,12 +1237,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_functionStatement
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterFunctionStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterFunctionStatement" ):
                 listener.enterFunctionStatement(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitFunctionStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitFunctionStatement" ):
                 listener.exitFunctionStatement(self)
 
 
@@ -1259,9 +1274,10 @@ class CMakeParser ( Parser ):
 
 
     class FunctionBodyContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.FunctionBodyContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
             self.body = None # Token
 
@@ -1269,12 +1285,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_functionBody
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterFunctionBody"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterFunctionBody" ):
                 listener.enterFunctionBody(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitFunctionBody"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitFunctionBody" ):
                 listener.exitFunctionBody(self)
 
 
@@ -1307,9 +1323,10 @@ class CMakeParser ( Parser ):
 
 
     class EndFunctionStatementContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.EndFunctionStatementContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def LPAREN(self):
@@ -1327,12 +1344,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_endFunctionStatement
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterEndFunctionStatement"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterEndFunctionStatement" ):
                 listener.enterEndFunctionStatement(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitEndFunctionStatement"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitEndFunctionStatement" ):
                 listener.exitEndFunctionStatement(self)
 
 
@@ -1377,9 +1394,10 @@ class CMakeParser ( Parser ):
 
 
     class Logical_exprContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.Logical_exprContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
 
@@ -1387,14 +1405,14 @@ class CMakeParser ( Parser ):
             return CMakeParser.RULE_logical_expr
 
      
-        def copyFrom(self, ctx):
-            super(CMakeParser.Logical_exprContext, self).copyFrom(ctx)
+        def copyFrom(self, ctx:ParserRuleContext):
+            super().copyFrom(ctx)
 
 
     class LogicalExpressionExistsContext(Logical_exprContext):
 
-        def __init__(self, parser, ctx): # actually a CMakeParser.Logical_exprContext)
-            super(CMakeParser.LogicalExpressionExistsContext, self).__init__(parser)
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a CMakeParser.Logical_exprContext
+            super().__init__(parser)
             self.copyFrom(ctx)
 
         def EXISTS(self):
@@ -1403,19 +1421,19 @@ class CMakeParser ( Parser ):
             return self.getTypedRuleContext(CMakeParser.Logical_exprContext,0)
 
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterLogicalExpressionExists"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterLogicalExpressionExists" ):
                 listener.enterLogicalExpressionExists(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitLogicalExpressionExists"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitLogicalExpressionExists" ):
                 listener.exitLogicalExpressionExists(self)
 
 
     class LogicalExpressionTargetContext(Logical_exprContext):
 
-        def __init__(self, parser, ctx): # actually a CMakeParser.Logical_exprContext)
-            super(CMakeParser.LogicalExpressionTargetContext, self).__init__(parser)
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a CMakeParser.Logical_exprContext
+            super().__init__(parser)
             self.copyFrom(ctx)
 
         def TARGET(self):
@@ -1424,19 +1442,19 @@ class CMakeParser ( Parser ):
             return self.getTypedRuleContext(CMakeParser.Logical_exprContext,0)
 
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterLogicalExpressionTarget"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterLogicalExpressionTarget" ):
                 listener.enterLogicalExpressionTarget(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitLogicalExpressionTarget"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitLogicalExpressionTarget" ):
                 listener.exitLogicalExpressionTarget(self)
 
 
     class LogicalExpressionIsAbsoluteContext(Logical_exprContext):
 
-        def __init__(self, parser, ctx): # actually a CMakeParser.Logical_exprContext)
-            super(CMakeParser.LogicalExpressionIsAbsoluteContext, self).__init__(parser)
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a CMakeParser.Logical_exprContext
+            super().__init__(parser)
             self.copyFrom(ctx)
 
         def IS_ABSOLUTE(self):
@@ -1445,44 +1463,44 @@ class CMakeParser ( Parser ):
             return self.getTypedRuleContext(CMakeParser.Logical_exprContext,0)
 
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterLogicalExpressionIsAbsolute"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterLogicalExpressionIsAbsolute" ):
                 listener.enterLogicalExpressionIsAbsolute(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitLogicalExpressionIsAbsolute"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitLogicalExpressionIsAbsolute" ):
                 listener.exitLogicalExpressionIsAbsolute(self)
 
 
     class LogicalEntityContext(Logical_exprContext):
 
-        def __init__(self, parser, ctx): # actually a CMakeParser.Logical_exprContext)
-            super(CMakeParser.LogicalEntityContext, self).__init__(parser)
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a CMakeParser.Logical_exprContext
+            super().__init__(parser)
             self.copyFrom(ctx)
 
         def single_argument(self):
             return self.getTypedRuleContext(CMakeParser.Single_argumentContext,0)
 
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterLogicalEntity"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterLogicalEntity" ):
                 listener.enterLogicalEntity(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitLogicalEntity"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitLogicalEntity" ):
                 listener.exitLogicalEntity(self)
 
 
     class ComparisonExpressionContext(Logical_exprContext):
 
-        def __init__(self, parser, ctx): # actually a CMakeParser.Logical_exprContext)
-            super(CMakeParser.ComparisonExpressionContext, self).__init__(parser)
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a CMakeParser.Logical_exprContext
+            super().__init__(parser)
             self.left = None # Single_argumentContext
             self.operator = None # Comp_operatorContext
             self.right = None # Single_argumentContext
             self.copyFrom(ctx)
 
-        def single_argument(self, i=None):
+        def single_argument(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(CMakeParser.Single_argumentContext)
             else:
@@ -1492,19 +1510,19 @@ class CMakeParser ( Parser ):
             return self.getTypedRuleContext(CMakeParser.Comp_operatorContext,0)
 
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterComparisonExpression"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterComparisonExpression" ):
                 listener.enterComparisonExpression(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitComparisonExpression"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitComparisonExpression" ):
                 listener.exitComparisonExpression(self)
 
 
     class LogicalExpressionInParenContext(Logical_exprContext):
 
-        def __init__(self, parser, ctx): # actually a CMakeParser.Logical_exprContext)
-            super(CMakeParser.LogicalExpressionInParenContext, self).__init__(parser)
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a CMakeParser.Logical_exprContext
+            super().__init__(parser)
             self.copyFrom(ctx)
 
         def LPAREN(self):
@@ -1515,19 +1533,19 @@ class CMakeParser ( Parser ):
         def RPAREN(self):
             return self.getToken(CMakeParser.RPAREN, 0)
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterLogicalExpressionInParen"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterLogicalExpressionInParen" ):
                 listener.enterLogicalExpressionInParen(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitLogicalExpressionInParen"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitLogicalExpressionInParen" ):
                 listener.exitLogicalExpressionInParen(self)
 
 
     class LogicalExpressionPolicyContext(Logical_exprContext):
 
-        def __init__(self, parser, ctx): # actually a CMakeParser.Logical_exprContext)
-            super(CMakeParser.LogicalExpressionPolicyContext, self).__init__(parser)
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a CMakeParser.Logical_exprContext
+            super().__init__(parser)
             self.copyFrom(ctx)
 
         def POLICY(self):
@@ -1536,22 +1554,22 @@ class CMakeParser ( Parser ):
             return self.getTypedRuleContext(CMakeParser.Logical_exprContext,0)
 
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterLogicalExpressionPolicy"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterLogicalExpressionPolicy" ):
                 listener.enterLogicalExpressionPolicy(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitLogicalExpressionPolicy"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitLogicalExpressionPolicy" ):
                 listener.exitLogicalExpressionPolicy(self)
 
 
     class LogicalExpressionAndContext(Logical_exprContext):
 
-        def __init__(self, parser, ctx): # actually a CMakeParser.Logical_exprContext)
-            super(CMakeParser.LogicalExpressionAndContext, self).__init__(parser)
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a CMakeParser.Logical_exprContext
+            super().__init__(parser)
             self.copyFrom(ctx)
 
-        def logical_expr(self, i=None):
+        def logical_expr(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(CMakeParser.Logical_exprContext)
             else:
@@ -1560,38 +1578,38 @@ class CMakeParser ( Parser ):
         def AND(self):
             return self.getToken(CMakeParser.AND, 0)
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterLogicalExpressionAnd"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterLogicalExpressionAnd" ):
                 listener.enterLogicalExpressionAnd(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitLogicalExpressionAnd"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitLogicalExpressionAnd" ):
                 listener.exitLogicalExpressionAnd(self)
 
 
     class ConstantValueContext(Logical_exprContext):
 
-        def __init__(self, parser, ctx): # actually a CMakeParser.Logical_exprContext)
-            super(CMakeParser.ConstantValueContext, self).__init__(parser)
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a CMakeParser.Logical_exprContext
+            super().__init__(parser)
             self.copyFrom(ctx)
 
         def constant_value(self):
             return self.getTypedRuleContext(CMakeParser.Constant_valueContext,0)
 
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterConstantValue"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterConstantValue" ):
                 listener.enterConstantValue(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitConstantValue"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitConstantValue" ):
                 listener.exitConstantValue(self)
 
 
     class LogicalExpressionNotContext(Logical_exprContext):
 
-        def __init__(self, parser, ctx): # actually a CMakeParser.Logical_exprContext)
-            super(CMakeParser.LogicalExpressionNotContext, self).__init__(parser)
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a CMakeParser.Logical_exprContext
+            super().__init__(parser)
             self.copyFrom(ctx)
 
         def NOT(self):
@@ -1600,22 +1618,22 @@ class CMakeParser ( Parser ):
             return self.getTypedRuleContext(CMakeParser.Logical_exprContext,0)
 
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterLogicalExpressionNot"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterLogicalExpressionNot" ):
                 listener.enterLogicalExpressionNot(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitLogicalExpressionNot"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitLogicalExpressionNot" ):
                 listener.exitLogicalExpressionNot(self)
 
 
     class LogicalExpressionOrContext(Logical_exprContext):
 
-        def __init__(self, parser, ctx): # actually a CMakeParser.Logical_exprContext)
-            super(CMakeParser.LogicalExpressionOrContext, self).__init__(parser)
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a CMakeParser.Logical_exprContext
+            super().__init__(parser)
             self.copyFrom(ctx)
 
-        def logical_expr(self, i=None):
+        def logical_expr(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(CMakeParser.Logical_exprContext)
             else:
@@ -1624,19 +1642,19 @@ class CMakeParser ( Parser ):
         def OR(self):
             return self.getToken(CMakeParser.OR, 0)
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterLogicalExpressionOr"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterLogicalExpressionOr" ):
                 listener.enterLogicalExpressionOr(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitLogicalExpressionOr"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitLogicalExpressionOr" ):
                 listener.exitLogicalExpressionOr(self)
 
 
     class LogicalExpressionDefinedContext(Logical_exprContext):
 
-        def __init__(self, parser, ctx): # actually a CMakeParser.Logical_exprContext)
-            super(CMakeParser.LogicalExpressionDefinedContext, self).__init__(parser)
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a CMakeParser.Logical_exprContext
+            super().__init__(parser)
             self.copyFrom(ctx)
 
         def DEFINED(self):
@@ -1645,19 +1663,19 @@ class CMakeParser ( Parser ):
             return self.getTypedRuleContext(CMakeParser.Logical_exprContext,0)
 
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterLogicalExpressionDefined"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterLogicalExpressionDefined" ):
                 listener.enterLogicalExpressionDefined(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitLogicalExpressionDefined"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitLogicalExpressionDefined" ):
                 listener.exitLogicalExpressionDefined(self)
 
 
     class LogicalExpressionIsDirectoryContext(Logical_exprContext):
 
-        def __init__(self, parser, ctx): # actually a CMakeParser.Logical_exprContext)
-            super(CMakeParser.LogicalExpressionIsDirectoryContext, self).__init__(parser)
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a CMakeParser.Logical_exprContext
+            super().__init__(parser)
             self.copyFrom(ctx)
 
         def IS_DIRECTORY(self):
@@ -1668,17 +1686,17 @@ class CMakeParser ( Parser ):
         def COMMAND(self):
             return self.getToken(CMakeParser.COMMAND, 0)
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterLogicalExpressionIsDirectory"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterLogicalExpressionIsDirectory" ):
                 listener.enterLogicalExpressionIsDirectory(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitLogicalExpressionIsDirectory"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitLogicalExpressionIsDirectory" ):
                 listener.exitLogicalExpressionIsDirectory(self)
 
 
 
-    def logical_expr(self, _p=0):
+    def logical_expr(self, _p:int=0):
         _parentctx = self._ctx
         _parentState = self.state
         localctx = CMakeParser.Logical_exprContext(self, self._ctx, _parentState)
@@ -1865,9 +1883,10 @@ class CMakeParser ( Parser ):
 
 
     class OptionCommandContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.OptionCommandContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def argument(self):
@@ -1877,12 +1896,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_optionCommand
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterOptionCommand"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterOptionCommand" ):
                 listener.enterOptionCommand(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitOptionCommand"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitOptionCommand" ):
                 listener.exitOptionCommand(self)
 
 
@@ -1908,9 +1927,10 @@ class CMakeParser ( Parser ):
 
 
     class Command_invocationContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.Command_invocationContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def Identifier(self):
@@ -1923,12 +1943,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_command_invocation
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterCommand_invocation"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterCommand_invocation" ):
                 listener.enterCommand_invocation(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitCommand_invocation"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitCommand_invocation" ):
                 listener.exitCommand_invocation(self)
 
 
@@ -1954,9 +1974,10 @@ class CMakeParser ( Parser ):
 
 
     class ArgumentContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.ArgumentContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def LPAREN(self):
@@ -1965,21 +1986,21 @@ class CMakeParser ( Parser ):
         def RPAREN(self):
             return self.getToken(CMakeParser.RPAREN, 0)
 
-        def single_argument(self, i=None):
+        def single_argument(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(CMakeParser.Single_argumentContext)
             else:
                 return self.getTypedRuleContext(CMakeParser.Single_argumentContext,i)
 
 
-        def compound_argument(self, i=None):
+        def compound_argument(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(CMakeParser.Compound_argumentContext)
             else:
                 return self.getTypedRuleContext(CMakeParser.Compound_argumentContext,i)
 
 
-        def constant_value(self, i=None):
+        def constant_value(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(CMakeParser.Constant_valueContext)
             else:
@@ -1989,12 +2010,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_argument
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterArgument"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterArgument" ):
                 listener.enterArgument(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitArgument"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitArgument" ):
                 listener.exitArgument(self)
 
 
@@ -2048,9 +2069,10 @@ class CMakeParser ( Parser ):
 
 
     class Constant_valueContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.Constant_valueContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def CONSTANTS(self):
@@ -2062,12 +2084,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_constant_value
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterConstant_value"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterConstant_value" ):
                 listener.enterConstant_value(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitConstant_value"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitConstant_value" ):
                 listener.exitConstant_value(self)
 
 
@@ -2097,9 +2119,10 @@ class CMakeParser ( Parser ):
 
 
     class ForeachInputsContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.ForeachInputsContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def Identifier(self):
@@ -2120,12 +2143,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_foreachInputs
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterForeachInputs"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterForeachInputs" ):
                 listener.enterForeachInputs(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitForeachInputs"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitForeachInputs" ):
                 listener.exitForeachInputs(self)
 
 
@@ -2155,9 +2178,10 @@ class CMakeParser ( Parser ):
 
 
     class Single_argumentContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.Single_argumentContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def Identifier(self):
@@ -2202,12 +2226,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_single_argument
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterSingle_argument"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterSingle_argument" ):
                 listener.enterSingle_argument(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitSingle_argument"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitSingle_argument" ):
                 listener.exitSingle_argument(self)
 
 
@@ -2237,9 +2261,10 @@ class CMakeParser ( Parser ):
 
 
     class Compound_argumentContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.Compound_argumentContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def LPAREN(self):
@@ -2248,14 +2273,14 @@ class CMakeParser ( Parser ):
         def RPAREN(self):
             return self.getToken(CMakeParser.RPAREN, 0)
 
-        def single_argument(self, i=None):
+        def single_argument(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(CMakeParser.Single_argumentContext)
             else:
                 return self.getTypedRuleContext(CMakeParser.Single_argumentContext,i)
 
 
-        def compound_argument(self, i=None):
+        def compound_argument(self, i:int=None):
             if i is None:
                 return self.getTypedRuleContexts(CMakeParser.Compound_argumentContext)
             else:
@@ -2265,12 +2290,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_compound_argument
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterCompound_argument"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterCompound_argument" ):
                 listener.enterCompound_argument(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitCompound_argument"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitCompound_argument" ):
                 listener.exitCompound_argument(self)
 
 
@@ -2319,9 +2344,10 @@ class CMakeParser ( Parser ):
 
 
     class Comp_operatorContext(ParserRuleContext):
+        __slots__ = 'parser'
 
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(CMakeParser.Comp_operatorContext, self).__init__(parent, invokingState)
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
             self.parser = parser
 
         def GT(self):
@@ -2366,12 +2392,12 @@ class CMakeParser ( Parser ):
         def getRuleIndex(self):
             return CMakeParser.RULE_comp_operator
 
-        def enterRule(self, listener):
-            if hasattr(listener, "enterComp_operator"):
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterComp_operator" ):
                 listener.enterComp_operator(self)
 
-        def exitRule(self, listener):
-            if hasattr(listener, "exitComp_operator"):
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitComp_operator" ):
                 listener.exitComp_operator(self)
 
 
@@ -2401,7 +2427,7 @@ class CMakeParser ( Parser ):
 
 
 
-    def sempred(self, localctx, ruleIndex, predIndex):
+    def sempred(self, localctx:RuleContext, ruleIndex:int, predIndex:int):
         if self._predicates == None:
             self._predicates = dict()
         self._predicates[17] = self.logical_expr_sempred
@@ -2411,7 +2437,7 @@ class CMakeParser ( Parser ):
         else:
             return pred(localctx, predIndex)
 
-    def logical_expr_sempred(self, localctx, predIndex):
+    def logical_expr_sempred(self, localctx:Logical_exprContext, predIndex:int):
             if predIndex == 0:
                 return self.precpred(self._ctx, 6)
          

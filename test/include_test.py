@@ -19,7 +19,7 @@ from extract import initialize
 class TestVariableDefinitions(unittest.TestCase):
 
     def runTool(self, text):
-        initialize(text,False)
+        initialize(text, './test', True)
         linkDirectory()
 
 

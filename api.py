@@ -13,7 +13,8 @@ from vmodel import VModel
 def getGraph(directory):
     VModel.clearInstance()
     Lookup.clearInstance()
-    extract.initialize(directory, True)
+    os.chdir(directory)
+    extract.initialize(directory, ".", False)
     extract.vmodel.findAndSetTargets()
     extract.linkDirectory()
     return extract.vmodel, extract.lookupTable

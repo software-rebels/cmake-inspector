@@ -533,4 +533,7 @@ def mySimplifier(conditions):
 # This function will run simplifier on the facts
 def postprocessZ3Output(flattened: List):
     for idx, item in enumerate(flattened):
-        flattened[idx] = (item[0], mySimplifier(item[1]))
+        conditions = item[1]
+        if isinstance(item[1], Goal):
+            conditions = item[1].as_expr()
+        flattened[idx] = (item[0], mySimplifier(conditions))
