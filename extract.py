@@ -57,15 +57,12 @@ foreachNodeStack = []
 
 
 # noinspection PyGlobalUndefined
-def initialize(pathOrInput, isPath):
+def initialize(inputText, path, shouldUseInput=False):
     global vmodel, lookupTable, directoryTree, project_dir
     vmodel = VModel.getInstance()
     lookupTable = Lookup.getInstance()
     directoryTree = Directory.getInstance()
-    if isPath:
-        project_dir = pathOrInput
-    else:
-        project_dir = '.'
+    project_dir = path
 
     getIncludePaths()
     # Initializing the important variables
@@ -84,10 +81,10 @@ def initialize(pathOrInput, isPath):
     util_create_and_add_refNode_for_variable('HUPNP_VERSION_MINOR', LiteralNode('VERSION_TWEAK', 1))
     util_create_and_add_refNode_for_variable('HUPNP_VERSION_PATCH', LiteralNode('VERSION_TWEAK', 1))
 
-    if isPath:
+    if not shouldUseInput:
         parseFile(os.path.join(project_dir, 'CMakeLists.txt'),True)
     else:
-        parseFile(pathOrInput, False)
+        parseFile(inputText, False)
 
 
 class CMakeExtractorListener(CMakeListener):

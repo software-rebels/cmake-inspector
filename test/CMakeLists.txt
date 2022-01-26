@@ -24,7 +24,7 @@ if(APP_VERSION GREATER 1 OR LINUX)
 endif()
 
 add_executable(exec ${SERVER_SRC})
-add_library(lib test/another_folder_for_test/*.cxx)
+add_library(lib another_folder_for_test/*.cxx)
 if(foo)
     if(john)
         target_link_libraries(exec lib)

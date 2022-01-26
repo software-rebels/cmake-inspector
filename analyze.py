@@ -1,4 +1,5 @@
 import logging
+import os
 import pickle
 
 from algorithms import flattenAlgorithmWithConditions, getFlattenedDefinitionsFromNode, recursivelyResolveReference, mergeFlattedList, \
@@ -155,7 +156,7 @@ def getFilesForATarget(vmodel: VModel, lookup: Lookup, target: str):
 
     result = defaultdict(set)
     for item in flattenedFiles:
-        result[item[1]].add(item[0])
+        result[item[1].as_expr()].add(item[0])
 
     # with open(f'flatten_merged_result_{str(datetime.timestamp(datetime.utcnow()))[:-7]}.pickle', 'wb') as handle:
     #     pickle.dump(result, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -197,7 +198,7 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
         #     json.dump(result, f, default=set_default, sort_keys=True, indent=4)
 
     for key in list(result.keys()):
-        result[str(key)] = result[key]
+        result["[]" if str(key) == 'True' else str(key)] = result[key]
         del result[key]
 
     return result
