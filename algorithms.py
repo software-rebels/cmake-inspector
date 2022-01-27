@@ -215,17 +215,17 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
         arguments = node.commands[0].getChildren()
         fileCommandType = arguments[0].getValue()
         if fileCommandType.upper() == 'GLOB':
-            arguments = flattenAlgorithmWithConditions(node.commands[0].getChildren()[1],
-                                                       conditions, recStack=recStack)
             result = []
-            for arg in arguments:
-                wildcardPath = re.findall('"(.*)"', arg[0])
-                if wildcardPath:
-                    wildcardPath = wildcardPath[0]
-                else:
-                    wildcardPath = arg[0]
-                for item in glob.glob(os.path.join(node.extraInfo.get('pwd'), wildcardPath)):
-                    result.append([item, arg[1]])
+            for args in node.commands[0].getChildren()[1:]:
+                flattedArg = flattenAlgorithmWithConditions(args, conditions, recStack=recStack)
+                for arg in flattedArg:
+                    wildcardPath = re.findall('"(.*)"', arg[0])
+                    if wildcardPath:
+                        wildcardPath = wildcardPath[0]
+                    else:
+                        wildcardPath = arg[0]
+                    for item in glob.glob(os.path.join(node.extraInfo.get('pwd'), wildcardPath)):
+                        result.append([item, arg[1]])
             return result
     elif 'target_link_libraries' in node.rawName.lower():
         result = []
