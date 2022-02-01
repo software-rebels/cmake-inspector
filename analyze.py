@@ -5,7 +5,7 @@ import pickle
 from algorithms import flattenAlgorithmWithConditions, getFlattenedDefinitionsFromNode, recursivelyResolveReference, mergeFlattedList, \
     removeDuplicatesFromFlattedList, postprocessZ3Output
 from datastructs import Lookup, RefNode, TargetNode, LiteralNode, CustomCommandNode, Node
-from pydriller import RepositoryMining
+from pydriller import Repository
 import itertools
 import glob
 from collections import defaultdict
@@ -234,7 +234,7 @@ def doGitAnalysis(repoPath):
 
     foundedModification = 0
     notFoundedModification = 0
-    for index, commit in enumerate(RepositoryMining(
+    for index, commit in enumerate(Repository(
             # We are interested in commits after bc7e017112bb8e37a3103879148be718a48f5023 in zlib project
             repoPath, from_commit="a2d71e8e66530c325bfce936f3805ccff5831b62").traverse_commits()):
         # repoPath, from_commit="7707894d4857e2524ed9c48d972aa321dee850f8").traverse_commits()):
