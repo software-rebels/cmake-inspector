@@ -2,6 +2,7 @@ import time
 import pickle
 from analyze import getFilesForATarget
 from z3 import *
+from pydriller import Git
 from collections import defaultdict
 from xmlrpc.server import SimpleXMLRPCServer
 from xmlrpc.server import SimpleXMLRPCRequestHandler
@@ -26,10 +27,11 @@ class GraphQuery:
         def __hash__(self):
             return hash(self._name)
 
-    def __init__(self, vmodel, lookup):
+    def __init__(self, vmodel, lookup, projectPath=None):
         self._vmodel = vmodel
         self._lookup = lookup
         self._targets = []
+        self._path = projectPath
         self.targetToFlatted = dict()
         self.setOfFiles = set()
 
@@ -70,8 +72,9 @@ class GraphQuery:
 
         return result
 
-    def getImpactedTargetsByFileAndCondition(self, changedFile, requestedConditions):
-        result = defaultdict(list)
+    def getImpactedTargetsByFileAndCondition(self, changedFile, requestedConditions, result=None):
+        if result is None:
+            result = defaultdict(list)
         for target, flatted in self.targetToFlatted.items():
             for condition, files in flatted.items():
                 if changedFile in files:
@@ -79,7 +82,19 @@ class GraphQuery:
                     solver.add(condition)
                     solver.add(requestedConditions)
                     if solver.check() == sat:
-                        result[target].append(self.serializeConditionList(condition))
+                        serialized = self.serializeConditionList(condition)
+                        if serialized not in result[target]:
+                            result[target].append(self.serializeConditionList(condition))
+        return result
+
+    def getImpactedTargetsByCommitAndCondition(self, commit_id, requestedConditions):
+        gr = Git(self._path)
+        commit = gr.get_commit(commit_id)
+        result = defaultdict(list)
+        for modified_file in commit.modified_files:
+            self.getImpactedTargetsByFileAndCondition(modified_file.old_path or modified_file.new_path,
+                                                      requestedConditions,
+                                                      result)
         return result
 
     def startRPCServer(self):
@@ -106,9 +121,18 @@ class GraphQuery:
                     g.add(serializedCondition.deserialize() == condition['value'])
                 return dict(self.getImpactedTargetsByFileAndCondition(filename, g))
 
+            def get_impacted_by_commit_condition(commit_id, conditions):
+                g = Goal()
+                for condition in conditions:
+                    serializedCondition = self.SerializedCondition(condition['_name'],
+                                                                   condition['_type'])
+                    g.add(serializedCondition.deserialize() == condition['value'])
+                return dict(self.getImpactedTargetsByCommitAndCondition(commit_id, g))
+
             server.register_function(get_file_lists)
             server.register_function(get_impact)
             server.register_function(get_impact_by_file_condition)
+            server.register_function(get_impacted_by_commit_condition)
 
             # Run the server's main loop
             server.serve_forever()

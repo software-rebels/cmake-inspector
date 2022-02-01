@@ -14,7 +14,7 @@ neomodel==4.0.0
 packaging==20.4
 pluggy==0.13.1
 py==1.9.0
-PyDriller==1.15.2
+PyDriller
 pyparsing==2.4.7
 pytest==6.0.1
 pytz==2020.1
