@@ -34,6 +34,10 @@ class GraphQuery:
         self._path = projectPath
         self.targetToFlatted = dict()
         self.setOfFiles = set()
+        self.normalize = False
+
+    def enableNormalization(self):
+        self.normalize = True
 
     def getFlattenForTargets(self):
         self._vmodel.findAndSetTargets()
@@ -41,7 +45,14 @@ class GraphQuery:
             self._targets.append(item.getValue())
 
         for target in self._targets:
-            self.targetToFlatted[target] = getFilesForATarget(self._vmodel, self._lookup, target)
+            if "${" in target:
+                continue
+
+            normalized_target = target
+            if "_" in target and target[target.rindex("_") + 1:].isdigit():
+                normalized_target = target[:target.rindex("_")]
+
+            self.targetToFlatted[normalized_target] = getFilesForATarget(self._vmodel, self._lookup, target)
 
         for target, flatted in self.targetToFlatted.items():
             for condition, files in flatted.items():
@@ -72,12 +83,24 @@ class GraphQuery:
 
         return result
 
-    def getImpactedTargetsByFileAndCondition(self, changedFile, requestedConditions, result=None):
+    def getImpactedTargetsByFileAndCondition(self, changedFile, requestedConditions, result=None, normalize=False):
         if result is None:
             result = defaultdict(list)
         for target, flatted in self.targetToFlatted.items():
             for condition, files in flatted.items():
-                if changedFile in files:
+                if not normalize:
+                    list_of_files = set(files)
+                else:
+                    list_of_files = set()
+                    if "/" in changedFile:
+                        changedFile = changedFile[changedFile.rindex("/")+1:]
+                    for file in files:
+                        if "/" in file:
+                            list_of_files.add(file[file.rindex("/")+1:])
+                        else:
+                            list_of_files.add(file)
+
+                if changedFile in list_of_files:
                     solver = Solver()
                     solver.add(condition)
                     solver.add(requestedConditions)
@@ -94,7 +117,8 @@ class GraphQuery:
         for modified_file in commit.modified_files:
             self.getImpactedTargetsByFileAndCondition(modified_file.old_path or modified_file.new_path,
                                                       requestedConditions,
-                                                      result)
+                                                      result,
+                                                      self.normalize)
         return result
 
     def startRPCServer(self):
@@ -127,7 +151,15 @@ class GraphQuery:
                     serializedCondition = self.SerializedCondition(condition['_name'],
                                                                    condition['_type'])
                     g.add(serializedCondition.deserialize() == condition['value'])
-                return dict(self.getImpactedTargetsByCommitAndCondition(commit_id, g))
+                try:
+                    response = dict(self.getImpactedTargetsByCommitAndCondition(commit_id, g))
+                except:
+                    response = {
+                        "error": True,
+                        "message": "Bad Input"
+                    }
+
+                return response
 
             server.register_function(get_file_lists)
             server.register_function(get_impact)

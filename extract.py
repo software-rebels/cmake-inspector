@@ -1617,6 +1617,7 @@ class CMakeExtractorListener(CMakeListener):
                     interfaceIncludeDirectories.append(item)
 
             def handleProperty(propertyList, targetProperty):
+                return
                 if propertyList:
                     extendedProperties = vmodel.expand(propertyList, True)
                     assert isinstance(extendedProperties, ConcatNode)
