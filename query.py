@@ -121,13 +121,13 @@ class GraphQuery:
                                                       self.normalize)
         return result
 
-    def startRPCServer(self):
+    def startRPCServer(self, port):
         # Restrict to a particular path.
         class RequestHandler(SimpleXMLRPCRequestHandler):
             rpc_paths = ('/RPC2',)
 
         # Create server
-        with SimpleXMLRPCServer(('localhost', 8008),
+        with SimpleXMLRPCServer(('localhost', port),
                                 requestHandler=RequestHandler) as server:
             server.register_introspection_functions()
 
