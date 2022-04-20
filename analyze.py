@@ -5,7 +5,7 @@ import pickle
 from algorithms import flattenAlgorithmWithConditions, getFlattenedDefinitionsFromNode, recursivelyResolveReference, mergeFlattedList, \
     removeDuplicatesFromFlattedList, postprocessZ3Output
 from datastructs import Lookup, RefNode, TargetNode, LiteralNode, CustomCommandNode, Node
-from pydriller import Repository
+from pydriller import RepositoryMining
 import itertools
 import glob
 from collections import defaultdict
@@ -14,7 +14,8 @@ import json
 import csv
 from vmodel import VModel
 from datetime import datetime
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
+
 
 def printInputVariablesAndOptions(vmodel: VModel, lookup: Lookup):
     print("#### Input variables are:")
@@ -88,7 +89,9 @@ def printDefinitionsForATarget(vmodel: VModel, lookup: Lookup, target: str, outp
     targetNode = lookup.getKey("t:{}".format(target))
     if targetNode is None:
         # not sure if this is against the norm
-        targetNode = lookup.getVariableHistory(f't:{target}')[0]
+        targetNode = lookup.getVariableHistory(f't:{target}')
+        if targetNode:
+            targetNode = targetNode[0]
     if targetNode is None:
         targetNode = vmodel.findNode(target)
     assert isinstance(targetNode, TargetNode)
@@ -234,7 +237,7 @@ def doGitAnalysis(repoPath):
 
     foundedModification = 0
     notFoundedModification = 0
-    for index, commit in enumerate(Repository(
+    for index, commit in enumerate(RepositoryMining(
             # We are interested in commits after bc7e017112bb8e37a3103879148be718a48f5023 in zlib project
             repoPath, from_commit="a2d71e8e66530c325bfce936f3805ccff5831b62").traverse_commits()):
         # repoPath, from_commit="7707894d4857e2524ed9c48d972aa321dee850f8").traverse_commits()):
@@ -289,6 +292,6 @@ def doGitAnalysis(repoPath):
     #     print("Extension: {}, freq: {}".format(key, extension[key]))
     lists = sorted(extension.items(), key=lambda item: item[1], reverse=True)
     x, y = zip(*lists)
-    # plt.bar(x, y)
-    # plt.xticks(rotation=90)
-    # plt.savefig("plot.pdf")
+    plt.bar(x, y)
+    plt.xticks(rotation=90)
+    plt.savefig("plot.pdf")

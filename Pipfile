@@ -7,7 +7,7 @@ name = "pypi"
 antlr4-python3-runtime = "==4.9.1"
 attrs = "==20.2.0"
 gitdb = "==4.0.5"
-graphviz = "==0.14.1"
+graphviz = "==0.17"
 iniconfig = "==1.0.1"
 lizard = "==1.17.4"
 more-itertools = "==8.5.0"
@@ -26,7 +26,8 @@ Django = "==1.11.29"
 GitPython = "==3.1.8"
 PyDriller = "==1.15.2"
 Shapely = "==1.7.1"
-z3-solver = "*"
+z3-solver = "==4.8.12.0"
+matplotlib = "*"
 
 [dev-packages]
 

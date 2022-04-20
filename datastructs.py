@@ -369,7 +369,7 @@ class Lookup:
         return lastTable.get(key, None)
 
     def getVariableHistory(self, key) -> List[RefNode]:
-        return self.variableHistory[key]
+        return self.variableHistory.get(key)
 
     def deleteKey(self, key, parentScope=False):
         if parentScope:

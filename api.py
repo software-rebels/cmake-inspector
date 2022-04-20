@@ -8,6 +8,7 @@ from datastructs import LiteralNode, Lookup
 from utils import util_create_and_add_refNode_for_variable
 import extract
 from vmodel import VModel
+from z3 import *
 
 
 def getGraph(directory):
@@ -20,7 +21,7 @@ def getGraph(directory):
     return extract.vmodel, extract.lookupTable
 
 
-def getFlattenedDefintionsForTarget(target: str):
+def getFlattenedDefinitionsForTarget(target: str):
     return printDefinitionsForATarget(extract.vmodel, extract.lookupTable, target)
 
 
@@ -64,6 +65,19 @@ def main(argv):
     getGraph(argv[1])
     extract.vmodel.export()
 
+
+# def main(argv):
+#     vmodel, lookuptable = getGraph(argv[1])
+#     s = Solver()
+#     for target in vmodel.targets:
+#         if target.definitions is not None:
+#             definitions = getFlattenedDefinitionsForTarget(target.getValue())
+#             print(f"Vmodel sources for target {target.getValue()}:", getFlattenedFilesForTarget(target.getValue()))        
+#             print(f"Vmodel definitions for target {target.getValue()}:", definitions)
+#             for cond, def_set in definitions.items():
+#                 print(f"type(cond): {type(cond)}", cond)
+#                 s.from_string(cond)
+#                 print(f"definitions: {def_set}")
 
 if __name__ == "__main__":
     main(sys.argv)
