@@ -30,3 +30,5 @@ graph_dots_final/
 koffice-plugins/
 venv/
 .arm_venv/
+
+*.egg-info
