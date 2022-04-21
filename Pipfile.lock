@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "c39364b42252221ee7f0df237bcb6a6b61f101ee980f0916d6d8b5d98404da1a"
+            "sha256": "66c7ccef6d1687cec9cdc68cda8af9a6e32b192dbe8581d30b2ba0677505258e"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -310,11 +310,10 @@
         },
         "pydriller": {
             "hashes": [
-                "sha256:2d3322591d63c8fea590b1ac6b3cd6a9707417fdde675927a9589fe2d85e5c42",
-                "sha256:88d9f6a1226a9edbf19a777ec5fc71c3f347edab383634346d76edfbe604fecb"
+                "sha256:5be420c3630cc29b59d1938dfbb337c41d07689b83c7df98f19a4563bb80d005"
             ],
             "index": "pypi",
-            "version": "==1.15.2"
+            "version": "==2.1"
         },
         "pyparsing": {
             "hashes": [
@@ -400,6 +399,13 @@
             ],
             "index": "pypi",
             "version": "==0.10.1"
+        },
+        "types-pytz": {
+            "hashes": [
+                "sha256:6805c72d51118923c5bf98633c39593d5b464d2ab49a803440e2d7ab6b8920df",
+                "sha256:74547fd90d8d8ab4f1eedf3a344a7d186d97486973895f81221a712e1e2cd993"
+            ],
+            "version": "==2021.3.6"
         },
         "z3-solver": {
             "hashes": [

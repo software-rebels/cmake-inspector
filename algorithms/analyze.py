@@ -5,7 +5,7 @@ import pickle
 from algorithms import flattenAlgorithmWithConditions, getFlattenedDefinitionsFromNode, recursivelyResolveReference, mergeFlattedList, \
     removeDuplicatesFromFlattedList, postprocessZ3Output
 from datastructs import Lookup, RefNode, TargetNode, LiteralNode, CustomCommandNode, Node
-from pydriller import RepositoryMining
+from pydriller import Repository
 import itertools
 import glob
 from collections import defaultdict

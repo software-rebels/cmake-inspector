@@ -2,7 +2,7 @@ import time
 import pickle
 from analyze import getFilesForATarget
 from z3 import *
-from pydriller import GitRepository
+from pydriller import Git
 from collections import defaultdict
 from xmlrpc.server import SimpleXMLRPCServer
 from xmlrpc.server import SimpleXMLRPCRequestHandler
@@ -111,7 +111,7 @@ class GraphQuery:
         return result
 
     def getImpactedTargetsByCommitAndCondition(self, commit_id, requestedConditions):
-        gr = GitRepository(self._path)
+        gr = Git(self._path)
         commit = gr.get_commit(commit_id)
         result = defaultdict(list)
         for modified_file in commit.modified_files:
