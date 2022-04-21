@@ -479,5 +479,5 @@ class VModel:
 
     @classmethod
     def clearInstance(cls):
-        datastructs.created_commands = dict()
+        data_model.datastructs.created_commands = dict()
         cls._instance = None

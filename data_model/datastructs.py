@@ -1,8 +1,10 @@
-from operator import is_
-from typing import Optional, List, Type
 import copy
 
-from condition_data_structure import Rule
+from operator import is_
+from typing import Optional, List, Type
+
+from data_model.condition_data_structure import Rule
+
 
 created_commands = dict()
 

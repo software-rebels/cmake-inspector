@@ -1,6 +1,8 @@
 import operator
+
 from typing import Dict, List
 from z3 import *
+
 
 class ForeachVariable:
     logicType = None

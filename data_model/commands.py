@@ -4,12 +4,13 @@ from operator import concat
 from re import L
 from z3.z3 import Concat
 
-from algorithms.algorithms import flattenAlgorithmWithConditions
-from condition_data_structure import Rule
-from datastructs import Lookup, CustomCommandNode, TargetNode, ConcatNode, \
-WhileCommandNode, DefinitionNode, CommandDefinitionNode, DefinitionPair, TargetCompileDefinitionNode, TestNode, ForeachCommandNode
 from grammar.CMakeLexer import CMakeLexer, CommonTokenStream, InputStream
 from grammar.CMakeParser import CMakeParser
+
+from algorithms.algorithms import flattenAlgorithmWithConditions
+from data_model.condition_data_structure import Rule
+from data_model.datastructs import Lookup, CustomCommandNode, TargetNode, ConcatNode, \
+WhileCommandNode, DefinitionNode, CommandDefinitionNode, DefinitionPair, TargetCompileDefinitionNode, TestNode, ForeachCommandNode
 from utils.utils import *
 
 
