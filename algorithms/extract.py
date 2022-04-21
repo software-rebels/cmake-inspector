@@ -6,13 +6,16 @@ from z3 import *
 from antlr4 import FileStream, CommonTokenStream, ParseTreeWalker
 from antlr4.tree.Tree import TerminalNode
 from neomodel import config
-from condition_data_structure import LocalVariable, OrExpression, ComparisonExpression
+
 # Grammar generates by Antlr
 from grammar.CMakeListener import CMakeListener
+
 # Our own library
-from datastructs import TestNode, LiteralNode, OptionNode, Directory, DirectoryNode
-from commands import *
+from data_model.condition_data_structure import LocalVariable, OrExpression, ComparisonExpression
+from data_model.datastructs import TestNode, LiteralNode, OptionNode, Directory, DirectoryNode
+from data_model.commands import *
 from typing import Dict, List
+
 
 logging.basicConfig(filename='cmakeInspector.log', level=logging.DEBUG)
 config.DATABASE_URL = 'bolt://neo4j:123@localhost:7687'

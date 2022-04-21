@@ -1,4 +1,4 @@
-from datastructs import *
+from data_model.datastructs import *
 from functools import reduce
 
 

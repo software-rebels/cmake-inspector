@@ -2,13 +2,14 @@ import glob
 import logging
 import os
 import re
+
 from collections import Set, defaultdict
 from typing import Dict, List
 from z3 import *
 
-from datastructs import DefinitionNode, Node, LiteralNode, RefNode, CustomCommandNode, SelectNode, ConcatNode, \
+from data_model.datastructs import DefinitionNode, Node, LiteralNode, RefNode, CustomCommandNode, SelectNode, ConcatNode, \
     TargetNode, OptionNode, TestNode
-from vmodel import VModel
+from data_model.vmodel import VModel
 
 
 def flattenAlgorithm(node: Node):

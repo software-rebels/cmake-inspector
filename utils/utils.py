@@ -1,12 +1,11 @@
 # Convert list of strings to a string separated by space.
 from typing import List, Optional
-
 from z3 import And
 
-from condition_data_structure import LogicalExpression, NotExpression, AndExpression, Rule, ConstantExpression, \
+from data_model.condition_data_structure import LogicalExpression, NotExpression, AndExpression, Rule, ConstantExpression, \
     DummyExpression
-from datastructs import SelectNode, Node, RefNode, Lookup
-from vmodel import VModel
+from data_model.datastructs import SelectNode, Node, RefNode, Lookup
+from data_model.vmodel import VModel
 
 
 def util_getStringFromList(lst: List):

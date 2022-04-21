@@ -1,15 +1,16 @@
 import copy
 import re
-from typing import Optional, List, Set
 
+from typing import Optional, List, Set
 from graphviz import Digraph
 
-import datastructs
-from condition_data_structure import Rule
-from datalayer import Definition, Literal, Reference, Target, Concat, Select, CustomCommand, Option
-from datastructs import DefinitionNode, LiteralNode, Node, Lookup, RefNode, SelectNode, TargetNode, TestNode, ConcatNode, \
+import data_model.datastructs
+from data_model.condition_data_structure import Rule
+from data_model.datalayer import Definition, Literal, Reference, Target, Concat, Select, CustomCommand, Option
+from data_model.datastructs import DefinitionNode, LiteralNode, Node, Lookup, RefNode, SelectNode, TargetNode, TestNode, ConcatNode, \
     CustomCommandNode, OptionNode
-from graph_illustration import getNodeShape, getEdgeLabel
+from illustrations.graph_illustration import getNodeShape, getEdgeLabel
+
 
 VARIABLE_REGEX = r"\${(\S*)}"
 

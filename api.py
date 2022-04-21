@@ -2,13 +2,14 @@ import csv
 import sys
 import os
 
-from typing import Dict
-from .analyze import printDefinitionsForATarget, printFilesForATarget
-from .datastructs import LiteralNode, Lookup
-from .utils import util_create_and_add_refNode_for_variable
-from . import extract
-from .vmodel import VModel
 from z3 import *
+from typing import Dict
+
+from algorithms import extract
+from algorithms.analyze import printDefinitionsForATarget, printFilesForATarget
+from data_model.datastructs import LiteralNode, Lookup
+from utils.utils import util_create_and_add_refNode_for_variable
+from data_model.vmodel import VModel
 
 
 def getGraph(directory):

@@ -1,19 +1,19 @@
 import json
 import unittest
-from collections import defaultdict
 
+from collections import defaultdict
 from antlr4 import CommonTokenStream, ParseTreeWalker, InputStream
 
-from analyze import printDefinitionsForATarget, printFilesForATarget
-from extract import CMakeExtractorListener, getFlattenedDefintionsForTarget, linkDirectory
 from grammar.CMakeLexer import CMakeLexer
 from grammar.CMakeParser import CMakeParser
-from datastructs import CommandDefinitionNode, DefinitionNode, Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, \
-    CustomCommandNode, TargetNode, TestNode, OptionNode, Node, Directory
-from algorithms import flattenAlgorithm, flattenAlgorithmWithConditions, getFlattedArguments, flattenCustomCommandNode, \
+
+from algorithms.algorithms import flattenAlgorithm, flattenAlgorithmWithConditions, getFlattedArguments, flattenCustomCommandNode, \
     CycleDetectedException, getFlattenedDefinitionsFromNode, postprocessZ3Output
-from vmodel import VModel
-from extract import initialize
+from algorithms.analyze import printDefinitionsForATarget, printFilesForATarget
+from algorithms.extract import initialize, CMakeExtractorListener, getFlattenedDefintionsForTarget, linkDirectory
+from data_model.datastructs import CommandDefinitionNode, DefinitionNode, Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, \
+    CustomCommandNode, TargetNode, TestNode, OptionNode, Node, Directory
+from data_model.vmodel import VModel
 
 
 class TestVariableDefinitions(unittest.TestCase):

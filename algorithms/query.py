@@ -1,11 +1,13 @@
 import time
 import pickle
-from analyze import getFilesForATarget
-from z3 import *
-from pydriller import Git
+
 from collections import defaultdict
 from xmlrpc.server import SimpleXMLRPCServer
 from xmlrpc.server import SimpleXMLRPCRequestHandler
+from z3 import *
+from pydriller import Git
+
+from algorithms.analyze import getFilesForATarget
 
 
 class GraphQuery:

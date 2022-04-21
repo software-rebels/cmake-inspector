@@ -1,15 +1,14 @@
 import unittest
 import os
 
-from analyze import printDefinitionsForATarget, printFilesForATarget, getFilesForATarget
-from extract import linkDirectory
-from datastructs import CommandDefinitionNode, DefinitionNode, Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, \
-    CustomCommandNode, TargetNode, TestNode, OptionNode
-from algorithms import flattenAlgorithm, flattenAlgorithmWithConditions, getFlattedArguments, flattenCustomCommandNode, \
+from algorithms.analyze import printDefinitionsForATarget, printFilesForATarget, getFilesForATarget
+from algorithms.extract import initialize, linkDirectory
+from algorithms.query import GraphQuery
+from algorithms.algorithms import flattenAlgorithm, flattenAlgorithmWithConditions, getFlattedArguments, flattenCustomCommandNode, \
     CycleDetectedException, getFlattenedDefinitionsFromNode, postprocessZ3Output
-from vmodel import VModel
-from extract import initialize
-from query import GraphQuery
+from data_model.datastructs import CommandDefinitionNode, DefinitionNode, Lookup, RefNode, ConcatNode, LiteralNode, SelectNode, \
+    CustomCommandNode, TargetNode, TestNode, OptionNode
+from data_model.vmodel import VModel
 
 
 class TestVariableDefinitions(unittest.TestCase):
