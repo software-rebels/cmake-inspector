@@ -8,7 +8,7 @@ from typing import Dict
 from algorithms import extract
 from algorithms.analyze import printDefinitionsForATarget, printFilesForATarget
 from data_model.datastructs import LiteralNode, Lookup
-from utils.utils import util_create_and_add_refNode_for_variable
+from algorithms.utils import util_create_and_add_refNode_for_variable
 from data_model.vmodel import VModel
 
 

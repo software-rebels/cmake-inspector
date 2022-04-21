@@ -2,7 +2,7 @@ import logging
 
 from operator import concat
 from re import L
-from z3.z3 import Concat
+from z3 import Concat
 
 from grammar.CMakeLexer import CMakeLexer, CommonTokenStream, InputStream
 from grammar.CMakeParser import CMakeParser
@@ -11,7 +11,7 @@ from algorithms.algorithms import flattenAlgorithmWithConditions
 from data_model.condition_data_structure import Rule
 from data_model.datastructs import Lookup, CustomCommandNode, TargetNode, ConcatNode, \
 WhileCommandNode, DefinitionNode, CommandDefinitionNode, DefinitionPair, TargetCompileDefinitionNode, TestNode, ForeachCommandNode
-from utils.utils import *
+from algorithms.utils import *
 
 
 def setCommand(arguments):
