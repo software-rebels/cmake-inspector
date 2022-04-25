@@ -48,42 +48,24 @@ def exportFlattenedListToCSV(flattened: Dict, fileName: str):
             })
 
 
-# def main(argv):
-#     global extension_type
-#     extension_type = "ECM"
-#     if len(argv) > 2:
-#         currentIndex = 2
-#         if argv[currentIndex] == 'find_package_dir':
-#             dirs = argv[currentIndex + 1].split(',')
-#             extract.find_package_lookup_directories.append(dirs)
-#             currentIndex += 2
-
-#         if argv[currentIndex] == 'version':
-#             cmake_version = argv[currentIndex + 1]
-#             for idx in range(len(extract.find_package_lookup_directories)):
-#                 extract.find_package_lookup_directories[idx] = extract.find_package_lookup_directories[idx].replace(
-#                     ':version', cmake_version)
-#     getGraph(argv[1])
-#     extract.vmodel.export()
-
-
-# more restrictions!
-# 1) only care about boolrefs
-# 2) recursively retrieve all children primitives
-# 3) build a set of primitive elements
-
 def main(argv):
-    vmodel, lookuptable = getGraph(argv[1])
-    s = Solver()
-    for target in vmodel.targets:
-        if target.definitions is not None:
-            definitions = getFlattenedDefinitionsForTarget(target.getValue(), True)
-            print(f"Vmodel sources for target {target.getValue()}:", getFlattenedFilesForTarget(target.getValue(), True))        
-            print(f"Vmodel definitions for target {target.getValue()}:", definitions)
-            
-            for cond, def_set in definitions.items():
-                print(f"type(cond): {type(cond[0])}", cond, type(cond[0].children()[0]) if len(cond[0].children()) > 0 else True, cond[0].num_args())
-                print(f"definitions: {def_set}")
+    global extension_type
+    extension_type = "ECM"
+    if len(argv) > 2:
+        currentIndex = 2
+        if argv[currentIndex] == 'find_package_dir':
+            dirs = argv[currentIndex + 1].split(',')
+            extract.find_package_lookup_directories.append(dirs)
+            currentIndex += 2
+
+        if argv[currentIndex] == 'version':
+            cmake_version = argv[currentIndex + 1]
+            for idx in range(len(extract.find_package_lookup_directories)):
+                extract.find_package_lookup_directories[idx] = extract.find_package_lookup_directories[idx].replace(
+                    ':version', cmake_version)
+    getGraph(argv[1])
+    extract.vmodel.export()
+
 
 if __name__ == "__main__":
     main(sys.argv)
