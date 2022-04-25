@@ -85,7 +85,7 @@ def checkForCyclesAndPrint(vmodel: VModel, lookup: Lookup, node: Node, visited=[
     return False
 
 
-def printDefinitionsForATarget(vmodel: VModel, lookup: Lookup, target: str, output=False):
+def printDefinitionsForATarget(vmodel: VModel, lookup: Lookup, target: str, raw=False, output=False):
     logging.info("[FLATTEN] Start flattening target for definitions " + target)
     targetNode = lookup.getKey("t:{}".format(target))
     if targetNode is None:
@@ -102,9 +102,13 @@ def printDefinitionsForATarget(vmodel: VModel, lookup: Lookup, target: str, outp
     postprocessZ3Output(flattenedDefinitions)
 
     result = defaultdict(set)
-    for item in flattenedDefinitions:
-        result[str(item[1])].add(item[0])
-
+    if raw:
+        for item in flattenedDefinitions:
+            result[item[1]].add(item[0])
+    else:
+        for item in flattenedDefinitions:
+            result[str(item[1])].add(item[0])
+    
     # logging.info("[FLATTEN] Start postprocessing 2 " + target)
     # # Post-processing
     # # 1. Resolve wildcard path
@@ -184,9 +188,8 @@ def getFilesForATarget(vmodel: VModel, lookup: Lookup, target: str):
     return result
 
 
-def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=False):
+def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, raw=False, output=False):
     result = getFilesForATarget(vmodel, lookup, target)
-
     # json.dumps does not work on set. Using this function, we convert set to a list.
     def set_default(obj):
         if isinstance(obj, set):
@@ -195,6 +198,9 @@ def printFilesForATarget(vmodel: VModel, lookup: Lookup, target: str, output=Fal
 
     if output:
         print(json.dumps(result, default=set_default, sort_keys=True, indent=4))
+
+    if raw:
+        return result
 
         # with open('result.pkl', 'wb') as f:
         #     pickle.dump(result, f, pickle.HIGHEST_PROTOCOL)

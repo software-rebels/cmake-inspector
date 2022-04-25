@@ -34,7 +34,7 @@ class VModel:
         self.cmakeVersion = None
         self.ifLevel = 0
         self.ifConditions = []
-        self.targets = set()
+        self.targets: Set[TargetNode] = set()
         self.testTargets = set()
         self.options = dict()
         self.lookupTable = Lookup.getInstance()

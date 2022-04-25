@@ -5,7 +5,7 @@ import re
 
 from collections import Set, defaultdict
 from typing import Dict, List
-from z3 import *
+from z3.z3 import *
 
 from data_model.datastructs import DefinitionNode, Node, LiteralNode, RefNode, CustomCommandNode, SelectNode, ConcatNode, \
     TargetNode, OptionNode, TestNode

@@ -2,7 +2,7 @@ import glob
 import logging
 
 # Third-party
-from z3 import *
+from z3.z3 import *
 from antlr4 import FileStream, CommonTokenStream, ParseTreeWalker
 from antlr4.tree.Tree import TerminalNode
 from neomodel import config
@@ -17,7 +17,7 @@ from data_model.commands import *
 from typing import Dict, List
 
 
-logging.basicConfig(filename='cmakeInspector.log', level=logging.DEBUG)
+# logging.basicConfig(filename='cmakeInspector.log', level=logging.DEBUG)
 config.DATABASE_URL = 'bolt://neo4j:123@localhost:7687'
 
 project_dir = "."
@@ -1540,6 +1540,7 @@ class CMakeExtractorListener(CMakeListener):
             # First 0 for getting the only element in possible path,
             # Second 0 for getting the key (path)
             project_dir = possible_paths[0][0]
+            
             util_create_and_add_refNode_for_variable('CMAKE_CURRENT_SOURCE_DIR',
                                                      LiteralNode(project_dir, project_dir))
             parent_dir = directoryTree.find(tempProjectDir)
@@ -1547,7 +1548,15 @@ class CMakeExtractorListener(CMakeListener):
             if child_dir is None:
                 child_dir = DirectoryNode(project_dir)
             directoryTree.addChild(parent_dir, child_dir)
-            parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
+            
+            if "CMakeLists.txt" not in project_dir:
+                print("----------------------------------------------------------")
+                print("Project dir", project_dir)
+                print("Parent dir", parent_dir)
+                print("Child dir", child_dir)
+                print("----------------------------------------------------------")
+
+                parseFile(os.path.join(project_dir, 'CMakeLists.txt'))
             # parseFile(os.path.join(possible_paths[0][0], 'CMakeLists.txt'),True)
             lookupTable.dropScope()
             project_dir = tempProjectDir

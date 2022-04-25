@@ -1,6 +1,6 @@
 # Convert list of strings to a string separated by space.
 from typing import List, Optional
-from z3 import And
+from z3.z3 import And
 
 from data_model.condition_data_structure import LogicalExpression, NotExpression, AndExpression, Rule, ConstantExpression, \
     DummyExpression

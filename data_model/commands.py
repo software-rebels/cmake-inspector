@@ -2,7 +2,7 @@ import logging
 
 from operator import concat
 from re import L
-from z3 import Concat
+from z3.z3 import Concat
 
 from grammar.CMakeLexer import CMakeLexer, CommonTokenStream, InputStream
 from grammar.CMakeParser import CMakeParser
