@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import copy
 
 from operator import is_
-from typing import Optional, List, Type
+from typing import Optional, List, Type, Dict
 
 from data_model.condition_data_structure import Rule
 
@@ -408,10 +410,10 @@ class Lookup:
 class DirectoryNode(LiteralNode):
     def __init__(self, name):
         super().__init__(name)
-        self._post_num = 0 # for linearization
-        self.depends_on = [] # child depends on parent
-        self.depended_by = [] # parent depended by child
-        self.targets = []
+        self._post_num: int = 0 # for linearization
+        self.depends_on: List[DirectoryNode] = [] # child depends on parent
+        self.depended_by: List[DirectoryNode] = [] # parent depended by child
+        self.targets: List[TargetNode] = []
 
 
 class DefinitionPair:
@@ -460,29 +462,29 @@ class TargetCompileDefinitionNode(CustomCommandNode):
 
 
 class Directory:
-    _instance = None
+    _instance: Directory = None
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.root = None
-        self.map = {}
+        self.map: Dict[str, DirectoryNode] = {}
         # might want to test linearization later, but ignore for now.
         self.topologicalOrder = None 
 
-    def setRoot(self, root_dir):
+    def setRoot(self, root_dir: str) -> None:
         if not self.root:
             self.root = DirectoryNode(root_dir)
             self.map[root_dir] = self.root
 
-    def find(self, name):
+    def find(self, name: str) -> DirectoryNode:
         return self.map.get(name, None) 
 
     # TODO: Should also check for circular dependency when adding new child
-    def addChild(self, node, child):
+    def addChild(self, node: DirectoryNode, child: DirectoryNode):
         node.depended_by.append(child)
         child.depends_on.append(node)
         self.map[child.rawName] = child
 
-    def getTopologicalOrder(self, force=False):
+    def getTopologicalOrder(self, force: bool=False):
         if self.topologicalOrder is not None and not force:
             return self.topologicalOrder
         self._dfs(self.root)
@@ -491,15 +493,15 @@ class Directory:
         result = [node for node, _ in sorted_nodes]
         return result
 
-    def _dfs(self, node):
-        def _visit(node):
+    def _dfs(self, node: DirectoryNode) -> None:
+        def _visit(node: DirectoryNode):
             node.isVisited = True 
             for child in node.depends_on:
                 if not child.isVisited:
                     _visit(child)
             _post(node)
         
-        def _post(node):
+        def _post(node: DirectoryNode):
             nonlocal post_num
             post_num += 1
             node._post_num = post_num
@@ -508,12 +510,12 @@ class Directory:
         _visit(node)
 
     @classmethod
-    def getInstance(cls):
+    def getInstance(cls) -> Directory:
         if cls._instance is None:
             cls._instance = Directory()
 
         return cls._instance
 
     @classmethod
-    def clearInstance(cls):
+    def clearInstance(cls) -> None:
         cls._instance = None
