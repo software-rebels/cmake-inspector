@@ -1577,16 +1577,22 @@ class CMakeExtractorListener(CMakeListener):
             vmodel.nodes.append(node)
 
         elif commandId == 'add_library':
-            directory_node = directoryTree.find(project_dir)
             target_nodes = addTarget(arguments, False)
-            for target_node in target_nodes:
-                directory_node.targets.append(target_node)
+            directory_node = directoryTree.find(project_dir)
+            if directory_node:
+                for target_node in target_nodes:
+                    directory_node.targets.append(target_node)
+            else:
+                logging.error(f"[add_library] Cannot find {project_dir} in directory tree.")
 
         elif commandId == 'add_executable':
-            directory_node = directoryTree.find(project_dir)
             target_nodes = addTarget(arguments, True)
-            for target_node in target_nodes:
-                directory_node.targets.append(target_node)
+            directory_node = directoryTree.find(project_dir)
+            if directory_node:
+                for target_node in target_nodes:
+                    directory_node.targets.append(target_node)
+            else:
+                logging.error(f"[add_executable] Cannot find {project_dir} in directory tree.")
 
         elif commandId == 'list':
             listCommand(arguments)
