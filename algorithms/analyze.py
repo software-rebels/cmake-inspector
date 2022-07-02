@@ -100,6 +100,7 @@ def printDefinitionsForATarget(vmodel: VModel, lookup: Lookup, target: str, raw=
 
     logging.info("[FLATTEN] Start postprocessing " + target)
     postprocessZ3Output(flattenedDefinitions)
+    logging.info("[FLATTEN] Finished Z3 postprocessing " + target)
 
     result = defaultdict(set)
     if raw:
