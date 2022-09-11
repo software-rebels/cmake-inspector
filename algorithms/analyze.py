@@ -14,6 +14,7 @@ from datetime import datetime
 
 from algorithms.algorithms import flattenAlgorithmWithConditions, getFlattenedDefinitionsFromNode, recursivelyResolveReference, mergeFlattedList, \
     removeDuplicatesFromFlattedList, postprocessZ3Output
+from algorithms.utils import clean_and_filter_definitions
 from data_model.datastructs import Lookup, RefNode, TargetNode, LiteralNode, CustomCommandNode, Node
 from data_model.vmodel import VModel
 
@@ -95,9 +96,17 @@ def printDefinitionsForATarget(vmodel: VModel, lookup: Lookup, target: str, raw=
             targetNode = targetNode[0]
     if targetNode is None:
         targetNode = vmodel.findNode(target)
-    assert isinstance(targetNode, TargetNode)
-    flattenedDefinitions = getFlattenedDefinitionsFromNode(targetNode.definitions)
+    if not isinstance(targetNode, TargetNode):
+        return {}
+        # assert isinstance(targetNode, TargetNode)
 
+    if targetNode.definitions is None:
+        flattenedDefinitions = []
+    else:
+        flattenedDefinitions = getFlattenedDefinitionsFromNode(targetNode.definitions)
+    # print("________________________ FLAMTTEND DEFINITON ____________________________")
+    # print(flattenedDefinitions)
+    # print("_____________________________________________________________________________")
     logging.info("[FLATTEN] Start postprocessing " + target)
     postprocessZ3Output(flattenedDefinitions)
     logging.info("[FLATTEN] Finished Z3 postprocessing " + target)
@@ -110,6 +119,8 @@ def printDefinitionsForATarget(vmodel: VModel, lookup: Lookup, target: str, raw=
         for item in flattenedDefinitions:
             result[str(item[1])].add(item[0])
     
+    for name, s in result.items():
+        result[name] = clean_and_filter_definitions(s)
     # logging.info("[FLATTEN] Start postprocessing 2 " + target)
     # # Post-processing
     # # 1. Resolve wildcard path
@@ -136,7 +147,10 @@ def getFilesForATarget(vmodel: VModel, lookup: Lookup, target: str):
     if targetNode is None:
         targetNode = vmodel.findNode(target)
 
-    assert isinstance(targetNode, TargetNode)
+    # assert isinstance(targetNode, TargetNode)
+    if not isinstance(targetNode, TargetNode):
+        return {}
+    
     logging.info("[FLATTEN] flattening the source files for target " + target)
     flattenedFiles = flattenAlgorithmWithConditions(targetNode.sources)
     # for library, conditions in targetNode.linkLibrariesConditions.items():

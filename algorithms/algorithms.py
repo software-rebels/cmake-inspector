@@ -337,6 +337,7 @@ def flattenCustomCommandNode(node: CustomCommandNode, conditions: Set, recStack,
 # information recursively, so we cannot just recurse normally
 def getFlattenedDefinitionsFromNode(node: Node, conditions: Set = None, debug=True, recStack=None):
     # There are only type of nodes following a definition edge.
+    # just note that node is a ConcatNode
     children = node.getChildren()
     directory_node, target_node = None, None
     if len(children) == 1:
@@ -353,9 +354,12 @@ def getFlattenedDefinitionsFromNode(node: Node, conditions: Set = None, debug=Tr
             directory_node = children[1]
     dir_result = flattenDirectoryDefinitions(directory_node, conditions, recStack)
     target_result = flattenTargetDefinitions(target_node, conditions, recStack)
+    # print("Directory Result", dir_result)    
+    # print("Target result", target_result)
     # Now this gives us all the flattened result for the directory side,
     # we have to reconcile the data with the target side.
     result = mergeDirectoryAndTargetDefinitions(dir_result, target_result)
+    # print("merged result", result)
     return result
 
 
@@ -389,17 +393,7 @@ def mergeFlattenedDefinitionResults(global_result, local_result, command_type):
 
 
 def mergeDirectoryAndTargetDefinitions(directory_result, target_result):
-    # something need to be fixed here
-    result = directory_result
-    for tar in target_result:
-        flag, cond = tar
-        indices = find_name(result, flag)
-        if not indices:
-            result.append((flag, cond))
-            continue
-        for idx in indices:
-            r_flag, r_cond = result[idx]
-            result[idx] = (r_flag, {Or(*r_cond, *cond)})
+    result = mergeFlattenedDefinitionResults(directory_result, target_result, 'add')
     return result
 
 

@@ -22,12 +22,12 @@ def getGraph(directory):
     return extract.vmodel, extract.lookupTable
 
 
-def getFlattenedDefinitionsForTarget(target: str, raw: bool = False):
-    return printDefinitionsForATarget(extract.vmodel, extract.lookupTable, target, raw)
+def getFlattenedDefinitionsForTarget(target: str, raw: bool = False, output: bool = False):
+    return printDefinitionsForATarget(extract.vmodel, extract.lookupTable, target, raw, output)
 
 
-def getFlattenedFilesForTarget(target: str, raw: bool = False):
-    return printFilesForATarget(extract.vmodel, extract.lookupTable, target, raw)
+def getFlattenedFilesForTarget(target: str, raw: bool = False, output: bool = False):
+    return printFilesForATarget(extract.vmodel, extract.lookupTable, target, raw, output)
 
 
 def getTargets():
@@ -64,7 +64,16 @@ def main(argv):
                 extract.find_package_lookup_directories[idx] = extract.find_package_lookup_directories[idx].replace(
                     ':version', cmake_version)
     getGraph(argv[1])
+    # extract.vmodel.export()
+    # getTargets()
+    extract.vmodel.findAndSetTargets()
+    for idx, item in enumerate(extract.vmodel.targets):
+        target_name = item.getValue()
+        print(f"Definitions for {target_name}")
+        getFlattenedDefinitionsForTarget(target_name, output=True)
+        # print(f"Files for {target_name}", getFlattenedFilesForTarget(target_name))
     extract.vmodel.export()
+    # exportFlattenedListToCSV()
 
 
 if __name__ == "__main__":

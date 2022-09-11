@@ -124,5 +124,18 @@ def util_preprocess_definition_names(names, force=False):
         # where definitions are added without specifying -D
         results = [f"-D{name}" for name in names]
     else:
-        results = list(map(lambda x: f"-D{x[2:]}" if x[0:2] == '/D' else x, names))
+        for name in names:
+            if name[0:2] == '/D':
+                results.append(f"-D{name[2:]}")
+            elif name[0:2] == '-D':
+                results.append(name)
+            else:
+                results.append(f"-D{name}")
     return results
+
+
+def clean_and_filter_definitions(definitions):
+    result = set(util_preprocess_definition_names(definitions))
+    if "-D" in result:
+        result.remove("-D")
+    return result

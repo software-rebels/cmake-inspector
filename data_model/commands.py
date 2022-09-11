@@ -295,7 +295,7 @@ def addCompileTargetDefinitionsCommand(arguments):
         raise ValueError(f'target_compile_definitions is given an invalid scope: {scope}')
     
     definition_names = util_preprocess_definition_names(arguments, force=True)
-    
+
     # Similar to the directory definition case, but since ordering here does not matter
     # we do not have to use DefinitionPair for flipping the path.
     if to_definition:
